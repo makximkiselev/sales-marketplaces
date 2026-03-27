@@ -4,12 +4,11 @@
 
 ## Что внутри
 
-- FastAPI (API-only backend)
+- FastAPI backend (`backend/`)
 - React + Vite + TypeScript frontend (`frontend/`)
-- Backend API (`backend/`)
-- Next.js frontend (`frontend/`)
-- Текущее локальное хранилище: SQLite (`data/analytics.db`)
-- Подготовлен переход на PostgreSQL через `APP_DB_BACKEND=postgres`
+- локальное хранилище на SQLite в `data/`
+- поддержка PostgreSQL через `APP_DB_BACKEND=postgres`
+- интеграции с Яндекс Маркетом, внешними таблицами и Google Sheets
 
 ## Установка
 
@@ -19,11 +18,24 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Для frontend:
+
+```bash
+cd frontend
+npm install
+```
+
 ## Настройка
 
-1. Заполнить `.env` базовыми переменными приложения.
-2. Ключи маркетплейсов и Google-таблиц настраиваются через интерфейс приложения.
-3. Файлы Google Service Account сохраняются в `data/config/google_keys/`.
+1. Создать `.env` на основе `.env.example`.
+2. При необходимости создать `frontend/.env.local` на основе `frontend/.env.local.example`.
+3. Ключи маркетплейсов и Google-таблиц настраивать через интерфейс приложения или локальные конфиги вне Git.
+
+Важно:
+- `.env` не хранится в репозитории
+- `data/` не хранится в репозитории
+- `data/config/integrations.json` не хранится в репозитории
+- безопасный шаблон интеграций лежит в `data/config/integrations.example.json`
 
 ## Локальный запуск
 
@@ -39,21 +51,12 @@ Backend API: `http://127.0.0.1:8000`
 - Vite frontend (autostart) на `:3000`
 - и перенаправляет `/` с backend на frontend.
 
-## Фронтенд (React + Vite)
+## Отдельный запуск frontend
 
-Фронтенд живёт в `frontend/` (React + Vite + TypeScript).
-
-1. Установка:
+Из папки `frontend/`:
 
 ```bash
-cd frontend
-npm install
 cp .env.local.example .env.local
-```
-
-2. Запуск:
-
-```bash
 npm run dev
 ```
 
@@ -79,7 +82,7 @@ docker compose up -d
 
 - По умолчанию используется SQLite: `data/analytics.db`
 - Служебные файлы `data/analytics.db-shm` и `data/analytics.db-wal` являются нормальной частью SQLite в режиме `WAL`.
-- Для начала миграции на PostgreSQL:
+- Для миграции на PostgreSQL:
 
 ```bash
 export APP_DB_BACKEND=postgres
@@ -88,3 +91,15 @@ python3 tools/migrate_sqlite_to_postgres.py
 ```
 
 Сейчас PostgreSQL-поддержка уже добавлена в `backend/services/db.py` для core DB-слоя и подготовлен мигратор hot-таблиц, но полный runtime store-data контура ещё переносится поэтапно.
+
+## Что не хранится в Git
+
+- локальные базы данных из `data/*.db`
+- recovery-архивы и логи
+- `.env` и прочие локальные env-файлы
+- `data/config/integrations.json` с боевыми ключами
+- `frontend/node_modules`, `frontend/dist`, `frontend/.next`
+
+## Лицензия
+
+Файл `LICENSE` пока не добавлен. Лучше выбрать его отдельно осознанно, а не ставить случайную лицензию по умолчанию.
