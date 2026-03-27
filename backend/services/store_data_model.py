@@ -1750,22 +1750,32 @@ def _init_store_data_model_postgres() -> None:
                 )
                 """
             )
-            conn.execute("CREATE SEQUENCE IF NOT EXISTS pricing_category_settings_id_seq")
-            conn.execute(
+            id_meta = conn.execute(
                 """
-                ALTER TABLE pricing_category_settings
-                ALTER COLUMN id SET DEFAULT nextval('pricing_category_settings_id_seq')
+                SELECT is_identity
+                FROM information_schema.columns
+                WHERE table_schema = current_schema()
+                  AND table_name = 'pricing_category_settings'
+                  AND column_name = 'id'
                 """
-            )
-            conn.execute(
-                """
-                SELECT setval(
-                    'pricing_category_settings_id_seq',
-                    GREATEST(COALESCE((SELECT MAX(id) FROM pricing_category_settings), 0), 1),
-                    COALESCE((SELECT MAX(id) FROM pricing_category_settings), 0) > 0
+            ).fetchone()
+            if str((id_meta or {}).get("is_identity", "")).upper() != "YES":
+                conn.execute("CREATE SEQUENCE IF NOT EXISTS pricing_category_settings_id_seq")
+                conn.execute(
+                    """
+                    ALTER TABLE pricing_category_settings
+                    ALTER COLUMN id SET DEFAULT nextval('pricing_category_settings_id_seq')
+                    """
                 )
-                """
-            )
+                conn.execute(
+                    """
+                    SELECT setval(
+                        'pricing_category_settings_id_seq',
+                        GREATEST(COALESCE((SELECT MAX(id) FROM pricing_category_settings), 0), 1),
+                        COALESCE((SELECT MAX(id) FROM pricing_category_settings), 0) > 0
+                    )
+                    """
+                )
             pcs_cols = {row["column_name"] for row in conn.execute(
                 """
                 SELECT column_name
