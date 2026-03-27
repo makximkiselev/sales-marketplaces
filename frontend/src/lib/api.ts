@@ -1,7 +1,24 @@
-export const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+const RAW_API_BASE = String(import.meta.env.VITE_API_BASE || "/api").trim();
+export const API_BASE = RAW_API_BASE === "/api" ? "" : RAW_API_BASE.replace(/\/+$/, "");
+
+export function buildApiUrl(path: string): string {
+  const rawPath = String(path || "").trim();
+  if (!rawPath) return API_BASE;
+  if (/^https?:\/\//i.test(rawPath)) return rawPath;
+  if (API_BASE.endsWith("/api") && rawPath.startsWith("/api/")) {
+    return rawPath;
+  }
+  if (API_BASE.endsWith("/") && rawPath.startsWith("/")) {
+    return `${API_BASE}${rawPath.slice(1)}`;
+  }
+  if (!API_BASE.endsWith("/") && !rawPath.startsWith("/")) {
+    return `${API_BASE}/${rawPath}`;
+  }
+  return `${API_BASE}${rawPath}`;
+}
 
 export async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     cache: "no-store"
   });
   if (!res.ok) {
@@ -12,7 +29,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 }
 
 export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const res = await fetch(buildApiUrl(path), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
