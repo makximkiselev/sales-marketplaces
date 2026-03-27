@@ -7,7 +7,7 @@ services:
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - "127.0.0.1:${BACKEND_BIND_PORT:-18000}:8000"
     volumes:
       - ./data:/app/data
     restart: unless-stopped
@@ -17,13 +17,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE: http://localhost:8000
+        VITE_API_BASE: ${VITE_API_BASE:-/api}
     container_name: data-analytics-frontend
     environment:
-      - API_BASE_INTERNAL=http://backend:8000
-      - NEXT_PUBLIC_API_BASE=http://localhost:8000
+      - VITE_API_BASE=${VITE_API_BASE:-/api}
     ports:
-      - "3000:3000"
+      - "127.0.0.1:${FRONTEND_BIND_PORT:-13000}:3000"
     depends_on:
       - backend
     restart: unless-stopped
