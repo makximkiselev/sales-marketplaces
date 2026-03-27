@@ -98,22 +98,34 @@ def _connect_postgres(*, history: bool = False, system: bool = False):
     return conn
 
 
+def _connect_sqlite(*, history: bool = False, system: bool = False) -> sqlite3.Connection:
+    if system:
+        db_path = SYSTEM_DB_PATH
+    elif history:
+        db_path = HISTORY_DB_PATH
+    else:
+        db_path = OPERATIONAL_DB_PATH
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path))
+    return apply_sqlite_pragmas(conn, history=history)
+
+
 def _connect() -> sqlite3.Connection:
-    if not is_postgres_backend():
-        raise RuntimeError("SQLite runtime отключен. Используй PostgreSQL backend.")
-    return _connect_postgres(history=False)
+    if is_postgres_backend():
+        return _connect_postgres(history=False)
+    return _connect_sqlite(history=False)
 
 
 def _connect_history() -> sqlite3.Connection:
-    if not is_postgres_backend():
-        raise RuntimeError("SQLite runtime отключен. Используй PostgreSQL backend.")
-    return _connect_postgres(history=True)
+    if is_postgres_backend():
+        return _connect_postgres(history=True)
+    return _connect_sqlite(history=True)
 
 
 def _connect_system():
-    if not is_postgres_backend():
-        raise RuntimeError("SQLite runtime отключен. Используй PostgreSQL backend.")
-    return _connect_postgres(system=True)
+    if is_postgres_backend():
+        return _connect_postgres(system=True)
+    return _connect_sqlite(system=True)
 
 
 def cleanup_legacy_kv_store(conn: sqlite3.Connection) -> bool:
