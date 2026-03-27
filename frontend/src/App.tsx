@@ -4,7 +4,6 @@ import HomePage from "./app/page";
 import CatalogPage from "./app/catalog/page";
 import CatalogContentRatingPage from "./app/catalog/content-rating/page";
 import CatalogKpisPage from "./app/catalog/kpis/page";
-import DataSourcesRedirectPage from "./app/data/sources/page";
 import MonitoringRedirectPage from "./app/monitoring/page";
 import PricingAttractivenessPage from "./app/pricing/attractiveness/page";
 import PricingDecisionPage from "./app/pricing/decision/page";
@@ -33,7 +32,7 @@ export default function App() {
         <Route path="/catalog" element={<CatalogPage />} />
         <Route path="/catalog/content-rating" element={<CatalogContentRatingPage />} />
         <Route path="/catalog/kpis" element={<CatalogKpisPage />} />
-        <Route path="/data/sources" element={<DataSourcesRedirectPage />} />
+        <Route path="/data/sources" element={<SettingsSourcesPage />} />
         <Route path="/monitoring" element={<MonitoringRedirectPage />} />
         <Route path="/pricing/attractiveness" element={<PricingAttractivenessPage />} />
         <Route path="/pricing/decision" element={<PricingDecisionPage />} />
