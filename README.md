@@ -67,16 +67,35 @@ npm run dev
 - frontend ходит в API backend;
 - dev-перезапуск backend и frontend настроен через `main.py`.
 
-## Production через Docker Compose
+## Production на сервере
+
+Текущий production-стек:
+
+- `nginx` раздаёт `frontend/dist` и проксирует `/api`
+- `systemd` держит backend-сервис `sales-marketplaces-backend`
+- `PostgreSQL` запущен локально на сервере
+
+Обновление проекта на сервере:
 
 ```bash
-docker compose build
-docker compose up -d
+cd /opt/sales-marketplaces
+./deploy.sh
 ```
 
-Сервисы:
-- frontend: `http://localhost:3000`
-- backend API: `http://localhost:8000`
+Что делает `deploy.sh`:
+
+- подтягивает `main` из GitHub
+- обновляет Python-зависимости в `.venv`
+- обновляет frontend-зависимости
+- собирает `frontend/dist`
+- перезапускает backend
+- делает `health-check` backend и домена
+
+Важно:
+
+- `deploy.sh` рассчитан на уже подготовленный сервер
+- backend-сервис по умолчанию называется `sales-marketplaces-backend`
+- при необходимости сервисы можно переопределить через `BACKEND_SERVICE` и `NGINX_SERVICE`
 
 ## База данных
 
@@ -102,4 +121,4 @@ python3 tools/migrate_sqlite_to_postgres.py
 
 ## Лицензия
 
-Файл `LICENSE` пока не добавлен. Лучше выбрать его отдельно осознанно, а не ставить случайную лицензию по умолчанию.
+Проект закрытый. Детали в [LICENSE](LICENSE).
