@@ -1,0 +1,156 @@
+.filterWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filterSelect {
+  min-width: 240px;
+  height: 34px;
+}
+
+.autopilotCell {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.autopilotValue {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.metricStack {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+}
+
+.metricSubtle {
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.hypothesisText {
+  display: inline-block;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #d7e5ff;
+  text-align: left;
+}
+
+.planPanel {
+  display: grid;
+  gap: 12px;
+}
+
+.planPanelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.planPanelTitle {
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.planPanelSubtle {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.planTableWrap {
+  overflow-x: auto;
+}
+
+.planTable {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.planTable th,
+.planTable td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.16);
+  white-space: nowrap;
+}
+
+.planTable th {
+  color: var(--text-soft);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+  text-align: left;
+}
+
+.planTable td {
+  color: var(--text-main);
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.planTable tbody td:first-child {
+  font-weight: 700;
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sortButton:hover {
+  opacity: 0.85;
+}
+
+.sortMarker {
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.promoDetailItem {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+}
+
+.promoDetailName {
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--text-main);
+  text-align: center;
+  font-weight: 600;
+}
+
+.strategyBranch {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.strategyBranchText {
+  display: inline-block;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #d7e5ff;
+  text-align: left;
+}

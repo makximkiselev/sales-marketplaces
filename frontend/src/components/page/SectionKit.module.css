@@ -1,0 +1,32 @@
+.section {
+  width: 100%;
+}
+
+.sectionTitle {
+  display: block;
+}
+
+.sectionBody {
+  padding: 16px;
+}
+
+.panelGrid {
+  align-items: start;
+}
+
+.panelCard {
+  gap: 12px;
+}
+
+.panelHead {
+  align-items: center;
+}
+
+.panelTitleBlock {
+  display: grid;
+  gap: 4px;
+}
+
+.panelFooter {
+  margin-top: 2px;
+}

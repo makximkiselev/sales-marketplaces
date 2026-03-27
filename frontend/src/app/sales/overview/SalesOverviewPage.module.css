@@ -1,0 +1,288 @@
+.pageFrame {
+  overflow: visible;
+}
+
+.pageFrameInner {
+  overflow: visible;
+}
+
+.pageFrameInner > section {
+  min-width: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.summaryCard {
+  border: 1px solid rgba(157, 182, 230, 0.16);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: rgba(10, 18, 34, 0.88);
+}
+
+.summaryLabel {
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-bottom: 6px;
+}
+
+.summaryValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: #e9f0ff;
+}
+
+.summaryDetail {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #93b2ec;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.segmentedActive {
+  border-color: rgba(88, 165, 255, 0.45);
+  background: rgba(35, 96, 193, 0.24);
+}
+
+.pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pageInfo {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.pageSize {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.pageSize select {
+  min-width: 96px;
+}
+
+.dateInput {
+  height: 40px;
+  min-width: 150px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(109, 151, 255, 0.22);
+  background: rgba(8, 16, 30, 0.92);
+  color: #e9f0ff;
+}
+
+.table {
+  width: max-content;
+  min-width: max(100%, 980px);
+  border-collapse: collapse;
+}
+
+.tableWrap {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  border: 1px solid rgba(157, 182, 230, 0.16);
+  border-radius: 16px;
+  background: rgba(8, 16, 30, 0.9);
+  margin-bottom: 16px;
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  background: rgba(11, 20, 36, 0.98);
+  z-index: 1;
+  text-align: center;
+  font-size: 12px;
+  color: #dce7ff;
+  letter-spacing: 0.03em;
+}
+
+.table th,
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(157, 182, 230, 0.16);
+  white-space: nowrap;
+  text-align: center;
+}
+
+.nameCell {
+  text-align: left;
+  white-space: normal;
+}
+
+.table tbody tr:hover td {
+  background: rgba(92, 126, 189, 0.08);
+}
+
+.plannedRow td {
+  background: rgba(245, 196, 74, 0.12);
+}
+
+.plannedRow:hover td {
+  background: rgba(245, 196, 74, 0.18);
+}
+
+.summaryRow td {
+  font-weight: 700;
+  background: rgba(120, 164, 255, 0.1);
+}
+
+.empty {
+  text-align: center;
+  color: var(--text-soft);
+  padding: 24px 14px;
+}
+
+.errorBox {
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 120, 120, 0.28);
+  background: rgba(66, 20, 26, 0.4);
+  color: #ffd0d0;
+}
+
+.subtleText {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #8fb9ff;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(157, 182, 230, 0.2);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tone_neutral {
+  color: #d5e2ff;
+  background: rgba(74, 95, 132, 0.18);
+}
+
+.tone_positive {
+  color: #9df6b7;
+  background: rgba(10, 76, 39, 0.32);
+  border-color: rgba(82, 208, 128, 0.3);
+}
+
+.tone_warn {
+  color: #ffd88f;
+  background: rgba(90, 62, 12, 0.28);
+  border-color: rgba(245, 196, 74, 0.28);
+}
+
+.tone_info {
+  color: #97dcff;
+  background: rgba(17, 67, 113, 0.28);
+  border-color: rgba(91, 181, 255, 0.24);
+}
+
+.trackingYearSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.trackingYearTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #dfe8ff;
+}
+
+.trackingMonthRow {
+  cursor: pointer;
+}
+
+.trackingMonthRowActive td {
+  background: rgba(56, 128, 255, 0.14);
+}
+
+.trackingMonthCell {
+  text-align: left !important;
+  font-weight: 700;
+}
+
+.trackingChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  margin-right: 8px;
+  color: #7dc6ff;
+}
+
+.trackingPlanText {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #8fb9ff;
+}
+
+.trackingDaysHostRow td {
+  padding: 0;
+  border-bottom: 1px solid rgba(157, 182, 230, 0.12);
+  background: transparent;
+}
+
+.trackingDaysHostCell {
+  padding: 0 !important;
+}
+
+.trackingDaysWrap {
+  max-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  transition: max-height 220ms ease;
+}
+
+.trackingDaysWrapOpen {
+  max-height: 1600px;
+}
+
+.trackingDaysTable {
+  width: max-content;
+  min-width: 100%;
+  border-top: 1px solid rgba(157, 182, 230, 0.12);
+}
+
+.trackingDaysTable thead th {
+  top: 0;
+  background: rgba(9, 18, 34, 0.98);
+}

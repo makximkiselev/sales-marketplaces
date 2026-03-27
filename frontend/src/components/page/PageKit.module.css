@@ -1,0 +1,159 @@
+.frame {
+  width: 100%;
+}
+
+.frameInner {
+  padding: 16px 18px 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.heroMain {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.heroSubtitle {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.heroAside {
+  min-width: 220px;
+  max-width: 420px;
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.heroMeta {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.toolbar {
+  padding-top: 12px;
+  border-top: 1px solid rgba(132, 161, 214, 0.18);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.toolbarLeft,
+.toolbarRight {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sectionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sectionTitleBlock {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.sectionMeta {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(2, 7, 17, 0.74);
+  backdrop-filter: blur(10px);
+}
+
+.modalCard {
+  width: min(760px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  border: 1px solid rgba(132, 161, 214, 0.24);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(13, 24, 44, 0.98), rgba(8, 16, 31, 0.98));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+}
+
+.modalHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.18);
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.modalSubtitle {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.modalBody {
+  padding: 16px 18px 18px;
+}
+
+@media (max-width: 960px) {
+  .hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .heroAside {
+    min-width: 0;
+    max-width: none;
+    justify-items: stretch;
+  }
+
+  .heroMeta {
+    text-align: left;
+  }
+}

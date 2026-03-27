@@ -1,0 +1,173 @@
+.btn {
+  border: 1px solid var(--line);
+  color: #dce9ff;
+  background: rgba(98, 125, 178, 0.12);
+  border-radius: 11px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font: inherit;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.btn:hover {
+  border-color: rgba(76, 201, 240, 0.5);
+  background: rgba(76, 201, 240, 0.18);
+}
+
+.btn.primary {
+  border-color: rgba(76, 201, 240, 0.45);
+  background: linear-gradient(90deg, rgba(76, 201, 240, 0.2), rgba(45, 212, 191, 0.16));
+}
+
+.btn.inline {
+  padding: 2px 8px;
+  min-height: 0;
+  line-height: 1.2;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.btn.icon-only {
+  min-width: 30px;
+  width: 30px;
+  padding: 2px 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.btn.is-loading {
+  transform: translateY(1px) scale(0.995);
+}
+
+.btn-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-spinner-slot {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(220, 233, 255, 0.35);
+  border-top-color: #dce9ff;
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.btn-spinner.show {
+  opacity: 1;
+  transform: scale(1);
+  animation: spin 0.9s linear infinite;
+}
+
+.toggle {
+  border: 1px solid rgba(132, 161, 214, 0.4);
+  background: rgba(9, 17, 31, 0.7);
+  border-radius: 999px;
+  width: 50px;
+  height: 28px;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.toggle:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.toggle-track {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+}
+
+.toggle-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #bfd1ef;
+  box-shadow: 0 2px 8px rgba(5, 9, 18, 0.5);
+  transform: translateX(0);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.toggle.on {
+  border-color: rgba(45, 212, 191, 0.5);
+  background: rgba(45, 212, 191, 0.18);
+}
+
+.toggle.on .toggle-thumb {
+  transform: translateX(22px);
+  background: #d8fff7;
+}
+
+.toggle.sm {
+  width: 42px;
+  height: 24px;
+  padding: 2px;
+}
+
+.toggle.sm .toggle-thumb {
+  width: 18px;
+  height: 18px;
+}
+
+.toggle.sm.on .toggle-thumb {
+  transform: translateX(18px);
+}
+
+.refresh-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.refresh-icon.spinning {
+  display: inline-block;
+  animation: spin 0.9s linear infinite;
+}
+
+.delete-btn {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0;
+  opacity: 0.8;
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(127, 29, 29, 0.12);
+}
+
+.delete-btn:hover {
+  opacity: 1;
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.55);
+  background: rgba(185, 28, 28, 0.2);
+}
+
+.delete-icon {
+  width: 11px;
+  height: 11px;
+  display: block;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

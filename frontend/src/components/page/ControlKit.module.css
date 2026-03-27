@@ -1,0 +1,79 @@
+.field {
+  min-width: 220px;
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 12px;
+  background: rgba(12, 22, 39, 0.48);
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.label {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fieldBody {
+  min-width: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tabBtn {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tabBtnActive {
+  border-color: rgba(43, 214, 255, 0.55);
+  background: linear-gradient(180deg, rgba(34, 113, 140, 0.38), rgba(23, 43, 73, 0.9));
+}
+
+.tabBadge {
+  border: 1px solid rgba(132, 161, 214, 0.28);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  color: var(--text-soft);
+}
+
+.actionButton {
+  height: 40px;
+  min-width: 150px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.actionButtonLoading {
+  min-width: 172px;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(201, 219, 250, 0.25);
+  border-top-color: #cfe8ff;
+  animation: controlSpin 0.7s linear infinite;
+  flex: 0 0 14px;
+}
+
+@keyframes controlSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

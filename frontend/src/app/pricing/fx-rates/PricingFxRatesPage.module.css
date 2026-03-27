@@ -1,0 +1,109 @@
+.updatedNote {
+  color: var(--text-soft);
+  font-size: 13px;
+  text-align: right;
+}
+
+.dateField {
+  min-width: 180px;
+}
+
+.dateInput {
+  height: 38px;
+}
+
+.tablesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.tableCard {
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 14px;
+  background: rgba(10, 18, 33, 0.46);
+  padding: 12px;
+  min-width: 0;
+}
+
+.tableHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tableTitle {
+  margin: 0;
+  font-size: 15px;
+}
+
+.tableMeta {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.tableWrap {
+  margin-top: 10px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 10px;
+  overflow: auto;
+  max-height: 60vh;
+}
+
+.ratesTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 260px;
+}
+
+.ratesTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(13, 25, 46, 0.96);
+  color: #c9dbfa;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.2);
+  border-right: 1px solid rgba(132, 161, 214, 0.1);
+}
+
+.ratesTable thead th:last-child,
+.ratesTable tbody td:last-child {
+  border-right: 0;
+}
+
+.ratesTable tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.12);
+  border-right: 1px solid rgba(132, 161, 214, 0.08);
+  color: #dbe8ff;
+}
+
+.ratesTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.dateCell {
+  white-space: nowrap;
+}
+
+.rateCell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.statusBox {
+  margin-top: 2px;
+}
+
+@media (max-width: 1200px) {
+  .tablesGrid {
+    grid-template-columns: 1fr;
+  }
+}

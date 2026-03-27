@@ -1,0 +1,33 @@
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.kpiCard {
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 14px;
+  background: rgba(12, 22, 39, 0.48);
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.kpiLabel {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.kpiValue {
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 700;
+  color: #edf4ff;
+}
+
+.tableCard {
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 14px;
+  overflow: auto;
+}

@@ -1,0 +1,1015 @@
+.headCard :global(.inner) {
+  padding: 16px 18px 10px;
+}
+
+.headInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.headTitle {
+  margin: 0 0 4px;
+}
+
+.headSubtitle {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.storeSettingsMeta {
+  max-width: 420px;
+  font-size: 12px;
+  color: var(--text-soft);
+  text-align: right;
+}
+
+.controlsRow {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(132, 161, 214, 0.18);
+  display: grid;
+  gap: 14px;
+}
+
+.settingsTabsRow {
+  gap: 10px;
+}
+
+.storeTabsRow {
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.globalSettingsGrid {
+  display: grid;
+  grid-template-columns: 0.95fr 1.1fr 1.1fr 1fr 0.8fr;
+  gap: 12px;
+}
+
+.logisticsSettingsGrid {
+  grid-template-columns: minmax(520px, 1.7fr) minmax(300px, 1fr) minmax(300px, 1fr) minmax(260px, 0.85fr);
+}
+
+.logisticsPlaceholder {
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 14px;
+  background: rgba(12, 22, 39, 0.48);
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.logisticsPlaceholderTitle {
+  font-weight: 700;
+  color: #dceaff;
+}
+
+.logisticsPlaceholderText {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.settingField {
+  min-height: 68px;
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 14px;
+  background: rgba(12, 22, 39, 0.48);
+  padding: 10px 12px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.settingFieldError {
+  border-color: rgba(255, 108, 122, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(255, 108, 122, 0.35);
+  background: linear-gradient(180deg, rgba(56, 18, 26, 0.38), rgba(34, 14, 22, 0.34));
+}
+
+.fieldErrorText {
+  color: #ff9aa5;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.settingLabel {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.modeToggleWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.dualToggleRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: nowrap;
+}
+
+.handlingInlineRow {
+  display: grid;
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+}
+
+.modeToggleText {
+  font-size: 13px;
+  color: #d4e4ff;
+}
+
+.selectorToggle {
+  border-color: rgba(132, 161, 214, 0.32);
+  background: rgba(17, 28, 48, 0.86);
+}
+
+.selectorToggle :global(.toggle-track) {
+  justify-content: flex-start;
+}
+
+.selectorToggle:global(.toggle.on) {
+  border-color: rgba(132, 161, 214, 0.32);
+  background: rgba(17, 28, 48, 0.86);
+}
+
+.selectorToggle:global(.toggle.on .toggle-thumb) {
+  background: #bfd1ef;
+}
+
+.inputWithSuffix {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.inlineThreeInputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.inlineThreeInputsCompact {
+  min-width: 0;
+  grid-column: 2 / -1;
+  grid-template-columns: repeat(3, minmax(86px, 1fr));
+}
+
+.handlingFixedWrap {
+  grid-column: 2 / -1;
+}
+
+.settingInput {
+  height: 36px;
+}
+
+.inputSuffix {
+  color: var(--text-soft);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.platformTabs {
+  gap: 10px;
+}
+
+.inlineInfo {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.storePicker {
+  min-width: min(100%, 420px);
+}
+
+.importButton {
+  height: 40px;
+  padding: 0 14px;
+}
+
+.storeSelect {
+  min-width: 260px;
+  height: 40px;
+}
+
+.contentControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.salesPlanTable th,
+.salesPlanTable td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.salesPlanTable th:nth-child(2),
+.salesPlanTable td:nth-child(2) {
+  text-align: left;
+}
+
+.sectionActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.monitoringHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.monitoringHeaderText {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.monitoringExportHeaderActions {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.monitoringExportSummary {
+  color: var(--text-soft);
+  font-size: 12px;
+  text-align: right;
+}
+
+.monitoringRunAll {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.monitoringRunAllMeta {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.monitoringRunAllStage {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.monitoringGroupTitle {
+  padding: 10px 12px 0;
+  color: #dceaff;
+  font-weight: 700;
+}
+
+.monitoringTable {
+  min-width: 1180px;
+}
+
+.monitoringExportTable {
+  min-width: 1220px;
+  table-layout: fixed;
+}
+
+.monitoringExportMethodCol {
+  width: 220px;
+}
+
+.monitoringExportStoreCol {
+  width: 260px;
+}
+
+.monitoringTable th,
+.monitoringTable td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.monitoringTable th:nth-child(1),
+.monitoringTable td:nth-child(1) {
+  text-align: left;
+}
+
+.monitoringSelect {
+  min-width: 160px;
+  height: 36px;
+}
+
+.monitoringStoreHead {
+  display: grid;
+  gap: 4px;
+  min-width: 132px;
+  font-size: 12px;
+  justify-items: center;
+  text-align: center;
+}
+
+.monitoringPlatformTag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  padding: 2px 8px;
+  border: 1px solid rgba(132, 161, 214, 0.24);
+  border-radius: 999px;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.monitoringExportRunButton {
+  min-width: 112px;
+  height: 32px;
+}
+
+.monitoringStoreCell,
+.monitoringStoreCellMuted {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.monitoringExportMethodCell {
+  min-width: 220px;
+  padding-inline: 14px;
+}
+
+.monitoringExportMethodName {
+  display: grid;
+  place-items: center;
+  min-height: 148px;
+  padding: 14px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: linear-gradient(180deg, rgba(16, 28, 48, 0.82), rgba(9, 18, 34, 0.9));
+  color: #dceaff;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.monitoringStoreCellMuted {
+  color: rgba(180, 200, 236, 0.48);
+}
+
+.monitoringStoreStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(17, 28, 48, 0.72);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.monitoringConfigState {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(17, 28, 48, 0.72);
+  font-size: 12px;
+  white-space: nowrap;
+  width: fit-content;
+}
+
+.monitoringConfigStateReady {
+  color: #8ef0b1;
+  border-color: rgba(78, 200, 118, 0.32);
+  background: rgba(20, 69, 41, 0.38);
+}
+
+.monitoringConfigStateEmpty {
+  color: var(--text-soft);
+  border-color: rgba(132, 161, 214, 0.18);
+  background: rgba(17, 28, 48, 0.72);
+}
+
+.monitoringProgress {
+  width: 100%;
+  max-width: 180px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(132, 161, 214, 0.14);
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.monitoringProgressBar {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #38c8d9, #8ef0b1);
+  transition: width 0.25s ease;
+}
+
+.monitoringJobStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(17, 28, 48, 0.72);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.monitoringStatusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
+
+.monitoringStatusSuccess {
+  color: #8ef0b1;
+  border-color: rgba(78, 200, 118, 0.32);
+  background: rgba(20, 69, 41, 0.38);
+}
+
+.monitoringStatusRunning {
+  color: #ffe18a;
+  border-color: rgba(223, 178, 70, 0.32);
+  background: rgba(84, 63, 16, 0.34);
+}
+
+.monitoringStatusError {
+  color: #ff9aa5;
+  border-color: rgba(255, 108, 122, 0.36);
+  background: rgba(74, 18, 28, 0.34);
+}
+
+.monitoringStatusIdle {
+  color: var(--text-soft);
+}
+
+.inlineSuffix {
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cogsSourceRow {
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 14px;
+  background: rgba(12, 22, 39, 0.48);
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cogsSourceRowDisabled {
+  opacity: 0.85;
+}
+
+.cogsSourceDisplay {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cogsSourceName,
+.cogsSourceNameSet {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(132, 161, 214, 0.22);
+  background: rgba(9, 18, 34, 0.52);
+  min-width: 180px;
+  max-width: 100%;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cogsSourceNameSet {
+  color: #dceaff;
+  border-color: rgba(76, 201, 240, 0.28);
+}
+
+.cogsSelectButton {
+  height: 36px;
+  flex: 0 0 auto;
+}
+
+.cogsClearButton {
+  height: 36px;
+  min-width: 36px;
+  padding-inline: 10px;
+  flex: 0 0 auto;
+}
+
+.cogsSourceMeta {
+  color: var(--text-soft);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.monitoringExportCard {
+  min-height: 148px;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  gap: 10px;
+  padding: 12px;
+}
+
+.monitoringExportCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.monitoringExportSourceWrap {
+  min-width: 0;
+}
+
+.monitoringExportSource,
+.monitoringExportSourceSet {
+  min-height: 44px;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(132, 161, 214, 0.22);
+  background: rgba(9, 18, 34, 0.52);
+  color: var(--text-soft);
+  text-align: center;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.monitoringExportSourceSet {
+  color: #dceaff;
+  border-color: rgba(76, 201, 240, 0.28);
+}
+
+.monitoringExportMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.monitoringExportMetaItem {
+  min-width: 0;
+  padding: 10px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  background: rgba(17, 28, 48, 0.56);
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  text-align: center;
+}
+
+.monitoringExportMetaLabel {
+  color: var(--text-soft);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.monitoringExportMetaValue {
+  max-width: 100%;
+  color: #dceaff;
+  font-size: 13px;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.monitoringExportStatusRow {
+  display: flex;
+  justify-content: center;
+}
+
+.globalSettingsGrid > .cogsSourceRow {
+  align-content: start;
+}
+
+.sourceTypeCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sourceTypeCard {
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(10, 18, 33, 0.4);
+  color: inherit;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.selected {
+}
+
+.sourceTypeCard.selected {
+  border-color: rgba(76, 201, 240, 0.4);
+  background: linear-gradient(180deg, rgba(25, 52, 82, 0.45), rgba(12, 22, 39, 0.75));
+}
+
+.sourceTypeCard:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sourceTypeCardTitle {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+.sourceTypeCardDesc {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.sourceList {
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.sourceListItem {
+  text-align: left;
+  border-radius: 10px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  background: rgba(9, 18, 34, 0.48);
+  color: #dbe8ff;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.sourceListItem.selected {
+  border-color: rgba(76, 201, 240, 0.45);
+  background: rgba(40, 86, 116, 0.25);
+}
+
+.columnSelectGroup {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.columnSelectLabel {
+  color: var(--text-soft);
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.emptyState {
+  min-height: 140px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--text-soft);
+  border: 1px dashed rgba(132, 161, 214, 0.24);
+  border-radius: 14px;
+  background: rgba(9, 18, 34, 0.35);
+  padding: 22px;
+}
+
+.pricingTableWrap {
+  border: 1px solid rgba(132, 161, 214, 0.22);
+  border-radius: 14px;
+  overflow-x: auto;
+  overflow-y: auto;
+  background: rgba(8, 16, 30, 0.55);
+  -webkit-overflow-scrolling: touch;
+}
+
+.logisticsListControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.logisticsListControls > .inputWithSuffix {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.logisticsPageSizeBox {
+  flex: 0 0 auto;
+}
+
+.logisticsImportBox {
+  flex: 0 0 auto;
+  align-self: end;
+}
+
+.logisticsSearchField {
+  min-width: 0;
+}
+
+.logisticsPageSizeSelect {
+  width: 88px;
+  height: 38px;
+}
+
+.logisticsTable {
+  min-width: 2140px;
+}
+
+.logisticsTable thead th:nth-child(1),
+.logisticsTable tbody td:nth-child(1) {
+  min-width: 130px;
+}
+
+.logisticsTable thead th:nth-child(2),
+.logisticsTable tbody td:nth-child(2) {
+  min-width: 320px;
+  text-align: left;
+}
+
+.logisticsTable thead th:nth-child(3),
+.logisticsTable tbody td:nth-child(3) {
+  min-width: 180px;
+}
+
+.logisticsTable thead th:nth-child(n + 4):nth-child(-n + 9),
+.logisticsTable tbody td:nth-child(n + 4):nth-child(-n + 9) {
+  min-width: 130px;
+}
+
+.logisticsTable thead th:nth-child(10),
+.logisticsTable tbody td:nth-child(10),
+.logisticsTable thead th:nth-child(12),
+.logisticsTable tbody td:nth-child(12),
+.logisticsTable thead th:nth-child(13),
+.logisticsTable tbody td:nth-child(13),
+.logisticsTable thead th:nth-child(14),
+.logisticsTable tbody td:nth-child(14) {
+  min-width: 150px;
+}
+
+.logisticsTable thead th:nth-child(11),
+.logisticsTable tbody td:nth-child(11) {
+  min-width: 220px;
+}
+
+.logisticsPager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.pricingTable {
+  width: 100%;
+  min-width: 1560px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.pricingTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(14, 24, 43, 0.96);
+  color: #c9dcff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.2);
+  white-space: normal;
+  line-height: 1.2;
+  min-width: 130px;
+}
+
+.pricingTable tbody td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 12px 12px;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.12);
+}
+
+.pricingTable thead th:not(:last-child),
+.pricingTable tbody td:not(:last-child) {
+  border-right: 1px solid rgba(132, 161, 214, 0.08);
+}
+
+.pricingTable tbody tr:hover td {
+  background: rgba(76, 201, 240, 0.04);
+}
+
+.placeholderDash {
+  color: var(--text-soft);
+}
+
+.cellInputWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.cellInput {
+  width: 100%;
+  min-width: 112px;
+  height: 34px;
+  text-align: center;
+  padding-right: 20px;
+}
+
+.cellSavingDot {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .headInner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .refreshBlock {
+    justify-items: start;
+    width: 100%;
+  }
+
+  .storeSettingsMeta {
+    max-width: none;
+    text-align: left;
+  }
+
+  .controlsRow {
+    align-items: stretch;
+  }
+
+  .globalSettingsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dualToggleRow {
+    gap: 10px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .handlingInlineRow {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .contentControls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .storePicker {
+    width: 100%;
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .storeSelect {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .sourceTypeCards,
+  .columnSelectGroup {
+    grid-template-columns: 1fr;
+  }
+
+  .inlineThreeInputs {
+    grid-template-columns: 1fr;
+  }
+
+  .cogsSourceMeta {
+    white-space: normal;
+  }
+
+  .monitoringExportMethodName,
+  .monitoringExportCard {
+    min-height: 0;
+  }
+
+  .monitoringExportMetaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .logisticsListControls,
+  .logisticsPager {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .logisticsPageSizeBox {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 1320px) and (min-width: 961px) {
+  .globalSettingsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .logisticsSettingsGrid {
+    grid-template-columns: minmax(460px, 1.4fr) minmax(280px, 1fr) minmax(280px, 1fr);
+  }
+
+  .logisticsSettingsGrid > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1720px) and (min-width: 1321px) {
+  .logisticsSettingsGrid {
+    grid-template-columns: minmax(500px, 1.6fr) minmax(290px, 1fr) minmax(290px, 1fr) minmax(250px, 0.85fr);
+  }
+}
+
+.colText {
+  text-align: left !important;
+  color: #d7e6ff;
+  min-width: 190px;
+}
+
+.logisticsComposite {
+  display: grid;
+  gap: 4px;
+}
+
+.logisticsCompositeMeta {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.logisticsImportStep {
+  display: grid;
+  gap: 10px;
+}
+
+.logisticsImportShell {
+  display: grid;
+  gap: 12px;
+}
+
+.logisticsTemplateButton {
+  justify-self: start;
+  align-self: start;
+  height: 40px;
+  min-width: 168px;
+  padding: 0 16px;
+}
+
+.logisticsImportFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(132, 161, 214, 0.14);
+}
+
+.pricingTable thead th:nth-child(1),
+.pricingTable tbody td:nth-child(1) {
+  min-width: 210px;
+}
+
+.pricingTable thead th:nth-child(n + 2):nth-child(-n + 6),
+.pricingTable tbody td:nth-child(n + 2):nth-child(-n + 6) {
+  min-width: 180px;
+}

@@ -1,0 +1,104 @@
+.shell {
+  display: grid;
+  gap: 14px;
+}
+
+.steps {
+  display: grid;
+  gap: 8px;
+}
+
+.step {
+  border: 1px solid rgba(132, 161, 214, 0.25);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: var(--text-soft);
+  background: rgba(10, 19, 35, 0.46);
+  font-size: 12px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
+}
+
+.step:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.stepActive {
+  color: #dff3ff;
+  border-color: rgba(76, 201, 240, 0.5);
+  background: rgba(76, 201, 240, 0.12);
+}
+
+.stepClickable {
+  cursor: pointer;
+}
+
+.stepClickable:hover {
+  border-color: rgba(76, 201, 240, 0.38);
+  background: rgba(76, 201, 240, 0.06);
+  color: #d7ebff;
+}
+
+.label {
+  font-size: 12px;
+  color: var(--text-soft);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.dropzone {
+  border: 1px dashed rgba(132, 161, 214, 0.4);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(12, 23, 43, 0.85), rgba(8, 16, 31, 0.85));
+  min-height: 84px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-soft);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.dropzone:hover {
+  border-color: rgba(76, 201, 240, 0.6);
+  background: linear-gradient(180deg, rgba(13, 27, 51, 0.92), rgba(9, 19, 37, 0.92));
+}
+
+.dropzone:focus-visible {
+  outline: none;
+  border-color: rgba(76, 201, 240, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(76, 201, 240, 0.4);
+}
+
+.dropzoneActive {
+  border-color: rgba(76, 201, 240, 0.7);
+  background: linear-gradient(180deg, rgba(18, 44, 72, 0.65), rgba(11, 27, 46, 0.65));
+  box-shadow: inset 0 0 0 1px rgba(76, 201, 240, 0.35);
+}
+
+.dropzoneContent {
+  display: grid;
+  gap: 5px;
+}
+
+.dropzoneTitle {
+  font-weight: 600;
+  color: #d9e8ff;
+}
+
+.dropzoneSubtitle {
+  font-size: 12px;
+  color: var(--text-soft);
+}
