@@ -12,6 +12,25 @@ log() {
   printf '\n[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
 }
 
+wait_for_url() {
+  local url="$1"
+  local label="$2"
+  local attempts="${3:-20}"
+  local delay="${4:-2}"
+  local i
+
+  for ((i = 1; i <= attempts; i++)); do
+    if curl --fail --silent --show-error "$url"; then
+      printf '\n'
+      return 0
+    fi
+    sleep "$delay"
+  done
+
+  echo "$label did not become healthy: $url" >&2
+  return 1
+}
+
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "Missing required command: $1" >&2
@@ -60,11 +79,9 @@ log "Reloading nginx"
 systemctl reload "$NGINX_SERVICE"
 
 log "Checking backend health"
-curl --fail --silent --show-error "$BACKEND_HEALTH_URL"
-printf '\n'
+wait_for_url "$BACKEND_HEALTH_URL" "Backend health"
 
 log "Checking public health"
-curl --fail --silent --show-error "$PUBLIC_HEALTH_URL"
-printf '\n'
+wait_for_url "$PUBLIC_HEALTH_URL" "Public health"
 
 log "Deploy completed"
