@@ -252,6 +252,101 @@ def _build_export_values(*, store_uid: str, export_kind: str) -> dict[str, int |
     return values
 
 
+def _load_strategy_export_snapshot(*, store_uid: str) -> dict[str, dict[str, float | None]]:
+    suid = str(store_uid or "").strip()
+    if not suid:
+        return {}
+    ph = "%s" if is_postgres_backend() else "?"
+    with _connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT sku, installed_price, boost_bid_percent
+            FROM pricing_strategy_results
+            WHERE store_uid = {ph}
+            """,
+            (suid,),
+        ).fetchall()
+    out: dict[str, dict[str, float | None]] = {}
+    for row in rows:
+        item = dict(row)
+        sku = str(item.get("sku") or "").strip()
+        if not sku:
+            continue
+        out[sku] = {
+            "installed_price": _to_num(item.get("installed_price")),
+            "boost_bid_percent": _to_num(item.get("boost_bid_percent")),
+        }
+    return out
+
+
+def _verify_export_consistency(*, store_uid: str) -> tuple[bool, str | None]:
+    strategy = _load_strategy_export_snapshot(store_uid=store_uid)
+    if not strategy:
+        return False, "Нет strategy rows для проверки экспорта"
+
+    in_stock_skus = _load_in_stock_skus(store_uid=store_uid)
+    google_prices = _build_export_values(store_uid=store_uid, export_kind="prices")
+    google_ads = _build_export_values(store_uid=store_uid, export_kind="ads")
+    market_prices = {str(item.get("sku") or "").strip(): _to_num(item.get("price")) for item in _load_market_prices_payload(store_uid=store_uid)}
+    market_boosts = {str(item.get("sku") or "").strip(): _to_num(item.get("bid")) for item in _load_market_boosts_payload(store_uid=store_uid)}
+
+    mismatches: list[str] = []
+    samples: list[dict[str, Any]] = []
+    for sku in sorted(strategy.keys()):
+        item = strategy.get(sku) or {}
+        installed_price = _to_num(item.get("installed_price"))
+        boost_bid_percent = _to_num(item.get("boost_bid_percent"))
+        google_price = _to_num(google_prices.get(sku))
+        google_ads_raw = _to_num(google_ads.get(sku))
+        google_boost_percent = None if google_ads_raw is None else round(float(google_ads_raw) * 100.0, 2)
+        market_price = _to_num(market_prices.get(sku))
+        market_boost = _to_num(market_boosts.get(sku))
+
+        if installed_price not in (None, 0):
+            if google_price is not None and abs(float(google_price) - float(installed_price)) > 0.01:
+                mismatches.append(f"{sku}:google_price={google_price} strategy_price={round(float(installed_price), 2)}")
+            if market_price is not None and abs(float(market_price) - float(installed_price)) > 0.01:
+                mismatches.append(f"{sku}:market_price={market_price} strategy_price={round(float(installed_price), 2)}")
+
+        if boost_bid_percent is not None:
+            expected_boost_percent = round(float(boost_bid_percent), 2)
+            if google_boost_percent is not None and abs(float(google_boost_percent) - expected_boost_percent) > 0.01:
+                mismatches.append(f"{sku}:google_boost={google_boost_percent} strategy_boost={expected_boost_percent}")
+            expected_market_boost = expected_boost_percent
+            if in_stock_skus is not None and sku not in in_stock_skus:
+                expected_market_boost = 0.0
+            if market_boost is not None and abs(float(market_boost) - expected_market_boost) > 0.01:
+                mismatches.append(f"{sku}:market_boost={market_boost} expected_market_boost={expected_market_boost}")
+
+        if len(samples) < 5:
+            samples.append(
+                {
+                    "sku": sku,
+                    "strategy_price": installed_price,
+                    "google_price": google_price,
+                    "market_price": market_price,
+                    "strategy_boost": boost_bid_percent,
+                    "google_boost": google_boost_percent,
+                    "market_boost": market_boost,
+                }
+            )
+
+    logger.warning(
+        "[pricing_export] export consistency store_uid=%s strategy_rows=%s google_prices=%s google_ads=%s market_prices=%s market_boosts=%s samples=%s mismatches=%s",
+        store_uid,
+        len(strategy),
+        len(google_prices),
+        len(google_ads),
+        len(market_prices),
+        len(market_boosts),
+        samples,
+        len(mismatches),
+    )
+    if mismatches:
+        return False, "; ".join(mismatches[:10])
+    return True, None
+
+
 def _strategy_layer_is_fresh(*, store_uid: str) -> tuple[bool, str | None]:
     suid = str(store_uid or "").strip()
     if not suid:
@@ -1055,6 +1150,21 @@ async def export_strategy_outputs_for_store(*, store_uid: str, export_kinds: lis
                     "kind": "strategy_guard",
                     "status": "error",
                     "message": stale_message or "Стратегия устарела",
+                }
+            ],
+        }
+    export_consistent, export_guard_message = _verify_export_consistency(store_uid=suid)
+    if not export_consistent:
+        return {
+            "ok": False,
+            "store_uid": suid,
+            "store_id": str(store.get("store_id") or "").strip(),
+            "store_name": str(store.get("store_name") or store.get("store_id") or suid).strip(),
+            "results": [
+                {
+                    "kind": "export_guard",
+                    "status": "error",
+                    "message": export_guard_message or "Экспорт заблокирован из-за расхождения данных",
                 }
             ],
         }
