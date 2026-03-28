@@ -25,6 +25,7 @@ from backend.services.store_data_model import (
     get_pricing_category_tree,
     get_pricing_logistics_product_settings_map,
     get_pricing_logistics_store_settings,
+    get_pricing_price_results_map,
     get_pricing_store_settings,
     get_pricing_strategy_results_map,
     replace_fx_rates_cache,
@@ -789,6 +790,10 @@ async def get_prices_overview(
             if ru and (not item["updated_at"] or ru > item["updated_at"]):
                 item["updated_at"] = ru
 
+    target_store_uids = [str(s.get("store_uid") or "").strip() for s in target_stores if str(s.get("store_uid") or "").strip()]
+    merged_skus = list(merged.keys())
+    db_price_map = get_pricing_price_results_map(store_uids=target_store_uids, skus=merged_skus) if merged_skus else {}
+
     selected_prefix = [p.strip() for p in str(category_path or "").split("/") if p.strip()]
     q = str(search or "").strip().lower()
     stock_filter_norm = str(stock_filter or "all").strip().lower()
@@ -865,6 +870,7 @@ async def get_prices_overview(
                 market_price_by_store[suid] = float(int(round(float(raw_rrc))))
 
             src_row = source_row_by_store_sku.get(suid, {}).get(sku) or {}
+            src_updated = str(src_row.get("updated_at") or "").strip() or None
             leaf = _leaf_path_from_row(src_row)
             st = _resolve_category_settings_for_leaf(category_settings_by_store_uid.get(suid), leaf)
             store_st = store_settings_by_store_uid.get(suid, {}) or {}
@@ -909,6 +915,18 @@ async def get_prices_overview(
             cogs_cost = _num0(cogs_val)
             fixed_cost_core = other_fixed + logistics_cost
             fixed_cost = fixed_cost_core + (cogs_cost if earning_mode == "profit" else 0.0)
+            calc_ctx = {
+                "dep_rate": dep_rate,
+                "ads_rate": ads_rate,
+                "tax_rate": tax_rate,
+                "fixed_cost": fixed_cost,
+                "apply_tax": apply_tax,
+                "handling_mode": handling_mode,
+                "handling_fixed": handling_fixed,
+                "handling_percent": handling_percent,
+                "handling_min": handling_min,
+                "handling_max": handling_max,
+            }
 
             if handling_mode == "percent":
                 handling_text = (
@@ -937,6 +955,30 @@ async def get_prices_overview(
                 )
                 rrc_profit_abs = float(int(round(pa)))
                 rrc_profit_pct = round(pp * 100.0, 2)
+
+            db_rec = ((db_price_map.get(suid) or {}).get(sku) or {}) if isinstance(db_price_map.get(suid), dict) else {}
+            db_source_updated = str(db_rec.get("source_updated_at") or "").strip() or None
+            if db_rec and db_source_updated == src_updated:
+                price_metrics_by_store[suid] = {
+                    "rrc_no_ads_price": _to_num(db_rec.get("rrc_no_ads_price")),
+                    "rrc_no_ads_profit_abs": _to_num(db_rec.get("rrc_no_ads_profit_abs")),
+                    "rrc_no_ads_profit_pct": _to_num(db_rec.get("rrc_no_ads_profit_pct")),
+                    "mrc_price": _to_num(db_rec.get("mrc_price")),
+                    "mrc_profit_abs": _to_num(db_rec.get("mrc_profit_abs")),
+                    "mrc_profit_pct": _to_num(db_rec.get("mrc_profit_pct")),
+                    "mrc_with_boost_price": _to_num(db_rec.get("mrc_with_boost_price")),
+                    "mrc_with_boost_profit_abs": _to_num(db_rec.get("mrc_with_boost_profit_abs")),
+                    "mrc_with_boost_profit_pct": _to_num(db_rec.get("mrc_with_boost_profit_pct")),
+                    "target_price": _to_num(db_rec.get("target_price")),
+                    "target_profit_abs": _to_num(db_rec.get("target_profit_abs")),
+                    "target_profit_pct": _to_num(db_rec.get("target_profit_pct")),
+                    "calc_ctx": calc_ctx,
+                }
+                rrc_no_ads_price_by_store[suid] = _to_num(db_rec.get("rrc_no_ads_price"))
+                mrc_price_by_store[suid] = _to_num(db_rec.get("mrc_price"))
+                mrc_with_boost_price_by_store[suid] = _to_num(db_rec.get("mrc_with_boost_price"))
+                target_price_by_store[suid] = _to_num(db_rec.get("target_price"))
+                continue
 
             target_pct_raw = None
             target_abs_raw = None
@@ -1213,18 +1255,7 @@ async def get_prices_overview(
                 "target_profit_abs": target_profit_abs,
                 "target_profit_pct": target_profit_pct,
                 # Внутренний контекст расчета для переиспользования на смежных страницах (Привлекательность и т.д.).
-                "calc_ctx": {
-                    "dep_rate": dep_rate,
-                    "ads_rate": ads_rate,
-                    "tax_rate": tax_rate,
-                    "fixed_cost": fixed_cost,
-                    "apply_tax": apply_tax,
-                    "handling_mode": handling_mode,
-                    "handling_fixed": handling_fixed,
-                    "handling_percent": handling_percent,
-                    "handling_min": handling_min,
-                    "handling_max": handling_max,
-                },
+                "calc_ctx": calc_ctx,
             }
             rrc_no_ads_price_by_store[suid] = rrc_no_ads_price
             mrc_price_by_store[suid] = mrc_price
@@ -1309,7 +1340,6 @@ async def get_prices_overview(
     paged = rows_out[start:start + page_size_n]
 
     paged_skus = [str(item.get("sku") or "").strip() for item in paged if str(item.get("sku") or "").strip()]
-    target_store_uids = [str(s.get("store_uid") or "").strip() for s in target_stores if str(s.get("store_uid") or "").strip()]
     strategy_map = get_pricing_strategy_results_map(store_uids=target_store_uids, skus=paged_skus) if paged_skus else {}
     for item in paged:
         sku = str(item.get("sku") or "").strip()
