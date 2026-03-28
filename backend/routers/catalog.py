@@ -1048,13 +1048,13 @@ async def prime_catalog_cache() -> None:
         first_platform = str(stores[0].get("platform") or "").strip()
         await catalog_products_tree(
             tree_mode="marketplaces",
-            tree_source_store_id=first_store_uid,
+            tree_source_store_id="",
             scope="all",
         )
         await catalog_products_overview(
             scope="all",
             tree_mode="marketplaces",
-            tree_source_store_id=first_store_uid,
+            tree_source_store_id="",
             page=1,
             page_size=50,
         )

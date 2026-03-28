@@ -3428,7 +3428,7 @@ async def prime_strategy_cache() -> None:
         common_params = {
             "scope": "all",
             "tree_mode": "marketplaces",
-            "tree_source_store_id": first_store_uid,
+            "tree_source_store_id": "",
         }
         await get_strategy_tree(**common_params)
         await get_strategy_overview(
