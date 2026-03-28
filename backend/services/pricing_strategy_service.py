@@ -181,6 +181,82 @@ def _normalize_strategy_plan_values(
                 qty_map[suid] = scaled_qty
 
 
+async def _load_strategy_base_rows(
+    *,
+    scope: str,
+    platform: str,
+    store_id: str,
+    tree_mode: str,
+    tree_source_store_id: str,
+    category_path: str,
+    search: str,
+    stock_filter: str,
+    page_size: int,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    warm_page_size = max(1000, int(page_size or 200), 200)
+    base = await get_prices_overview(
+        scope=scope,
+        platform=platform,
+        store_id=store_id,
+        tree_mode=tree_mode,
+        tree_source_store_id=tree_source_store_id,
+        category_path=category_path,
+        search=search,
+        stock_filter=stock_filter,
+        page=1,
+        page_size=warm_page_size,
+        force_refresh=False,
+    )
+    rows_all = list(base.get("rows") or [])
+    total_base = int(base.get("total_count") or len(rows_all))
+    loaded = len(rows_all)
+    page_i = 1
+    while loaded < total_base:
+        page_i += 1
+        nxt = await get_prices_overview(
+            scope=scope,
+            platform=platform,
+            store_id=store_id,
+            tree_mode=tree_mode,
+            tree_source_store_id=tree_source_store_id,
+            category_path=category_path,
+            search=search,
+            stock_filter=stock_filter,
+            page=page_i,
+            page_size=warm_page_size,
+            force_refresh=False,
+        )
+        chunk = list(nxt.get("rows") or [])
+        if not chunk:
+            break
+        rows_all.extend(chunk)
+        loaded += len(chunk)
+        if page_i > 200:
+            break
+    return base, rows_all
+
+
+def _build_strategy_peer_snapshot(
+    *,
+    stores: list[dict[str, Any]],
+    sales_metrics: dict[str, dict[str, Any]],
+    sku: str,
+) -> dict[str, dict[str, Any]]:
+    peer_snapshot: dict[str, dict[str, Any]] = {}
+    for store in stores:
+        suid = str(store.get("store_uid") or "").strip()
+        sales_metric = ((sales_metrics.get(suid) or {}).get(sku) or {}) if isinstance(sales_metrics.get(suid), dict) else {}
+        peer_snapshot[suid] = {
+            "store_uid": suid,
+            "store_label": str(store.get("label") or "").strip(),
+            "fact_sales": int(sales_metric.get("today_sales") or 0),
+            "forecast_sales": int(sales_metric.get("forecast_sales") or 0),
+            "coinvest_pct": _to_num(sales_metric.get("coinvest_pct")),
+            "fact_profit_pct": _to_num(sales_metric.get("fact_economy_pct")),
+        }
+    return peer_snapshot
+
+
 
 
 def _is_stable_report_value(current_value: float | None, previous_value: float | None) -> bool:
@@ -3578,8 +3654,7 @@ async def get_strategy_overview(
 
     stock_filter_norm = str(stock_filter or "all").strip().lower()
     sales_filter_norm = str(sales_filter or "all").strip().lower()
-    warm_page_size = max(1000, int(page_size or 200), 200)
-    base = await get_prices_overview(
+    base, rows = await _load_strategy_base_rows(
         scope=scope,
         platform=platform,
         store_id=store_id,
@@ -3588,37 +3663,8 @@ async def get_strategy_overview(
         category_path=category_path,
         search=search,
         stock_filter=stock_filter,
-        page=1,
-        page_size=warm_page_size,
-        force_refresh=False,
+        page_size=page_size,
     )
-    rows_all = list(base.get("rows") or [])
-    total_base = int(base.get("total_count") or len(rows_all))
-    loaded = len(rows_all)
-    page_i = 1
-    while loaded < total_base:
-        page_i += 1
-        nxt = await get_prices_overview(
-            scope=scope,
-            platform=platform,
-            store_id=store_id,
-            tree_mode=tree_mode,
-            tree_source_store_id=tree_source_store_id,
-            category_path=category_path,
-            search=search,
-            stock_filter=stock_filter,
-            page=page_i,
-            page_size=warm_page_size,
-            force_refresh=False,
-        )
-        chunk = list(nxt.get("rows") or [])
-        if not chunk:
-            break
-        rows_all.extend(chunk)
-        loaded += len(chunk)
-        if page_i > 200:
-            break
-    rows = rows_all
     stores = _filter_strategy_stores(
         list(base.get("stores") or []),
         scope=scope,
@@ -3716,18 +3762,11 @@ async def get_strategy_overview(
         experimental_floor_pct_by_store: dict[str, float | None] = {}
         strategy_code_by_store: dict[str, str] = {}
 
-        peer_snapshot: dict[str, dict[str, Any]] = {}
-        for store in stores:
-            suid = str(store.get("store_uid") or "").strip()
-            sales_metric = ((sales_metrics.get(suid) or {}).get(sku) or {}) if isinstance(sales_metrics.get(suid), dict) else {}
-            peer_snapshot[suid] = {
-                "store_uid": suid,
-                "store_label": str(store.get("label") or "").strip(),
-                "fact_sales": int(sales_metric.get("today_sales") or 0),
-                "forecast_sales": int(sales_metric.get("forecast_sales") or 0),
-                "coinvest_pct": _to_num(sales_metric.get("coinvest_pct")),
-                "fact_profit_pct": _to_num(sales_metric.get("fact_economy_pct")),
-            }
+        peer_snapshot = _build_strategy_peer_snapshot(
+            stores=stores,
+            sales_metrics=sales_metrics,
+            sku=sku,
+        )
 
         per_store: dict[str, dict[str, Any]] = {}
         for store in stores:
