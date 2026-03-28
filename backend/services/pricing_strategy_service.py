@@ -3931,9 +3931,6 @@ async def get_strategy_overview(
         market_promo_checked_at_by_store: dict[str, str] = {}
         market_promo_message_by_store: dict[str, str] = {}
         on_display_price_by_store: dict[str, float | None] = {}
-        minimum_profit_percent_by_store: dict[str, float | None] = {}
-        experimental_floor_pct_by_store: dict[str, float | None] = {}
-        strategy_code_by_store: dict[str, str] = {}
 
         peer_snapshot = _build_strategy_peer_snapshot(
             stores=stores,
@@ -4283,10 +4280,6 @@ async def get_strategy_overview(
             market_promo_checked_at_by_store[suid] = str(item.get("market_promo_checked_at") or "").strip()
             market_promo_message_by_store[suid] = str(item.get("market_promo_message") or "").strip()
             on_display_price_by_store[suid] = _to_num(item.get("on_display_price"))
-            minimum_profit_percent_by_store[suid] = _to_num(item.get("minimum_profit_percent"))
-            experimental_floor_pct_by_store[suid] = _to_num(item.get("experimental_floor_pct"))
-            strategy_code_by_store[suid] = str(item.get("decision_code") or "").strip()
-
         out_rows.append(
             {
                 "sku": sku,
@@ -4326,18 +4319,11 @@ async def get_strategy_overview(
                 "fact_economy_abs_by_store": fact_economy_abs_by_store,
                 "fact_economy_pct_by_store": fact_economy_pct_by_store,
                 "economy_delta_pct_by_store": economy_delta_pct_by_store,
-            "hypothesis_by_store": hypothesis_by_store,
-            "hypothesis_started_at_by_store": hypothesis_started_at_by_store,
-            "hypothesis_expires_at_by_store": hypothesis_expires_at_by_store,
-            "control_state_by_store": control_state_by_store,
-            "control_state_started_at_by_store": control_state_started_at_by_store,
+                "hypothesis_by_store": hypothesis_by_store,
+                "control_state_by_store": control_state_by_store,
                 "market_promo_status_by_store": market_promo_status_by_store,
-                "market_promo_checked_at_by_store": market_promo_checked_at_by_store,
                 "market_promo_message_by_store": market_promo_message_by_store,
                 "on_display_price_by_store": on_display_price_by_store,
-                "minimum_profit_percent_by_store": minimum_profit_percent_by_store,
-                "experimental_floor_pct_by_store": experimental_floor_pct_by_store,
-                "strategy_code_by_store": strategy_code_by_store,
                 "updated_at": row.get("updated_at") or "",
             }
         )
