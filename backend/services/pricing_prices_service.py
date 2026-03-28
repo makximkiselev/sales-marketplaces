@@ -1348,31 +1348,30 @@ async def get_prices_overview(
         "page": page_n,
         "page_size": page_size_n,
     }
-    if total_count <= page_size_n:
-        _snapshot_set(
-            _snapshot_payload_from_overview_payload(cache_payload),
-            {
-                "ok": True,
-                "scope": scope_norm,
-                "platform": platform_norm,
-                "store_id": store_norm,
-                "tree_mode": tree_mode_norm,
-                "tree_source": tree_source,
-                "stores": [
-                    {
-                        "store_uid": s["store_uid"],
-                        "store_id": s["store_id"],
-                        "platform": s["platform"],
-                        "platform_label": s["platform_label"],
-                        "label": s["label"],
-                        "currency_code": str(s.get("currency_code") or "RUB"),
-                    }
-                    for s in target_stores
-                ],
-                "rows": rows_out,
-                "total_count": total_count,
-            },
-        )
+    _snapshot_set(
+        _snapshot_payload_from_overview_payload(cache_payload),
+        {
+            "ok": True,
+            "scope": scope_norm,
+            "platform": platform_norm,
+            "store_id": store_norm,
+            "tree_mode": tree_mode_norm,
+            "tree_source": tree_source,
+            "stores": [
+                {
+                    "store_uid": s["store_uid"],
+                    "store_id": s["store_id"],
+                    "platform": s["platform"],
+                    "platform_label": s["platform_label"],
+                    "label": s["label"],
+                    "currency_code": str(s.get("currency_code") or "RUB"),
+                }
+                for s in target_stores
+            ],
+            "rows": rows_out,
+            "total_count": total_count,
+        },
+    )
     if not force_refresh:
         _cache_set("overview", cache_payload, resp)
     return resp

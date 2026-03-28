@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import copy
-import hashlib
-import json
 import datetime
 
 from fastapi import APIRouter
@@ -51,36 +48,80 @@ from backend.services.store_data_model import (
     get_pricing_logistics_store_settings,
     get_pricing_logistics_product_settings_map,
 )
+from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 
 router = APIRouter()
 
 _CATALOG_CACHE: dict[str, dict] = {}
 _CATALOG_CACHE_GEN = 1
 _CATALOG_CACHE_MAX = 400
+_CATALOG_SNAPSHOT_CACHE: dict[str, dict] = {}
+_CATALOG_SNAPSHOT_CACHE_MAX = 24
 _FX_USD_RUB_MEM: dict[str, float] = {}
 
 
 def _cache_key(name: str, payload: dict) -> str:
-    raw = json.dumps({"name": name, "gen": _CATALOG_CACHE_GEN, "payload": payload}, sort_keys=True, ensure_ascii=False, default=str)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
+    return make_cache_key(name, payload, _CATALOG_CACHE_GEN)
 
 
 def _cache_get(name: str, payload: dict):
     key = _cache_key(name, payload)
-    got = _CATALOG_CACHE.get(key)
-    return copy.deepcopy(got) if isinstance(got, dict) else None
+    return cache_get_copy(_CATALOG_CACHE, key)
 
 
 def _cache_set(name: str, payload: dict, value: dict):
     key = _cache_key(name, payload)
-    if len(_CATALOG_CACHE) >= _CATALOG_CACHE_MAX:
-        _CATALOG_CACHE.clear()
-    _CATALOG_CACHE[key] = copy.deepcopy(value)
+    cache_set_copy(_CATALOG_CACHE, key, value, _CATALOG_CACHE_MAX)
+
+
+def _snapshot_get(payload: dict):
+    key = _cache_key("overview_full", payload)
+    return cache_get_copy(_CATALOG_SNAPSHOT_CACHE, key)
+
+
+def _snapshot_set(payload: dict, value: dict):
+    key = _cache_key("overview_full", payload)
+    cache_set_copy(_CATALOG_SNAPSHOT_CACHE, key, value, _CATALOG_SNAPSHOT_CACHE_MAX)
+
+
+def _snapshot_payload_from_overview_payload(payload: dict) -> dict:
+    return {
+        "scope": payload.get("scope"),
+        "platform": payload.get("platform"),
+        "store_id": payload.get("store_id"),
+        "tree_mode": payload.get("tree_mode"),
+        "tree_source_store_id": payload.get("tree_source_store_id"),
+        "category_path": payload.get("category_path"),
+        "search": payload.get("search"),
+    }
+
+
+def _build_catalog_page_from_snapshot(snapshot: dict, *, page: int, page_size: int) -> dict:
+    rows = list(snapshot.get("rows") or [])
+    total_count = int(snapshot.get("total_count") or len(rows))
+    page_size_n = max(1, min(int(page_size or 50), 500))
+    page_n = max(1, int(page or 1))
+    start = (page_n - 1) * page_size_n
+    paged = rows[start:start + page_size_n]
+    return {
+        "ok": True,
+        "scope": snapshot.get("scope"),
+        "platform": snapshot.get("platform"),
+        "store_id": snapshot.get("store_id"),
+        "tree_mode": snapshot.get("tree_mode"),
+        "tree_source": snapshot.get("tree_source"),
+        "stores": list(snapshot.get("stores") or []),
+        "rows": paged,
+        "total_count": total_count,
+        "page": page_n,
+        "page_size": page_size_n,
+    }
 
 
 def _cache_invalidate_all():
     global _CATALOG_CACHE_GEN
     _CATALOG_CACHE.clear()
+    _CATALOG_SNAPSHOT_CACHE.clear()
     _CATALOG_CACHE_GEN += 1
 
 
@@ -271,6 +312,11 @@ async def catalog_products_overview(
     cached = _cache_get("overview", cache_payload)
     if cached:
         return cached
+    snapshot_cached = _snapshot_get(_snapshot_payload_from_overview_payload(cache_payload))
+    if snapshot_cached:
+        resp = _build_catalog_page_from_snapshot(snapshot_cached, page=page, page_size=page_size)
+        _cache_set("overview", cache_payload, resp)
+        return resp
     stores = _catalog_marketplace_stores_context()
     scope_norm = str(scope or "all").strip().lower()
     platform_norm = str(platform or "").strip().lower()
@@ -732,6 +778,30 @@ async def catalog_products_overview(
         "page": page_n,
         "page_size": page_size_n,
     }
+    _snapshot_set(
+        _snapshot_payload_from_overview_payload(cache_payload),
+        {
+            "ok": True,
+            "scope": scope_norm,
+            "platform": platform_norm,
+            "store_id": store_norm,
+            "tree_mode": tree_mode_norm,
+            "tree_source": tree_source,
+            "stores": [
+                {
+                    "store_uid": s["store_uid"],
+                    "store_id": s["store_id"],
+                    "platform": s["platform"],
+                    "platform_label": s["platform_label"],
+                    "label": s["label"],
+                    "currency_code": str(s.get("currency_code") or "RUB"),
+                }
+                for s in target_stores
+            ],
+            "rows": rows_out,
+            "total_count": total_count,
+        },
+    )
     _cache_set("overview", cache_payload, resp)
     return resp
 
