@@ -1,26 +1,26 @@
 {
-  "name": "Аналитика данных",
-  "short_name": "Аналитика",
-  "description": "Управление данными, ценами и продажами маркетплейсов.",
+  "name": "SmartMarketplaces",
+  "short_name": "SM",
+  "description": "Analytics app for marketplace sales",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#071122",
-  "theme_color": "#071122",
+  "background_color": "#0B0F1A",
+  "theme_color": "#5B21B6",
   "lang": "ru",
   "icons": [
     {
-      "src": "/icons/app-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/icons/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/app-icon-maskable.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "src": "/icons/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
