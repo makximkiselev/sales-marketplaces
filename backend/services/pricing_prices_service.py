@@ -1547,11 +1547,7 @@ async def prime_prices_cache() -> None:
             "tree_source_store_id": "",
         }
         await get_prices_tree(**common_params)
-        await get_prices_overview_full(
-            **common_params,
-            page=1,
-            page_size=50,
-        )
+        await get_prices_overview_full(**common_params)
         if first_store_id:
             store_params = {
                 "scope": "store",
@@ -1561,10 +1557,6 @@ async def prime_prices_cache() -> None:
                 "tree_source_store_id": first_store_uid,
             }
             await get_prices_tree(**store_params)
-            await get_prices_overview_full(
-                **store_params,
-                page=1,
-                page_size=50,
-            )
+            await get_prices_overview_full(**store_params)
     except Exception as exc:
         logger.warning("[pricing_prices] prime cache skipped error=%s", exc)
