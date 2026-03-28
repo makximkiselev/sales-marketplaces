@@ -38,6 +38,7 @@ body {
     radial-gradient(circle at 100% 100%, rgba(45, 212, 191, 0.2), transparent 35%),
     var(--bg-main);
   font-family: "Segoe UI", "Inter", "Roboto", sans-serif;
+  overflow-x: hidden;
 }
 
 a {
@@ -230,6 +231,207 @@ a {
   backdrop-filter: blur(10px);
   overflow: visible;
   width: 100%;
+}
+
+.mobile-topbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mobile-menu-trigger {
+  min-width: 74px;
+  padding-inline: 10px;
+}
+
+.mobile-topbar-center {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.mobile-topbar-title {
+  max-width: 100%;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-topbar-subtitle {
+  max-width: 100%;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-topbar-home {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-nav-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  justify-content: flex-start;
+  background: rgba(3, 8, 18, 0.68);
+  backdrop-filter: blur(8px);
+}
+
+.mobile-nav-drawer {
+  width: min(88vw, 380px);
+  height: 100%;
+  border-right: 1px solid rgba(157, 182, 230, 0.18);
+  background:
+    linear-gradient(180deg, rgba(10, 18, 34, 0.99), rgba(7, 13, 26, 0.99));
+  box-shadow: 24px 0 60px rgba(0, 0, 0, 0.38);
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.mobile-nav-head {
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid rgba(157, 182, 230, 0.16);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobile-nav-brand {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-nav-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mobile-nav-subtitle {
+  margin-top: 2px;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.mobile-nav-body {
+  overflow-y: auto;
+  padding: 10px 12px 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.mobile-nav-direct,
+.mobile-nav-group-toggle,
+.mobile-nav-link {
+  width: 100%;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 12px;
+  background: rgba(9, 17, 31, 0.54);
+  color: #dce9ff;
+  font: inherit;
+  font-size: 14px;
+}
+
+.mobile-nav-direct,
+.mobile-nav-link {
+  display: block;
+  padding: 11px 12px;
+}
+
+.mobile-nav-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  cursor: pointer;
+}
+
+.mobile-nav-group-toggle.active,
+.mobile-nav-direct.active,
+.mobile-nav-link.active {
+  border-color: rgba(76, 201, 240, 0.5);
+  background: linear-gradient(90deg, rgba(76, 201, 240, 0.18), rgba(45, 212, 191, 0.13));
+}
+
+.mobile-nav-links {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.mobile-nav-section {
+  display: grid;
+  gap: 8px;
+}
+
+.mobile-nav-section-title {
+  padding: 2px 6px 0;
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mobile-nav-chevron {
+  font-size: 18px;
+  line-height: 1;
+  color: #9eb1d6;
+}
+
+.mobile-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(157, 182, 230, 0.16);
+  background: rgba(7, 11, 20, 0.92);
+  backdrop-filter: blur(14px);
+}
+
+.mobile-bottom-link {
+  min-width: 0;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 14px;
+  padding: 10px 6px;
+  color: #b9c8e6;
+  background: rgba(12, 20, 36, 0.54);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.mobile-bottom-link.active {
+  color: #eef8ff;
+  border-color: rgba(76, 201, 240, 0.42);
+  background: linear-gradient(180deg, rgba(76, 201, 240, 0.22), rgba(45, 212, 191, 0.14));
 }
 
 .topbar-main {
@@ -716,6 +918,115 @@ td.source-col {
 .section-frame {
   border: 1px solid rgba(132, 161, 214, 0.28);
   overflow: hidden;
+}
+
+.mobile-scroll-x {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 960px) {
+  .topbar {
+    padding: 10px 12px;
+  }
+
+  .wrap {
+    --content-gutter: 10px;
+    gap: 8px;
+    padding: 10px var(--content-gutter) calc(94px + env(safe-area-inset-bottom));
+  }
+
+  .wrap > *:not(.section-frame):not(.sources-head-card),
+  .wrap > :has(table),
+  .wrap > :has(.table-wrap),
+  .wrap > :has(.integration-cards),
+  .wrap > :has(.catalog-layout),
+  .wrap > :has(.source-row),
+  .wrap > .sources-head-card,
+  .wrap > .section-frame,
+  .content-wide {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .card,
+  .section-frame,
+  .inner {
+    min-width: 0;
+  }
+
+  .inner {
+    padding: 12px;
+  }
+
+  .grid.kpis,
+  .grid.two,
+  .grid.links,
+  .integration-cards,
+  .catalog-layout,
+  .source-row-line,
+  .source-row-labels,
+  .catalog-mapping-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .catalog-tree-panel {
+    position: static;
+  }
+
+  .catalog-tree-scroll {
+    max-height: none;
+  }
+
+  .source-row {
+    padding: 10px;
+  }
+
+  .flow-item,
+  .integration-head,
+  .integration-foot,
+  .account-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .table-wrap,
+  .mobile-scroll-x,
+  .section-frame,
+  .card {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    display: table;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  th,
+  td {
+    padding: 9px 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  th {
+    font-size: 11px;
+  }
+
+  .title,
+  .section-title {
+    font-size: 18px;
+  }
+
+  .page-intro,
+  .subtitle,
+  .muted-text {
+    font-size: 12px;
+  }
 }
 
 .section-title {

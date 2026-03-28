@@ -83,6 +83,14 @@ const groups: NavGroup[] = [
 const groupItems = (group: NavGroup): NavItem[] =>
   group.items ?? group.sections?.flatMap((section) => section.items) ?? [];
 
+const mobileTabs = [
+  { href: "/", label: "Главная" },
+  { href: "/catalog", label: "Каталог" },
+  { href: "/pricing/decision", label: "Цены" },
+  { href: "/sales/overview", label: "Продажи" },
+  { href: "/settings/pricing", label: "Настройки" },
+];
+
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") {
     return pathname === "/";
@@ -100,14 +108,29 @@ export function Shell({ children }: { children: ReactNode }) {
   const [openMenuTitle, setOpenMenuTitle] = useState<string | null>(null);
   const [suppressHoverTitle, setSuppressHoverTitle] = useState<string | null>(null);
   const [toast, setToast] = useState<AppToastDetail | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileGroupTitle, setMobileGroupTitle] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const currentGroupTitle = useMemo(() => {
     const match = groups.find((group) => groupItems(group).some((item) => isActive(pathname, item.href)));
     return match?.title ?? groups[0].title;
+  }, [pathname]);
+  const currentItem = useMemo(() => {
+    for (const group of groups) {
+      for (const item of groupItems(group)) {
+        if (isActive(pathname, item.href)) {
+          return item;
+        }
+      }
+    }
+    return groupItems(groups[0])[0] ?? { href: "/", label: "Дашборд" };
   }, [pathname]);
 
   useEffect(() => {
     setOpenMenuTitle(null);
     setSuppressHoverTitle(null);
+    setMobileMenuOpen(false);
+    setMobileGroupTitle(null);
   }, [pathname]);
 
   useEffect(() => {
@@ -126,6 +149,34 @@ export function Shell({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = typeof window.matchMedia === "function"
+      ? window.matchMedia("(max-width: 960px)")
+      : null;
+    const apply = () => {
+      const byWidth = window.innerWidth <= 960;
+      const byMedia = media?.matches ?? byWidth;
+      setIsMobile(Boolean(byWidth || byMedia));
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    media?.addEventListener?.("change", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+      media?.removeEventListener?.("change", apply);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen || typeof document === "undefined") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileMenuOpen]);
+
   function closeMenuAfterClick(groupTitle: string) {
     setOpenMenuTitle(null);
     setSuppressHoverTitle(groupTitle);
@@ -135,10 +186,104 @@ export function Shell({ children }: { children: ReactNode }) {
     }
   }
 
+  function renderMobileMenu() {
+    if (!mobileMenuOpen) return null;
+    return (
+      <div className="mobile-nav-overlay" onClick={() => setMobileMenuOpen(false)}>
+        <aside className="mobile-nav-drawer" onClick={(e) => e.stopPropagation()}>
+          <div className="mobile-nav-head">
+            <div className="mobile-nav-brand">
+              <div className="logo" />
+              <div>
+                <div className="mobile-nav-title">Аналитика данных</div>
+                <div className="mobile-nav-subtitle">{currentItem.label}</div>
+              </div>
+            </div>
+            <button type="button" className="btn icon-only" onClick={() => setMobileMenuOpen(false)} aria-label="Закрыть меню">
+              ×
+            </button>
+          </div>
+          <div className="mobile-nav-body">
+            {groups.map((group) => {
+              const items = groupItems(group);
+              const selected = currentGroupTitle === group.title;
+              const expanded = mobileGroupTitle === group.title || selected;
+              const directHref = items[0]?.href || "/";
+              const isSingleLink = group.title === "Сводка";
+              if (isSingleLink) {
+                return (
+                  <Link key={group.title} to={directHref} className={`mobile-nav-direct${selected ? " active" : ""}`} onClick={() => setMobileMenuOpen(false)}>
+                    {group.title}
+                  </Link>
+                );
+              }
+              return (
+                <section key={group.title} className={`mobile-nav-group${expanded ? " expanded" : ""}`}>
+                  <button
+                    type="button"
+                    className={`mobile-nav-group-toggle${selected ? " active" : ""}`}
+                    onClick={() => setMobileGroupTitle((prev) => (prev === group.title ? null : group.title))}
+                  >
+                    <span>{group.title}</span>
+                    <span className="mobile-nav-chevron">{expanded ? "−" : "+"}</span>
+                  </button>
+                  {expanded ? (
+                    <div className="mobile-nav-links">
+                      {group.sections
+                        ? group.sections.map((section) => (
+                            <div key={section.title} className="mobile-nav-section">
+                              <div className="mobile-nav-section-title">{section.title}</div>
+                              {section.items.map((item) => (
+                                <Link
+                                  key={item.href}
+                                  to={item.href}
+                                  className={`mobile-nav-link${isActive(pathname, item.href) ? " active" : ""}`}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                >
+                                  {item.label}
+                                </Link>
+                              ))}
+                            </div>
+                          ))
+                        : items.map((item) => (
+                            <Link
+                              key={item.href}
+                              to={item.href}
+                              className={`mobile-nav-link${isActive(pathname, item.href) ? " active" : ""}`}
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              {item.label}
+                            </Link>
+                          ))}
+                    </div>
+                  ) : null}
+                </section>
+              );
+            })}
+          </div>
+        </aside>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <main className="main">
         <header className="topbar">
+          {isMobile ? (
+            <div className="mobile-topbar">
+              <button type="button" className="btn mobile-menu-trigger" onClick={() => setMobileMenuOpen(true)}>
+                Меню
+              </button>
+              <div className="mobile-topbar-center">
+                <div className="mobile-topbar-title">{currentItem.label}</div>
+                <div className="mobile-topbar-subtitle">{currentGroupTitle}</div>
+              </div>
+              <Link to="/" className="mobile-topbar-home">
+                <div className="logo" />
+              </Link>
+            </div>
+          ) : (
           <div className="topbar-main topbar-main-inline">
             <div className="brand-inline">
               <div className="logo" />
@@ -225,8 +370,19 @@ export function Shell({ children }: { children: ReactNode }) {
               </nav>
             </div>
           </div>
+          )}
         </header>
+        {renderMobileMenu()}
         <div className="wrap">{children}</div>
+        {isMobile ? (
+          <nav className="mobile-bottom-nav">
+            {mobileTabs.map((item) => (
+              <Link key={item.href} to={item.href} className={`mobile-bottom-link${isActive(pathname, item.href) ? " active" : ""}`}>
+                <span>{item.label}</span>
+              </Link>
+            ))}
+          </nav>
+        ) : null}
         {toast ? (
           <div className={`app-toast${toast.tone === "error" ? " error" : ""}`}>
             {toast.message}
