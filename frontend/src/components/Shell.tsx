@@ -83,14 +83,6 @@ const groups: NavGroup[] = [
 const groupItems = (group: NavGroup): NavItem[] =>
   group.items ?? group.sections?.flatMap((section) => section.items) ?? [];
 
-const mobileTabs = [
-  { href: "/", label: "Главная" },
-  { href: "/catalog", label: "Каталог" },
-  { href: "/pricing/decision", label: "Цены" },
-  { href: "/sales/overview", label: "Продажи" },
-  { href: "/settings/pricing", label: "Настройки" },
-];
-
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") {
     return pathname === "/";
@@ -351,13 +343,6 @@ export function Shell({ children }: { children: ReactNode }) {
         </header>
         {renderMobileMenu()}
         <div className="wrap">{children}</div>
-        <nav className="mobile-bottom-nav">
-          {mobileTabs.map((item) => (
-            <Link key={item.href} to={item.href} className={`mobile-bottom-link${isActive(pathname, item.href) ? " active" : ""}`}>
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </nav>
         {toast ? (
           <div className={`app-toast${toast.tone === "error" ? " error" : ""}`}>
             {toast.message}

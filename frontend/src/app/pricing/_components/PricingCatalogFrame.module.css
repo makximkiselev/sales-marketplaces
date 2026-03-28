@@ -288,6 +288,9 @@
   border: 1px solid rgba(132, 161, 214, 0.2);
   border-radius: 12px;
   overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
@@ -399,6 +402,15 @@
     align-items: stretch;
   }
 
+  .tabsRow,
+  .tabsRight,
+  .tableTitleControls {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
   .treeList {
     max-height: 260px;
     flex: none;
@@ -417,5 +429,25 @@
   .paginationRow {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 960px) {
+  .tableHeaderRow {
+    flex-direction: column;
+  }
+
+  .tableWrap {
+    margin-inline: -12px;
+    border-inline: 0;
+    border-radius: 0;
+    padding-bottom: 40px;
+  }
+
+  .pageLeft,
+  .pageRightStack,
+  .pageRight {
+    width: 100%;
+    justify-content: space-between;
   }
 }

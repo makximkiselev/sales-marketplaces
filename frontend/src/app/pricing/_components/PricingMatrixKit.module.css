@@ -290,6 +290,34 @@
   border: 1px solid transparent;
 }
 
+@media (max-width: 960px) {
+  .matrixTable {
+    --matrix-sku-col-width: 92px;
+    --matrix-name-col-width: 220px;
+  }
+
+  .matrixTable thead th {
+    min-width: 112px;
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+
+  .matrixTable tbody td {
+    min-width: 112px;
+    padding: 8px 6px;
+    font-size: 10px;
+  }
+
+  .nameTitle {
+    font-size: 12px;
+  }
+
+  .updatedCell,
+  .mutedText {
+    font-size: 10px;
+  }
+}
+
 .statusPositive {
   color: #9ff4bf;
   background: rgba(15, 83, 49, 0.42);
