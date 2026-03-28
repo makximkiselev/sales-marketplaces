@@ -26,6 +26,11 @@ async def get_prices_overview(*args, **kwargs):
     return await impl(*args, **kwargs)
 
 
+async def get_prices_overview_full(*args, **kwargs):
+    from backend.services.pricing_prices_service import get_prices_overview_full as impl
+    return await impl(*args, **kwargs)
+
+
 async def get_prices_tree(*args, **kwargs):
     from backend.services.pricing_prices_service import get_prices_tree as impl
     return await impl(*args, **kwargs)

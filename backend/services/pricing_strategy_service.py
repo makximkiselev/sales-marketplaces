@@ -22,6 +22,7 @@ from backend.services.pricing_runtime_bridge import (
     get_cbr_usd_rub_rate_for_date as _get_cbr_usd_rub_rate_for_date,
     get_prices_context,
     get_prices_overview,
+    get_prices_overview_full,
     get_prices_tree,
     profit_for_price_with_ads_rate as _profit_for_price_with_ads_rate,
     refresh_attractiveness_data,
@@ -193,8 +194,7 @@ async def _load_strategy_base_rows(
     stock_filter: str,
     page_size: int,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    warm_page_size = max(1000, int(page_size or 200), 200)
-    base = await get_prices_overview(
+    base = await get_prices_overview_full(
         scope=scope,
         platform=platform,
         store_id=store_id,
@@ -203,36 +203,9 @@ async def _load_strategy_base_rows(
         category_path=category_path,
         search=search,
         stock_filter=stock_filter,
-        page=1,
-        page_size=warm_page_size,
         force_refresh=False,
     )
     rows_all = list(base.get("rows") or [])
-    total_base = int(base.get("total_count") or len(rows_all))
-    loaded = len(rows_all)
-    page_i = 1
-    while loaded < total_base:
-        page_i += 1
-        nxt = await get_prices_overview(
-            scope=scope,
-            platform=platform,
-            store_id=store_id,
-            tree_mode=tree_mode,
-            tree_source_store_id=tree_source_store_id,
-            category_path=category_path,
-            search=search,
-            stock_filter=stock_filter,
-            page=page_i,
-            page_size=warm_page_size,
-            force_refresh=False,
-        )
-        chunk = list(nxt.get("rows") or [])
-        if not chunk:
-            break
-        rows_all.extend(chunk)
-        loaded += len(chunk)
-        if page_i > 200:
-            break
     return base, rows_all
 
 

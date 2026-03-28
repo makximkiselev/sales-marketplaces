@@ -58,6 +58,8 @@ def read_sheet_all(*args, **kwargs):
 _PRICES_CACHE: dict[str, dict] = {}
 _PRICES_CACHE_GEN = 1
 _PRICES_CACHE_MAX = 400
+_PRICES_SNAPSHOT_CACHE: dict[str, dict] = {}
+_PRICES_SNAPSHOT_CACHE_MAX = 24
 _FX_USD_RUB_MEM: dict[str, float] = {}
 logger = logging.getLogger("uvicorn.error")
 
@@ -76,9 +78,55 @@ def _cache_set(name: str, payload: dict, value: dict):
     cache_set_copy(_PRICES_CACHE, key, value, _PRICES_CACHE_MAX)
 
 
+def _snapshot_payload_from_overview_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "scope": payload.get("scope"),
+        "platform": payload.get("platform"),
+        "store_id": payload.get("store_id"),
+        "tree_mode": payload.get("tree_mode"),
+        "tree_source_store_id": payload.get("tree_source_store_id"),
+        "category_path": payload.get("category_path"),
+        "search": payload.get("search"),
+        "stock_filter": payload.get("stock_filter"),
+    }
+
+
+def _snapshot_get(payload: dict[str, Any]) -> dict[str, Any] | None:
+    key = _cache_key("overview_full", payload)
+    return cache_get_copy(_PRICES_SNAPSHOT_CACHE, key)
+
+
+def _snapshot_set(payload: dict[str, Any], value: dict[str, Any]) -> None:
+    key = _cache_key("overview_full", payload)
+    cache_set_copy(_PRICES_SNAPSHOT_CACHE, key, value, _PRICES_SNAPSHOT_CACHE_MAX)
+
+
+def _build_prices_page_from_snapshot(snapshot: dict[str, Any], *, page: int, page_size: int) -> dict[str, Any]:
+    rows = list(snapshot.get("rows") or [])
+    total_count = int(snapshot.get("total_count") or len(rows))
+    page_size_n = max(1, min(int(page_size or 50), 100000))
+    page_n = max(1, int(page or 1))
+    start = (page_n - 1) * page_size_n
+    paged = rows[start:start + page_size_n]
+    return {
+        "ok": True,
+        "scope": snapshot.get("scope"),
+        "platform": snapshot.get("platform"),
+        "store_id": snapshot.get("store_id"),
+        "tree_mode": snapshot.get("tree_mode"),
+        "tree_source": snapshot.get("tree_source"),
+        "stores": list(snapshot.get("stores") or []),
+        "rows": paged,
+        "total_count": total_count,
+        "page": page_n,
+        "page_size": page_size_n,
+    }
+
+
 def invalidate_prices_cache():
     global _PRICES_CACHE_GEN
     _PRICES_CACHE.clear()
+    _PRICES_SNAPSHOT_CACHE.clear()
     _PRICES_CACHE_GEN += 1
 
 
@@ -547,6 +595,15 @@ async def get_prices_overview(
         cached = _cache_get("overview", cache_payload)
         if cached:
             return cached
+        snapshot_cached = _snapshot_get(_snapshot_payload_from_overview_payload(cache_payload))
+        if snapshot_cached:
+            resp = _build_prices_page_from_snapshot(
+                snapshot_cached,
+                page=page,
+                page_size=page_size,
+            )
+            _cache_set("overview", cache_payload, resp)
+            return resp
 
     stores = _catalog_marketplace_stores_context()
     scope_norm = str(scope or "all").strip().lower()
@@ -1291,9 +1348,95 @@ async def get_prices_overview(
         "page": page_n,
         "page_size": page_size_n,
     }
+    if total_count <= page_size_n:
+        _snapshot_set(
+            _snapshot_payload_from_overview_payload(cache_payload),
+            {
+                "ok": True,
+                "scope": scope_norm,
+                "platform": platform_norm,
+                "store_id": store_norm,
+                "tree_mode": tree_mode_norm,
+                "tree_source": tree_source,
+                "stores": [
+                    {
+                        "store_uid": s["store_uid"],
+                        "store_id": s["store_id"],
+                        "platform": s["platform"],
+                        "platform_label": s["platform_label"],
+                        "label": s["label"],
+                        "currency_code": str(s.get("currency_code") or "RUB"),
+                    }
+                    for s in target_stores
+                ],
+                "rows": rows_out,
+                "total_count": total_count,
+            },
+        )
     if not force_refresh:
         _cache_set("overview", cache_payload, resp)
     return resp
+
+
+async def get_prices_overview_full(
+    *,
+    scope: str = "all",
+    platform: str = "",
+    store_id: str = "",
+    tree_mode: str = "marketplaces",
+    tree_source_store_id: str = "",
+    category_path: str = "",
+    search: str = "",
+    stock_filter: str = "all",
+    force_refresh: bool = False,
+) -> dict[str, Any]:
+    snapshot_payload = {
+        "scope": scope,
+        "platform": platform,
+        "store_id": store_id,
+        "tree_mode": tree_mode,
+        "tree_source_store_id": tree_source_store_id,
+        "category_path": category_path,
+        "search": search,
+        "stock_filter": stock_filter,
+    }
+    if not force_refresh:
+        cached = _snapshot_get(snapshot_payload)
+        if cached:
+            return _build_prices_page_from_snapshot(
+                cached,
+                page=1,
+                page_size=max(1, int(cached.get("total_count") or len(cached.get("rows") or []) or 1)),
+            )
+
+    full = await get_prices_overview(
+        scope=scope,
+        platform=platform,
+        store_id=store_id,
+        tree_mode=tree_mode,
+        tree_source_store_id=tree_source_store_id,
+        category_path=category_path,
+        search=search,
+        stock_filter=stock_filter,
+        page=1,
+        page_size=100000,
+        force_refresh=force_refresh,
+    )
+    _snapshot_set(
+        snapshot_payload,
+        {
+            "ok": True,
+            "scope": full.get("scope"),
+            "platform": full.get("platform"),
+            "store_id": full.get("store_id"),
+            "tree_mode": full.get("tree_mode"),
+            "tree_source": full.get("tree_source"),
+            "stores": list(full.get("stores") or []),
+            "rows": list(full.get("rows") or []),
+            "total_count": int(full.get("total_count") or len(full.get("rows") or [])),
+        },
+    )
+    return full
 
 
 async def refresh_prices_data(*, store_uids: list[str] | None = None):

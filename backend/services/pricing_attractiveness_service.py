@@ -20,6 +20,7 @@ from backend.services.numeric_helpers import to_num_loose
 from backend.services.pricing_prices_service import (
     _profit_for_price,
     get_prices_context,
+    get_prices_overview_full,
     get_prices_overview,
     get_prices_tree,
     refresh_prices_data,
@@ -124,7 +125,7 @@ async def _load_attractiveness_base_rows(
         stores = base.get("stores") if isinstance(base, dict) else None
         return base, rows, stores
 
-    base = await get_prices_overview(
+    base = await get_prices_overview_full(
         scope=scope,
         platform=platform,
         store_id=store_id,
@@ -133,37 +134,10 @@ async def _load_attractiveness_base_rows(
         category_path=category_path,
         search=search,
         stock_filter=stock_filter_norm,
-        page=1,
-        page_size=200,
         force_refresh=bool(fetch_live),
     )
     stores = base.get("stores") if isinstance(base, dict) else None
     rows_all = base.get("rows") if isinstance(base, dict) and isinstance(base.get("rows"), list) else []
-    total_base = int(base.get("total_count") or len(rows_all)) if isinstance(base, dict) else len(rows_all)
-    loaded = len(rows_all)
-    page_i = 1
-    while loaded < total_base:
-        page_i += 1
-        nxt = await get_prices_overview(
-            scope=scope,
-            platform=platform,
-            store_id=store_id,
-            tree_mode=tree_mode,
-            tree_source_store_id=tree_source_store_id,
-            category_path=category_path,
-            search=search,
-            stock_filter=stock_filter_norm,
-            page=page_i,
-            page_size=200,
-            force_refresh=bool(fetch_live),
-        )
-        chunk = nxt.get("rows") if isinstance(nxt, dict) and isinstance(nxt.get("rows"), list) else []
-        if not chunk:
-            break
-        rows_all.extend(chunk)
-        loaded += len(chunk)
-        if page_i > 200:
-            break
     return base, rows_all, stores
 
 
