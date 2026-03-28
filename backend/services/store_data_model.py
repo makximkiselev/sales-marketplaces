@@ -1923,123 +1923,7 @@ def init_store_data_model() -> None:
             _MAINTENANCE_DONE = True
         conn = _connect()
         _init_store_data_model_sqlite_reference_tables(conn)
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_price_results (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                cogs_price REAL NULL,
-                rrc_no_ads_price REAL NULL,
-                rrc_no_ads_profit_abs REAL NULL,
-                rrc_no_ads_profit_pct REAL NULL,
-                mrc_price REAL NULL,
-                mrc_profit_abs REAL NULL,
-                mrc_profit_pct REAL NULL,
-                mrc_with_boost_price REAL NULL,
-                mrc_with_boost_profit_abs REAL NULL,
-                mrc_with_boost_profit_pct REAL NULL,
-                target_price REAL NULL,
-                target_profit_abs REAL NULL,
-                target_profit_pct REAL NULL,
-                source_updated_at TEXT NULL,
-                calculated_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, sku),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        _rename_column_if_exists(conn, "pricing_price_results", "cogs", "cogs_price")
-        _rebuild_pricing_price_results_if_needed(conn)
-        price_cols = _table_columns(conn, "pricing_price_results")
-        if "rrc_no_ads_price" not in price_cols:
-            conn.execute("ALTER TABLE pricing_price_results ADD COLUMN rrc_no_ads_price REAL NULL")
-        if "rrc_no_ads_profit_abs" not in price_cols:
-            conn.execute("ALTER TABLE pricing_price_results ADD COLUMN rrc_no_ads_profit_abs REAL NULL")
-        if "rrc_no_ads_profit_pct" not in price_cols:
-            conn.execute("ALTER TABLE pricing_price_results ADD COLUMN rrc_no_ads_profit_pct REAL NULL")
-        if "mrc_price" not in price_cols:
-            conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_price REAL NULL")
-        if "mrc_profit_abs" not in price_cols:
-            conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_profit_abs REAL NULL")
-        if "mrc_profit_pct" not in price_cols:
-            conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_profit_pct REAL NULL")
-        if "mrc_with_boost_price" not in price_cols:
-            conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_with_boost_price REAL NULL")
-        if "mrc_with_boost_profit_abs" not in price_cols:
-            conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_with_boost_profit_abs REAL NULL")
-        if "mrc_with_boost_profit_pct" not in price_cols:
-            conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_with_boost_profit_pct REAL NULL")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_price_results_store ON pricing_price_results(store_uid)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_price_results_sku ON pricing_price_results(sku)")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_boost_results (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                recommended_bid REAL NULL,
-                bid_30 REAL NULL,
-                bid_60 REAL NULL,
-                bid_80 REAL NULL,
-                bid_95 REAL NULL,
-                source_updated_at TEXT NULL,
-                calculated_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, sku),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        boost_cols = _table_columns(conn, "pricing_boost_results")
-        if "bid_30" not in boost_cols:
-            conn.execute("ALTER TABLE pricing_boost_results ADD COLUMN bid_30 REAL NULL")
-        if "bid_60" not in boost_cols:
-            conn.execute("ALTER TABLE pricing_boost_results ADD COLUMN bid_60 REAL NULL")
-        if "bid_80" not in boost_cols:
-            conn.execute("ALTER TABLE pricing_boost_results ADD COLUMN bid_80 REAL NULL")
-        if "bid_95" not in boost_cols:
-            conn.execute("ALTER TABLE pricing_boost_results ADD COLUMN bid_95 REAL NULL")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_boost_results_store ON pricing_boost_results(store_uid)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_boost_results_sku ON pricing_boost_results(sku)")
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_boost_history (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                captured_at TEXT NOT NULL,
-                recommended_bid REAL NULL,
-                bid_30 REAL NULL,
-                bid_60 REAL NULL,
-                bid_80 REAL NULL,
-                bid_95 REAL NULL,
-                source_updated_at TEXT NULL,
-                PRIMARY KEY (store_uid, sku, captured_at),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pricing_boost_history_store_sku_time "
-            "ON pricing_boost_history(store_uid, sku, captured_at)"
-        )
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_market_price_export_history (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                requested_at TEXT NOT NULL,
-                campaign_id TEXT NOT NULL DEFAULT '',
-                price REAL NULL,
-                source TEXT NOT NULL DEFAULT 'strategy',
-                PRIMARY KEY (store_uid, sku, requested_at),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pricing_market_price_export_history_store_sku_time "
-            "ON pricing_market_price_export_history(store_uid, sku, requested_at)"
-        )
+        _init_store_data_model_sqlite_pricing_core_tables(conn)
 
         conn.execute(
             """
@@ -2765,6 +2649,125 @@ def _init_store_data_model_sqlite_cogs_tables(conn: sqlite3.Connection) -> None:
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_pricing_cogs_snapshots_sku "
         "ON pricing_cogs_snapshots(store_uid, sku)"
+    )
+
+
+def _init_store_data_model_sqlite_pricing_core_tables(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_price_results (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            cogs_price REAL NULL,
+            rrc_no_ads_price REAL NULL,
+            rrc_no_ads_profit_abs REAL NULL,
+            rrc_no_ads_profit_pct REAL NULL,
+            mrc_price REAL NULL,
+            mrc_profit_abs REAL NULL,
+            mrc_profit_pct REAL NULL,
+            mrc_with_boost_price REAL NULL,
+            mrc_with_boost_profit_abs REAL NULL,
+            mrc_with_boost_profit_pct REAL NULL,
+            target_price REAL NULL,
+            target_profit_abs REAL NULL,
+            target_profit_pct REAL NULL,
+            source_updated_at TEXT NULL,
+            calculated_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, sku),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    _rename_column_if_exists(conn, "pricing_price_results", "cogs", "cogs_price")
+    _rebuild_pricing_price_results_if_needed(conn)
+    price_cols = _table_columns(conn, "pricing_price_results")
+    if "rrc_no_ads_price" not in price_cols:
+        conn.execute("ALTER TABLE pricing_price_results ADD COLUMN rrc_no_ads_price REAL NULL")
+    if "rrc_no_ads_profit_abs" not in price_cols:
+        conn.execute("ALTER TABLE pricing_price_results ADD COLUMN rrc_no_ads_profit_abs REAL NULL")
+    if "rrc_no_ads_profit_pct" not in price_cols:
+        conn.execute("ALTER TABLE pricing_price_results ADD COLUMN rrc_no_ads_profit_pct REAL NULL")
+    if "mrc_price" not in price_cols:
+        conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_price REAL NULL")
+    if "mrc_profit_abs" not in price_cols:
+        conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_profit_abs REAL NULL")
+    if "mrc_profit_pct" not in price_cols:
+        conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_profit_pct REAL NULL")
+    if "mrc_with_boost_price" not in price_cols:
+        conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_with_boost_price REAL NULL")
+    if "mrc_with_boost_profit_abs" not in price_cols:
+        conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_with_boost_profit_abs REAL NULL")
+    if "mrc_with_boost_profit_pct" not in price_cols:
+        conn.execute("ALTER TABLE pricing_price_results ADD COLUMN mrc_with_boost_profit_pct REAL NULL")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_price_results_store ON pricing_price_results(store_uid)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_price_results_sku ON pricing_price_results(sku)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_boost_results (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            recommended_bid REAL NULL,
+            bid_30 REAL NULL,
+            bid_60 REAL NULL,
+            bid_80 REAL NULL,
+            bid_95 REAL NULL,
+            source_updated_at TEXT NULL,
+            calculated_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, sku),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    boost_cols = _table_columns(conn, "pricing_boost_results")
+    if "bid_30" not in boost_cols:
+        conn.execute("ALTER TABLE pricing_boost_results ADD COLUMN bid_30 REAL NULL")
+    if "bid_60" not in boost_cols:
+        conn.execute("ALTER TABLE pricing_boost_results ADD COLUMN bid_60 REAL NULL")
+    if "bid_80" not in boost_cols:
+        conn.execute("ALTER TABLE pricing_boost_results ADD COLUMN bid_80 REAL NULL")
+    if "bid_95" not in boost_cols:
+        conn.execute("ALTER TABLE pricing_boost_results ADD COLUMN bid_95 REAL NULL")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_boost_results_store ON pricing_boost_results(store_uid)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_boost_results_sku ON pricing_boost_results(sku)")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_boost_history (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            captured_at TEXT NOT NULL,
+            recommended_bid REAL NULL,
+            bid_30 REAL NULL,
+            bid_60 REAL NULL,
+            bid_80 REAL NULL,
+            bid_95 REAL NULL,
+            source_updated_at TEXT NULL,
+            PRIMARY KEY (store_uid, sku, captured_at),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pricing_boost_history_store_sku_time "
+        "ON pricing_boost_history(store_uid, sku, captured_at)"
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_market_price_export_history (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            requested_at TEXT NOT NULL,
+            campaign_id TEXT NOT NULL DEFAULT '',
+            price REAL NULL,
+            source TEXT NOT NULL DEFAULT 'strategy',
+            PRIMARY KEY (store_uid, sku, requested_at),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pricing_market_price_export_history_store_sku_time "
+        "ON pricing_market_price_export_history(store_uid, sku, requested_at)"
     )
 
 
