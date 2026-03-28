@@ -1925,233 +1925,7 @@ def init_store_data_model() -> None:
         _init_store_data_model_sqlite_reference_tables(conn)
         _init_store_data_model_sqlite_pricing_core_tables(conn)
 
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_strategy_results (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                strategy_code TEXT NOT NULL DEFAULT 'base',
-                strategy_label TEXT NOT NULL DEFAULT 'Базовая',
-                rrc_price REAL NULL,
-                rrc_profit_abs REAL NULL,
-                rrc_profit_pct REAL NULL,
-                mrc_price REAL NULL,
-                mrc_profit_abs REAL NULL,
-                mrc_profit_pct REAL NULL,
-                mrc_with_boost_price REAL NULL,
-                mrc_with_boost_profit_abs REAL NULL,
-                mrc_with_boost_profit_pct REAL NULL,
-                promo_price REAL NULL,
-                promo_profit_abs REAL NULL,
-                promo_profit_pct REAL NULL,
-                attractiveness_price REAL NULL,
-                attractiveness_profit_abs REAL NULL,
-                attractiveness_profit_pct REAL NULL,
-                installed_price REAL NULL,
-                installed_profit_abs REAL NULL,
-                installed_profit_pct REAL NULL,
-                boost_bid_percent REAL NULL,
-                decision_code TEXT NOT NULL DEFAULT 'observe',
-                decision_label TEXT NOT NULL DEFAULT 'Наблюдать',
-                decision_tone TEXT NOT NULL DEFAULT 'warning',
-                hypothesis TEXT NOT NULL DEFAULT '',
-                hypothesis_started_at TEXT NOT NULL DEFAULT '',
-                hypothesis_expires_at TEXT NOT NULL DEFAULT '',
-                attractiveness_status TEXT NOT NULL DEFAULT '',
-                promo_items_json TEXT NOT NULL DEFAULT '[]',
-                uses_promo INTEGER NOT NULL DEFAULT 0,
-                uses_attractiveness INTEGER NOT NULL DEFAULT 0,
-                uses_boost INTEGER NOT NULL DEFAULT 0,
-                selected_iteration_code TEXT NOT NULL DEFAULT '',
-                scenario_matrix_json TEXT NOT NULL DEFAULT '{}',
-                source_updated_at TEXT NULL,
-                calculated_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, sku),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        strategy_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_strategy_results)").fetchall()}
-        if "mrc_price" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_price REAL NULL")
-        if "mrc_profit_abs" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_profit_abs REAL NULL")
-        if "mrc_profit_pct" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_profit_pct REAL NULL")
-        if "mrc_with_boost_price" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_with_boost_price REAL NULL")
-        if "mrc_with_boost_profit_abs" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_with_boost_profit_abs REAL NULL")
-        if "mrc_with_boost_profit_pct" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_with_boost_profit_pct REAL NULL")
-        if "promo_price" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN promo_price REAL NULL")
-        if "promo_profit_abs" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN promo_profit_abs REAL NULL")
-        if "promo_profit_pct" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN promo_profit_pct REAL NULL")
-        if "attractiveness_price" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN attractiveness_price REAL NULL")
-        if "attractiveness_profit_abs" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN attractiveness_profit_abs REAL NULL")
-        if "attractiveness_profit_pct" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN attractiveness_profit_pct REAL NULL")
-        if "decision_code" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN decision_code TEXT NOT NULL DEFAULT 'observe'")
-        if "decision_label" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN decision_label TEXT NOT NULL DEFAULT 'Наблюдать'")
-        if "decision_tone" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN decision_tone TEXT NOT NULL DEFAULT 'warning'")
-        if "hypothesis" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN hypothesis TEXT NOT NULL DEFAULT ''")
-        if "hypothesis_started_at" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN hypothesis_started_at TEXT NOT NULL DEFAULT ''")
-        if "hypothesis_expires_at" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN hypothesis_expires_at TEXT NOT NULL DEFAULT ''")
-        if "control_state" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN control_state TEXT NOT NULL DEFAULT 'stable'")
-        if "control_state_started_at" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN control_state_started_at TEXT NOT NULL DEFAULT ''")
-        if "market_promo_status" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN market_promo_status TEXT NOT NULL DEFAULT ''")
-        if "market_promo_checked_at" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN market_promo_checked_at TEXT NOT NULL DEFAULT ''")
-        if "market_promo_message" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN market_promo_message TEXT NOT NULL DEFAULT ''")
-        if "selected_iteration_code" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN selected_iteration_code TEXT NOT NULL DEFAULT ''")
-        if "scenario_matrix_json" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN scenario_matrix_json TEXT NOT NULL DEFAULT '{}'")
-        if "cycle_started_at" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN cycle_started_at TEXT NOT NULL DEFAULT ''")
-        if "market_boost_bid_percent" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN market_boost_bid_percent REAL NULL")
-        if "boost_share" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN boost_share REAL NULL")
-        if "promo_count" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN promo_count INTEGER NOT NULL DEFAULT 0")
-        if "coinvest_pct" not in strategy_cols:
-            conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN coinvest_pct REAL NULL")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_strategy_results_store ON pricing_strategy_results(store_uid)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_strategy_results_sku ON pricing_strategy_results(sku)")
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_strategy_history (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                captured_at TEXT NOT NULL,
-                cycle_started_at TEXT NOT NULL DEFAULT '',
-                strategy_code TEXT NOT NULL DEFAULT 'base',
-                strategy_label TEXT NOT NULL DEFAULT 'Базовая',
-                installed_price REAL NULL,
-                installed_profit_abs REAL NULL,
-                installed_profit_pct REAL NULL,
-                boost_bid_percent REAL NULL,
-                market_boost_bid_percent REAL NULL,
-                boost_share REAL NULL,
-                decision_code TEXT NOT NULL DEFAULT 'observe',
-                decision_label TEXT NOT NULL DEFAULT 'Наблюдать',
-                decision_tone TEXT NOT NULL DEFAULT 'warning',
-                hypothesis TEXT NOT NULL DEFAULT '',
-                hypothesis_started_at TEXT NOT NULL DEFAULT '',
-                hypothesis_expires_at TEXT NOT NULL DEFAULT '',
-                control_state TEXT NOT NULL DEFAULT 'stable',
-                control_state_started_at TEXT NOT NULL DEFAULT '',
-                attractiveness_status TEXT NOT NULL DEFAULT '',
-                promo_count INTEGER NOT NULL DEFAULT 0,
-                coinvest_pct REAL NULL,
-                selected_iteration_code TEXT NOT NULL DEFAULT '',
-                uses_promo INTEGER NOT NULL DEFAULT 0,
-                uses_attractiveness INTEGER NOT NULL DEFAULT 0,
-                uses_boost INTEGER NOT NULL DEFAULT 0,
-                market_promo_status TEXT NOT NULL DEFAULT '',
-                market_promo_checked_at TEXT NOT NULL DEFAULT '',
-                market_promo_message TEXT NOT NULL DEFAULT '',
-                source_updated_at TEXT NULL,
-                PRIMARY KEY (store_uid, sku, captured_at),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pricing_strategy_history_store_sku_time "
-            "ON pricing_strategy_history(store_uid, sku, captured_at)"
-        )
-        strategy_history_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_strategy_history)").fetchall()}
-        if "cycle_started_at" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN cycle_started_at TEXT NOT NULL DEFAULT ''")
-        if "market_boost_bid_percent" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN market_boost_bid_percent REAL NULL")
-        if "boost_share" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN boost_share REAL NULL")
-        if "decision_code" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN decision_code TEXT NOT NULL DEFAULT 'observe'")
-        if "decision_label" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN decision_label TEXT NOT NULL DEFAULT 'Наблюдать'")
-        if "decision_tone" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN decision_tone TEXT NOT NULL DEFAULT 'warning'")
-        if "hypothesis" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN hypothesis TEXT NOT NULL DEFAULT ''")
-        if "hypothesis_started_at" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN hypothesis_started_at TEXT NOT NULL DEFAULT ''")
-        if "hypothesis_expires_at" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN hypothesis_expires_at TEXT NOT NULL DEFAULT ''")
-        if "control_state" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN control_state TEXT NOT NULL DEFAULT 'stable'")
-        if "control_state_started_at" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN control_state_started_at TEXT NOT NULL DEFAULT ''")
-        if "promo_count" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN promo_count INTEGER NOT NULL DEFAULT 0")
-        if "coinvest_pct" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN coinvest_pct REAL NULL")
-        if "selected_iteration_code" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN selected_iteration_code TEXT NOT NULL DEFAULT ''")
-        if "market_promo_status" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN market_promo_status TEXT NOT NULL DEFAULT ''")
-        if "market_promo_checked_at" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN market_promo_checked_at TEXT NOT NULL DEFAULT ''")
-        if "market_promo_message" not in strategy_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN market_promo_message TEXT NOT NULL DEFAULT ''")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_strategy_iteration_history (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                cycle_started_at TEXT NOT NULL,
-                iteration_code TEXT NOT NULL,
-                iteration_label TEXT NOT NULL DEFAULT '',
-                tested_price REAL NULL,
-                tested_boost_pct REAL NULL,
-                market_boost_bid_percent REAL NULL,
-                boost_share REAL NULL,
-                promo_count INTEGER NOT NULL DEFAULT 0,
-                attractiveness_status TEXT NOT NULL DEFAULT '',
-                coinvest_pct REAL NULL,
-                on_display_price REAL NULL,
-                promo_details_json TEXT NOT NULL DEFAULT '[]',
-                market_promo_status TEXT NOT NULL DEFAULT '',
-                market_promo_message TEXT NOT NULL DEFAULT '',
-                source_updated_at TEXT NULL,
-                captured_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, sku, cycle_started_at, iteration_code),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pricing_strategy_iteration_history_store_cycle "
-            "ON pricing_strategy_iteration_history(store_uid, cycle_started_at)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pricing_strategy_iteration_history_store_sku "
-            "ON pricing_strategy_iteration_history(store_uid, sku)"
-        )
-        iteration_history_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_strategy_iteration_history)").fetchall()}
-        if "market_boost_bid_percent" not in iteration_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_iteration_history ADD COLUMN market_boost_bid_percent REAL NULL")
-        if "boost_share" not in iteration_history_cols:
-            conn.execute("ALTER TABLE pricing_strategy_iteration_history ADD COLUMN boost_share REAL NULL")
+        _init_store_data_model_sqlite_strategy_tables(conn)
 
         conn.execute(
             """
@@ -2769,6 +2543,237 @@ def _init_store_data_model_sqlite_pricing_core_tables(conn: sqlite3.Connection) 
         "CREATE INDEX IF NOT EXISTS idx_pricing_market_price_export_history_store_sku_time "
         "ON pricing_market_price_export_history(store_uid, sku, requested_at)"
     )
+
+
+def _init_store_data_model_sqlite_strategy_tables(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_strategy_results (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            strategy_code TEXT NOT NULL DEFAULT 'base',
+            strategy_label TEXT NOT NULL DEFAULT 'Базовая',
+            rrc_price REAL NULL,
+            rrc_profit_abs REAL NULL,
+            rrc_profit_pct REAL NULL,
+            mrc_price REAL NULL,
+            mrc_profit_abs REAL NULL,
+            mrc_profit_pct REAL NULL,
+            mrc_with_boost_price REAL NULL,
+            mrc_with_boost_profit_abs REAL NULL,
+            mrc_with_boost_profit_pct REAL NULL,
+            promo_price REAL NULL,
+            promo_profit_abs REAL NULL,
+            promo_profit_pct REAL NULL,
+            attractiveness_price REAL NULL,
+            attractiveness_profit_abs REAL NULL,
+            attractiveness_profit_pct REAL NULL,
+            installed_price REAL NULL,
+            installed_profit_abs REAL NULL,
+            installed_profit_pct REAL NULL,
+            boost_bid_percent REAL NULL,
+            decision_code TEXT NOT NULL DEFAULT 'observe',
+            decision_label TEXT NOT NULL DEFAULT 'Наблюдать',
+            decision_tone TEXT NOT NULL DEFAULT 'warning',
+            hypothesis TEXT NOT NULL DEFAULT '',
+            hypothesis_started_at TEXT NOT NULL DEFAULT '',
+            hypothesis_expires_at TEXT NOT NULL DEFAULT '',
+            attractiveness_status TEXT NOT NULL DEFAULT '',
+            promo_items_json TEXT NOT NULL DEFAULT '[]',
+            uses_promo INTEGER NOT NULL DEFAULT 0,
+            uses_attractiveness INTEGER NOT NULL DEFAULT 0,
+            uses_boost INTEGER NOT NULL DEFAULT 0,
+            selected_iteration_code TEXT NOT NULL DEFAULT '',
+            scenario_matrix_json TEXT NOT NULL DEFAULT '{}',
+            source_updated_at TEXT NULL,
+            calculated_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, sku),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    strategy_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_strategy_results)").fetchall()}
+    if "mrc_price" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_price REAL NULL")
+    if "mrc_profit_abs" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_profit_abs REAL NULL")
+    if "mrc_profit_pct" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_profit_pct REAL NULL")
+    if "mrc_with_boost_price" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_with_boost_price REAL NULL")
+    if "mrc_with_boost_profit_abs" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_with_boost_profit_abs REAL NULL")
+    if "mrc_with_boost_profit_pct" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN mrc_with_boost_profit_pct REAL NULL")
+    if "promo_price" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN promo_price REAL NULL")
+    if "promo_profit_abs" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN promo_profit_abs REAL NULL")
+    if "promo_profit_pct" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN promo_profit_pct REAL NULL")
+    if "attractiveness_price" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN attractiveness_price REAL NULL")
+    if "attractiveness_profit_abs" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN attractiveness_profit_abs REAL NULL")
+    if "attractiveness_profit_pct" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN attractiveness_profit_pct REAL NULL")
+    if "decision_code" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN decision_code TEXT NOT NULL DEFAULT 'observe'")
+    if "decision_label" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN decision_label TEXT NOT NULL DEFAULT 'Наблюдать'")
+    if "decision_tone" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN decision_tone TEXT NOT NULL DEFAULT 'warning'")
+    if "hypothesis" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN hypothesis TEXT NOT NULL DEFAULT ''")
+    if "hypothesis_started_at" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN hypothesis_started_at TEXT NOT NULL DEFAULT ''")
+    if "hypothesis_expires_at" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN hypothesis_expires_at TEXT NOT NULL DEFAULT ''")
+    if "control_state" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN control_state TEXT NOT NULL DEFAULT 'stable'")
+    if "control_state_started_at" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN control_state_started_at TEXT NOT NULL DEFAULT ''")
+    if "market_promo_status" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN market_promo_status TEXT NOT NULL DEFAULT ''")
+    if "market_promo_checked_at" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN market_promo_checked_at TEXT NOT NULL DEFAULT ''")
+    if "market_promo_message" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN market_promo_message TEXT NOT NULL DEFAULT ''")
+    if "selected_iteration_code" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN selected_iteration_code TEXT NOT NULL DEFAULT ''")
+    if "scenario_matrix_json" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN scenario_matrix_json TEXT NOT NULL DEFAULT '{}'")
+    if "cycle_started_at" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN cycle_started_at TEXT NOT NULL DEFAULT ''")
+    if "market_boost_bid_percent" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN market_boost_bid_percent REAL NULL")
+    if "boost_share" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN boost_share REAL NULL")
+    if "promo_count" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN promo_count INTEGER NOT NULL DEFAULT 0")
+    if "coinvest_pct" not in strategy_cols:
+        conn.execute("ALTER TABLE pricing_strategy_results ADD COLUMN coinvest_pct REAL NULL")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_strategy_results_store ON pricing_strategy_results(store_uid)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_strategy_results_sku ON pricing_strategy_results(sku)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_strategy_history (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            captured_at TEXT NOT NULL,
+            cycle_started_at TEXT NOT NULL DEFAULT '',
+            strategy_code TEXT NOT NULL DEFAULT 'base',
+            strategy_label TEXT NOT NULL DEFAULT 'Базовая',
+            installed_price REAL NULL,
+            installed_profit_abs REAL NULL,
+            installed_profit_pct REAL NULL,
+            boost_bid_percent REAL NULL,
+            market_boost_bid_percent REAL NULL,
+            boost_share REAL NULL,
+            decision_code TEXT NOT NULL DEFAULT 'observe',
+            decision_label TEXT NOT NULL DEFAULT 'Наблюдать',
+            decision_tone TEXT NOT NULL DEFAULT 'warning',
+            hypothesis TEXT NOT NULL DEFAULT '',
+            hypothesis_started_at TEXT NOT NULL DEFAULT '',
+            hypothesis_expires_at TEXT NOT NULL DEFAULT '',
+            control_state TEXT NOT NULL DEFAULT 'stable',
+            control_state_started_at TEXT NOT NULL DEFAULT '',
+            attractiveness_status TEXT NOT NULL DEFAULT '',
+            promo_count INTEGER NOT NULL DEFAULT 0,
+            coinvest_pct REAL NULL,
+            selected_iteration_code TEXT NOT NULL DEFAULT '',
+            uses_promo INTEGER NOT NULL DEFAULT 0,
+            uses_attractiveness INTEGER NOT NULL DEFAULT 0,
+            uses_boost INTEGER NOT NULL DEFAULT 0,
+            market_promo_status TEXT NOT NULL DEFAULT '',
+            market_promo_checked_at TEXT NOT NULL DEFAULT '',
+            market_promo_message TEXT NOT NULL DEFAULT '',
+            source_updated_at TEXT NULL,
+            PRIMARY KEY (store_uid, sku, captured_at),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pricing_strategy_history_store_sku_time "
+        "ON pricing_strategy_history(store_uid, sku, captured_at)"
+    )
+    strategy_history_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_strategy_history)").fetchall()}
+    if "cycle_started_at" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN cycle_started_at TEXT NOT NULL DEFAULT ''")
+    if "market_boost_bid_percent" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN market_boost_bid_percent REAL NULL")
+    if "boost_share" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN boost_share REAL NULL")
+    if "decision_code" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN decision_code TEXT NOT NULL DEFAULT 'observe'")
+    if "decision_label" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN decision_label TEXT NOT NULL DEFAULT 'Наблюдать'")
+    if "decision_tone" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN decision_tone TEXT NOT NULL DEFAULT 'warning'")
+    if "hypothesis" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN hypothesis TEXT NOT NULL DEFAULT ''")
+    if "hypothesis_started_at" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN hypothesis_started_at TEXT NOT NULL DEFAULT ''")
+    if "hypothesis_expires_at" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN hypothesis_expires_at TEXT NOT NULL DEFAULT ''")
+    if "control_state" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN control_state TEXT NOT NULL DEFAULT 'stable'")
+    if "control_state_started_at" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN control_state_started_at TEXT NOT NULL DEFAULT ''")
+    if "promo_count" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN promo_count INTEGER NOT NULL DEFAULT 0")
+    if "coinvest_pct" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN coinvest_pct REAL NULL")
+    if "selected_iteration_code" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN selected_iteration_code TEXT NOT NULL DEFAULT ''")
+    if "market_promo_status" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN market_promo_status TEXT NOT NULL DEFAULT ''")
+    if "market_promo_checked_at" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN market_promo_checked_at TEXT NOT NULL DEFAULT ''")
+    if "market_promo_message" not in strategy_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_history ADD COLUMN market_promo_message TEXT NOT NULL DEFAULT ''")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_strategy_iteration_history (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            cycle_started_at TEXT NOT NULL,
+            iteration_code TEXT NOT NULL,
+            iteration_label TEXT NOT NULL DEFAULT '',
+            tested_price REAL NULL,
+            tested_boost_pct REAL NULL,
+            market_boost_bid_percent REAL NULL,
+            boost_share REAL NULL,
+            promo_count INTEGER NOT NULL DEFAULT 0,
+            attractiveness_status TEXT NOT NULL DEFAULT '',
+            coinvest_pct REAL NULL,
+            on_display_price REAL NULL,
+            promo_details_json TEXT NOT NULL DEFAULT '[]',
+            market_promo_status TEXT NOT NULL DEFAULT '',
+            market_promo_message TEXT NOT NULL DEFAULT '',
+            source_updated_at TEXT NULL,
+            captured_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, sku, cycle_started_at, iteration_code),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pricing_strategy_iteration_history_store_cycle "
+        "ON pricing_strategy_iteration_history(store_uid, cycle_started_at)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pricing_strategy_iteration_history_store_sku "
+        "ON pricing_strategy_iteration_history(store_uid, sku)"
+    )
+    iteration_history_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_strategy_iteration_history)").fetchall()}
+    if "market_boost_bid_percent" not in iteration_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_iteration_history ADD COLUMN market_boost_bid_percent REAL NULL")
+    if "boost_share" not in iteration_history_cols:
+        conn.execute("ALTER TABLE pricing_strategy_iteration_history ADD COLUMN boost_share REAL NULL")
 
 
 def _init_store_data_model_sqlite_reference_tables(conn: sqlite3.Connection) -> None:
