@@ -1929,250 +1929,7 @@ def init_store_data_model() -> None:
 
         _init_store_data_model_sqlite_attractiveness_promo_tables(conn)
 
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS sales_market_order_items (
-                store_uid TEXT NOT NULL,
-                platform TEXT NOT NULL DEFAULT 'yandex_market',
-                order_id TEXT NOT NULL,
-                order_item_id TEXT NOT NULL,
-                order_status TEXT NOT NULL DEFAULT '',
-                order_created_at TEXT NOT NULL,
-                order_created_date TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                item_name TEXT NOT NULL DEFAULT '',
-                sale_price REAL NULL,
-                payment_price REAL NULL,
-                subsidy_amount REAL NULL,
-                item_count INTEGER NOT NULL DEFAULT 1,
-                line_revenue REAL NULL,
-                loaded_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, order_item_id),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        sales_cols = {row[1] for row in conn.execute("PRAGMA table_info(sales_market_order_items)").fetchall()}
-        if "payment_price" not in sales_cols:
-            conn.execute("ALTER TABLE sales_market_order_items ADD COLUMN payment_price REAL NULL")
-        if "subsidy_amount" not in sales_cols:
-            conn.execute("ALTER TABLE sales_market_order_items ADD COLUMN subsidy_amount REAL NULL")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_sales_market_order_items_store_date ON sales_market_order_items(store_uid, order_created_date)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_sales_market_order_items_store_sku ON sales_market_order_items(store_uid, sku)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_sales_market_order_items_order ON sales_market_order_items(store_uid, order_id)")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS sales_united_order_transactions (
-                store_uid TEXT NOT NULL,
-                platform TEXT NOT NULL DEFAULT 'yandex_market',
-                order_id TEXT NOT NULL,
-                order_created_at TEXT NOT NULL,
-                order_created_date TEXT NOT NULL,
-                shipment_date TEXT NOT NULL DEFAULT '',
-                delivery_date TEXT NOT NULL DEFAULT '',
-                sku TEXT NOT NULL,
-                item_name TEXT NOT NULL DEFAULT '',
-                item_status TEXT NOT NULL DEFAULT '',
-                source_updated_at TEXT NOT NULL DEFAULT '',
-                payload_json TEXT NOT NULL DEFAULT '{}',
-                loaded_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, order_id, sku),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        united_cols = {row[1] for row in conn.execute("PRAGMA table_info(sales_united_order_transactions)").fetchall()}
-        if "item_name" not in united_cols:
-            conn.execute("ALTER TABLE sales_united_order_transactions ADD COLUMN item_name TEXT NOT NULL DEFAULT ''")
-        if "shipment_date" not in united_cols:
-            conn.execute("ALTER TABLE sales_united_order_transactions ADD COLUMN shipment_date TEXT NOT NULL DEFAULT ''")
-        if "delivery_date" not in united_cols:
-            conn.execute("ALTER TABLE sales_united_order_transactions ADD COLUMN delivery_date TEXT NOT NULL DEFAULT ''")
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_united_order_transactions_store_date "
-            "ON sales_united_order_transactions(store_uid, order_created_date)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_united_order_transactions_store_sku "
-            "ON sales_united_order_transactions(store_uid, sku)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_united_order_transactions_order "
-            "ON sales_united_order_transactions(store_uid, order_id)"
-        )
-        _rebuild_sales_united_order_transactions_if_needed(conn)
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS sales_united_netting_report_rows (
-                store_uid TEXT NOT NULL,
-                platform TEXT NOT NULL DEFAULT 'yandex_market',
-                report_date_from TEXT NOT NULL,
-                report_date_to TEXT NOT NULL,
-                report_id TEXT NOT NULL DEFAULT '',
-                sheet_name TEXT NOT NULL DEFAULT '',
-                row_index INTEGER NOT NULL DEFAULT 0,
-                payload_json TEXT NOT NULL DEFAULT '{}',
-                source_updated_at TEXT NOT NULL DEFAULT '',
-                loaded_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, report_date_from, report_date_to, sheet_name, row_index),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_united_netting_store_period "
-            "ON sales_united_netting_report_rows(store_uid, report_date_from, report_date_to)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_united_netting_sheet "
-            "ON sales_united_netting_report_rows(store_uid, sheet_name)"
-        )
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS sales_shelfs_statistics_report_rows (
-                store_uid TEXT NOT NULL,
-                platform TEXT NOT NULL DEFAULT 'yandex_market',
-                report_date_from TEXT NOT NULL,
-                report_date_to TEXT NOT NULL,
-                report_id TEXT NOT NULL DEFAULT '',
-                sheet_name TEXT NOT NULL DEFAULT '',
-                row_index INTEGER NOT NULL DEFAULT 0,
-                payload_json TEXT NOT NULL DEFAULT '{}',
-                source_updated_at TEXT NOT NULL DEFAULT '',
-                loaded_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, report_date_from, report_date_to, sheet_name, row_index),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_shelfs_statistics_store_period "
-            "ON sales_shelfs_statistics_report_rows(store_uid, report_date_from, report_date_to)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_shelfs_statistics_sheet "
-            "ON sales_shelfs_statistics_report_rows(store_uid, sheet_name)"
-        )
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS sales_shows_boost_report_rows (
-                store_uid TEXT NOT NULL,
-                platform TEXT NOT NULL DEFAULT 'yandex_market',
-                report_date_from TEXT NOT NULL,
-                report_date_to TEXT NOT NULL,
-                report_id TEXT NOT NULL DEFAULT '',
-                sheet_name TEXT NOT NULL DEFAULT '',
-                row_index INTEGER NOT NULL DEFAULT 0,
-                payload_json TEXT NOT NULL DEFAULT '{}',
-                source_updated_at TEXT NOT NULL DEFAULT '',
-                loaded_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, report_date_from, report_date_to, sheet_name, row_index),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_shows_boost_store_period "
-            "ON sales_shows_boost_report_rows(store_uid, report_date_from, report_date_to)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_shows_boost_sheet "
-            "ON sales_shows_boost_report_rows(store_uid, sheet_name)"
-        )
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS sales_overview_order_rows (
-                store_uid TEXT NOT NULL,
-                platform TEXT NOT NULL DEFAULT 'yandex_market',
-                order_created_date TEXT NOT NULL,
-                order_created_at TEXT NOT NULL DEFAULT '',
-                shipment_date TEXT NOT NULL DEFAULT '',
-                delivery_date TEXT NOT NULL DEFAULT '',
-                order_id TEXT NOT NULL,
-                item_status TEXT NOT NULL DEFAULT '',
-                sku TEXT NOT NULL,
-                item_name TEXT NOT NULL DEFAULT '',
-                sale_price REAL NULL,
-                gross_profit REAL NULL,
-                cogs_price REAL NULL,
-                commission REAL NULL,
-                acquiring REAL NULL,
-                delivery REAL NULL,
-                ads REAL NULL,
-                tax REAL NULL,
-                profit REAL NULL,
-                sale_price_with_coinvest REAL NULL,
-                strategy_cycle_started_at TEXT NOT NULL DEFAULT '',
-                strategy_market_boost_bid_percent REAL NULL,
-                strategy_boost_share REAL NULL,
-                strategy_boost_bid_percent REAL NULL,
-                strategy_snapshot_at TEXT NOT NULL DEFAULT '',
-                strategy_installed_price REAL NULL,
-                strategy_decision_code TEXT NOT NULL DEFAULT '',
-                strategy_decision_label TEXT NOT NULL DEFAULT '',
-                strategy_control_state TEXT NOT NULL DEFAULT '',
-                strategy_attractiveness_status TEXT NOT NULL DEFAULT '',
-                strategy_promo_count INTEGER NOT NULL DEFAULT 0,
-                strategy_coinvest_pct REAL NULL,
-                strategy_selected_iteration_code TEXT NOT NULL DEFAULT '',
-                strategy_uses_promo INTEGER NOT NULL DEFAULT 0,
-                strategy_market_promo_status TEXT NOT NULL DEFAULT '',
-                uses_planned_costs INTEGER NOT NULL DEFAULT 0,
-                source_updated_at TEXT NOT NULL DEFAULT '',
-                calculated_at TEXT NOT NULL DEFAULT '',
-                PRIMARY KEY (store_uid, order_id, sku),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        overview_cols = {row[1] for row in conn.execute("PRAGMA table_info(sales_overview_order_rows)").fetchall()}
-        if "strategy_cycle_started_at" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_cycle_started_at TEXT NOT NULL DEFAULT ''")
-        if "strategy_market_boost_bid_percent" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_market_boost_bid_percent REAL NULL")
-        if "strategy_boost_share" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_boost_share REAL NULL")
-        if "strategy_boost_bid_percent" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_boost_bid_percent REAL NULL")
-        if "strategy_snapshot_at" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_snapshot_at TEXT NOT NULL DEFAULT ''")
-        if "strategy_installed_price" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_installed_price REAL NULL")
-        if "strategy_decision_code" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_decision_code TEXT NOT NULL DEFAULT ''")
-        if "strategy_decision_label" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_decision_label TEXT NOT NULL DEFAULT ''")
-        if "strategy_control_state" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_control_state TEXT NOT NULL DEFAULT ''")
-        if "strategy_attractiveness_status" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_attractiveness_status TEXT NOT NULL DEFAULT ''")
-        if "strategy_promo_count" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_promo_count INTEGER NOT NULL DEFAULT 0")
-        if "strategy_coinvest_pct" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_coinvest_pct REAL NULL")
-        if "strategy_selected_iteration_code" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_selected_iteration_code TEXT NOT NULL DEFAULT ''")
-        if "strategy_uses_promo" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_uses_promo INTEGER NOT NULL DEFAULT 0")
-        if "strategy_market_promo_status" not in overview_cols:
-            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_market_promo_status TEXT NOT NULL DEFAULT ''")
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_overview_order_rows_store_date "
-            "ON sales_overview_order_rows(store_uid, order_created_date)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_overview_order_rows_store_status "
-            "ON sales_overview_order_rows(store_uid, item_status)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_overview_order_rows_store_sku "
-            "ON sales_overview_order_rows(store_uid, sku)"
-        )
+        _init_store_data_model_sqlite_sales_tables(conn)
 
         _init_store_data_model_sqlite_cogs_tables(conn)
         _init_store_data_model_sqlite_operational_tables(conn)
@@ -2778,6 +2535,253 @@ def _init_store_data_model_sqlite_attractiveness_promo_tables(conn: sqlite3.Conn
     conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_raw_store ON pricing_promo_offer_raw(store_uid)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_raw_sku ON pricing_promo_offer_raw(store_uid, sku)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_raw_promo ON pricing_promo_offer_raw(store_uid, promo_id)")
+
+
+def _init_store_data_model_sqlite_sales_tables(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sales_market_order_items (
+            store_uid TEXT NOT NULL,
+            platform TEXT NOT NULL DEFAULT 'yandex_market',
+            order_id TEXT NOT NULL,
+            order_item_id TEXT NOT NULL,
+            order_status TEXT NOT NULL DEFAULT '',
+            order_created_at TEXT NOT NULL,
+            order_created_date TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            item_name TEXT NOT NULL DEFAULT '',
+            sale_price REAL NULL,
+            payment_price REAL NULL,
+            subsidy_amount REAL NULL,
+            item_count INTEGER NOT NULL DEFAULT 1,
+            line_revenue REAL NULL,
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, order_item_id),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    sales_cols = {row[1] for row in conn.execute("PRAGMA table_info(sales_market_order_items)").fetchall()}
+    if "payment_price" not in sales_cols:
+        conn.execute("ALTER TABLE sales_market_order_items ADD COLUMN payment_price REAL NULL")
+    if "subsidy_amount" not in sales_cols:
+        conn.execute("ALTER TABLE sales_market_order_items ADD COLUMN subsidy_amount REAL NULL")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_sales_market_order_items_store_date ON sales_market_order_items(store_uid, order_created_date)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_sales_market_order_items_store_sku ON sales_market_order_items(store_uid, sku)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_sales_market_order_items_order ON sales_market_order_items(store_uid, order_id)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sales_united_order_transactions (
+            store_uid TEXT NOT NULL,
+            platform TEXT NOT NULL DEFAULT 'yandex_market',
+            order_id TEXT NOT NULL,
+            order_created_at TEXT NOT NULL,
+            order_created_date TEXT NOT NULL,
+            shipment_date TEXT NOT NULL DEFAULT '',
+            delivery_date TEXT NOT NULL DEFAULT '',
+            sku TEXT NOT NULL,
+            item_name TEXT NOT NULL DEFAULT '',
+            item_status TEXT NOT NULL DEFAULT '',
+            source_updated_at TEXT NOT NULL DEFAULT '',
+            payload_json TEXT NOT NULL DEFAULT '{}',
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, order_id, sku),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    united_cols = {row[1] for row in conn.execute("PRAGMA table_info(sales_united_order_transactions)").fetchall()}
+    if "item_name" not in united_cols:
+        conn.execute("ALTER TABLE sales_united_order_transactions ADD COLUMN item_name TEXT NOT NULL DEFAULT ''")
+    if "shipment_date" not in united_cols:
+        conn.execute("ALTER TABLE sales_united_order_transactions ADD COLUMN shipment_date TEXT NOT NULL DEFAULT ''")
+    if "delivery_date" not in united_cols:
+        conn.execute("ALTER TABLE sales_united_order_transactions ADD COLUMN delivery_date TEXT NOT NULL DEFAULT ''")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_united_order_transactions_store_date "
+        "ON sales_united_order_transactions(store_uid, order_created_date)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_united_order_transactions_store_sku "
+        "ON sales_united_order_transactions(store_uid, sku)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_united_order_transactions_order "
+        "ON sales_united_order_transactions(store_uid, order_id)"
+    )
+    _rebuild_sales_united_order_transactions_if_needed(conn)
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sales_united_netting_report_rows (
+            store_uid TEXT NOT NULL,
+            platform TEXT NOT NULL DEFAULT 'yandex_market',
+            report_date_from TEXT NOT NULL,
+            report_date_to TEXT NOT NULL,
+            report_id TEXT NOT NULL DEFAULT '',
+            sheet_name TEXT NOT NULL DEFAULT '',
+            row_index INTEGER NOT NULL DEFAULT 0,
+            payload_json TEXT NOT NULL DEFAULT '{}',
+            source_updated_at TEXT NOT NULL DEFAULT '',
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, report_date_from, report_date_to, sheet_name, row_index),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_united_netting_store_period "
+        "ON sales_united_netting_report_rows(store_uid, report_date_from, report_date_to)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_united_netting_sheet "
+        "ON sales_united_netting_report_rows(store_uid, sheet_name)"
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sales_shelfs_statistics_report_rows (
+            store_uid TEXT NOT NULL,
+            platform TEXT NOT NULL DEFAULT 'yandex_market',
+            report_date_from TEXT NOT NULL,
+            report_date_to TEXT NOT NULL,
+            report_id TEXT NOT NULL DEFAULT '',
+            sheet_name TEXT NOT NULL DEFAULT '',
+            row_index INTEGER NOT NULL DEFAULT 0,
+            payload_json TEXT NOT NULL DEFAULT '{}',
+            source_updated_at TEXT NOT NULL DEFAULT '',
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, report_date_from, report_date_to, sheet_name, row_index),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_shelfs_statistics_store_period "
+        "ON sales_shelfs_statistics_report_rows(store_uid, report_date_from, report_date_to)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_shelfs_statistics_sheet "
+        "ON sales_shelfs_statistics_report_rows(store_uid, sheet_name)"
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sales_shows_boost_report_rows (
+            store_uid TEXT NOT NULL,
+            platform TEXT NOT NULL DEFAULT 'yandex_market',
+            report_date_from TEXT NOT NULL,
+            report_date_to TEXT NOT NULL,
+            report_id TEXT NOT NULL DEFAULT '',
+            sheet_name TEXT NOT NULL DEFAULT '',
+            row_index INTEGER NOT NULL DEFAULT 0,
+            payload_json TEXT NOT NULL DEFAULT '{}',
+            source_updated_at TEXT NOT NULL DEFAULT '',
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, report_date_from, report_date_to, sheet_name, row_index),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_shows_boost_store_period "
+        "ON sales_shows_boost_report_rows(store_uid, report_date_from, report_date_to)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_shows_boost_sheet "
+        "ON sales_shows_boost_report_rows(store_uid, sheet_name)"
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sales_overview_order_rows (
+            store_uid TEXT NOT NULL,
+            platform TEXT NOT NULL DEFAULT 'yandex_market',
+            order_created_date TEXT NOT NULL,
+            order_created_at TEXT NOT NULL DEFAULT '',
+            shipment_date TEXT NOT NULL DEFAULT '',
+            delivery_date TEXT NOT NULL DEFAULT '',
+            order_id TEXT NOT NULL,
+            item_status TEXT NOT NULL DEFAULT '',
+            sku TEXT NOT NULL,
+            item_name TEXT NOT NULL DEFAULT '',
+            sale_price REAL NULL,
+            gross_profit REAL NULL,
+            cogs_price REAL NULL,
+            commission REAL NULL,
+            acquiring REAL NULL,
+            delivery REAL NULL,
+            ads REAL NULL,
+            tax REAL NULL,
+            profit REAL NULL,
+            sale_price_with_coinvest REAL NULL,
+            strategy_cycle_started_at TEXT NOT NULL DEFAULT '',
+            strategy_market_boost_bid_percent REAL NULL,
+            strategy_boost_share REAL NULL,
+            strategy_boost_bid_percent REAL NULL,
+            strategy_snapshot_at TEXT NOT NULL DEFAULT '',
+            strategy_installed_price REAL NULL,
+            strategy_decision_code TEXT NOT NULL DEFAULT '',
+            strategy_decision_label TEXT NOT NULL DEFAULT '',
+            strategy_control_state TEXT NOT NULL DEFAULT '',
+            strategy_attractiveness_status TEXT NOT NULL DEFAULT '',
+            strategy_promo_count INTEGER NOT NULL DEFAULT 0,
+            strategy_coinvest_pct REAL NULL,
+            strategy_selected_iteration_code TEXT NOT NULL DEFAULT '',
+            strategy_uses_promo INTEGER NOT NULL DEFAULT 0,
+            strategy_market_promo_status TEXT NOT NULL DEFAULT '',
+            uses_planned_costs INTEGER NOT NULL DEFAULT 0,
+            source_updated_at TEXT NOT NULL DEFAULT '',
+            calculated_at TEXT NOT NULL DEFAULT '',
+            PRIMARY KEY (store_uid, order_id, sku),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    overview_cols = {row[1] for row in conn.execute("PRAGMA table_info(sales_overview_order_rows)").fetchall()}
+    if "strategy_cycle_started_at" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_cycle_started_at TEXT NOT NULL DEFAULT ''")
+    if "strategy_market_boost_bid_percent" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_market_boost_bid_percent REAL NULL")
+    if "strategy_boost_share" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_boost_share REAL NULL")
+    if "strategy_boost_bid_percent" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_boost_bid_percent REAL NULL")
+    if "strategy_snapshot_at" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_snapshot_at TEXT NOT NULL DEFAULT ''")
+    if "strategy_installed_price" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_installed_price REAL NULL")
+    if "strategy_decision_code" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_decision_code TEXT NOT NULL DEFAULT ''")
+    if "strategy_decision_label" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_decision_label TEXT NOT NULL DEFAULT ''")
+    if "strategy_control_state" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_control_state TEXT NOT NULL DEFAULT ''")
+    if "strategy_attractiveness_status" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_attractiveness_status TEXT NOT NULL DEFAULT ''")
+    if "strategy_promo_count" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_promo_count INTEGER NOT NULL DEFAULT 0")
+    if "strategy_coinvest_pct" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_coinvest_pct REAL NULL")
+    if "strategy_selected_iteration_code" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_selected_iteration_code TEXT NOT NULL DEFAULT ''")
+    if "strategy_uses_promo" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_uses_promo INTEGER NOT NULL DEFAULT 0")
+    if "strategy_market_promo_status" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_market_promo_status TEXT NOT NULL DEFAULT ''")
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_overview_order_rows_store_date "
+        "ON sales_overview_order_rows(store_uid, order_created_date)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_overview_order_rows_store_status "
+        "ON sales_overview_order_rows(store_uid, item_status)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_overview_order_rows_store_sku "
+        "ON sales_overview_order_rows(store_uid, sku)"
+    )
 
 
 def _init_store_data_model_sqlite_reference_tables(conn: sqlite3.Connection) -> None:
