@@ -2716,52 +2716,56 @@ def init_store_data_model() -> None:
             "ON sales_overview_order_rows(store_uid, sku)"
         )
 
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS sales_overview_cogs_source_rows (
-                store_uid TEXT NOT NULL,
-                order_key TEXT NOT NULL,
-                sku_key TEXT NOT NULL DEFAULT '',
-                cogs_value REAL NULL,
-                loaded_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, order_key, sku_key),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_sales_overview_cogs_source_rows_store "
-            "ON sales_overview_cogs_source_rows(store_uid)"
-        )
-        _rebuild_sales_overview_cogs_source_rows_if_needed(conn)
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_cogs_snapshots (
-                snapshot_at TEXT NOT NULL,
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                cogs_value REAL NULL,
-                source_id TEXT NOT NULL DEFAULT '',
-                loaded_at TEXT NOT NULL,
-                PRIMARY KEY (snapshot_at, store_uid, sku),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pricing_cogs_snapshots_store_time "
-            "ON pricing_cogs_snapshots(store_uid, snapshot_at)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pricing_cogs_snapshots_sku "
-            "ON pricing_cogs_snapshots(store_uid, sku)"
-        )
+        _init_store_data_model_sqlite_cogs_tables(conn)
         _init_store_data_model_sqlite_operational_tables(conn)
         conn.commit()
         conn.close()
         _backfill_system_settings_from_legacy()
         _INIT_DONE = True
+
+
+def _init_store_data_model_sqlite_cogs_tables(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sales_overview_cogs_source_rows (
+            store_uid TEXT NOT NULL,
+            order_key TEXT NOT NULL,
+            sku_key TEXT NOT NULL DEFAULT '',
+            cogs_value REAL NULL,
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, order_key, sku_key),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sales_overview_cogs_source_rows_store "
+        "ON sales_overview_cogs_source_rows(store_uid)"
+    )
+    _rebuild_sales_overview_cogs_source_rows_if_needed(conn)
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_cogs_snapshots (
+            snapshot_at TEXT NOT NULL,
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            cogs_value REAL NULL,
+            source_id TEXT NOT NULL DEFAULT '',
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (snapshot_at, store_uid, sku),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pricing_cogs_snapshots_store_time "
+        "ON pricing_cogs_snapshots(store_uid, snapshot_at)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pricing_cogs_snapshots_sku "
+        "ON pricing_cogs_snapshots(store_uid, sku)"
+    )
 
 
 def _init_store_data_model_sqlite_reference_tables(conn: sqlite3.Connection) -> None:

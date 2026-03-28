@@ -91,6 +91,103 @@ def _to_num(v: Any) -> float | None:
     return to_num_loose(v)
 
 
+async def _load_attractiveness_base_rows(
+    *,
+    scope: str,
+    platform: str,
+    store_id: str,
+    tree_mode: str,
+    tree_source_store_id: str,
+    category_path: str,
+    search: str,
+    page: int,
+    page_size: int,
+    stock_filter_norm: str,
+    status_filter_norm: str,
+    fetch_live: bool,
+):
+    if status_filter_norm == "all" and stock_filter_norm == "all":
+        base = await get_prices_overview(
+            scope=scope,
+            platform=platform,
+            store_id=store_id,
+            tree_mode=tree_mode,
+            tree_source_store_id=tree_source_store_id,
+            category_path=category_path,
+            search=search,
+            stock_filter=stock_filter_norm,
+            page=page,
+            page_size=page_size,
+            force_refresh=bool(fetch_live),
+        )
+        rows = base.get("rows") if isinstance(base, dict) else None
+        stores = base.get("stores") if isinstance(base, dict) else None
+        return base, rows, stores
+
+    base = await get_prices_overview(
+        scope=scope,
+        platform=platform,
+        store_id=store_id,
+        tree_mode=tree_mode,
+        tree_source_store_id=tree_source_store_id,
+        category_path=category_path,
+        search=search,
+        stock_filter=stock_filter_norm,
+        page=1,
+        page_size=200,
+        force_refresh=bool(fetch_live),
+    )
+    stores = base.get("stores") if isinstance(base, dict) else None
+    rows_all = base.get("rows") if isinstance(base, dict) and isinstance(base.get("rows"), list) else []
+    total_base = int(base.get("total_count") or len(rows_all)) if isinstance(base, dict) else len(rows_all)
+    loaded = len(rows_all)
+    page_i = 1
+    while loaded < total_base:
+        page_i += 1
+        nxt = await get_prices_overview(
+            scope=scope,
+            platform=platform,
+            store_id=store_id,
+            tree_mode=tree_mode,
+            tree_source_store_id=tree_source_store_id,
+            category_path=category_path,
+            search=search,
+            stock_filter=stock_filter_norm,
+            page=page_i,
+            page_size=200,
+            force_refresh=bool(fetch_live),
+        )
+        chunk = nxt.get("rows") if isinstance(nxt, dict) and isinstance(nxt.get("rows"), list) else []
+        if not chunk:
+            break
+        rows_all.extend(chunk)
+        loaded += len(chunk)
+        if page_i > 200:
+            break
+    return base, rows_all, stores
+
+
+def _paginate_attractiveness_rows(
+    *,
+    base: dict[str, Any] | dict,
+    filtered_rows: list[dict],
+    page: int,
+    page_size: int,
+    status_filter_norm: str,
+    stock_filter_norm: str,
+) -> tuple[list[dict], int, int, int]:
+    page_size_n = max(1, min(int(page_size or 50), 200))
+    page_n = max(1, int(page or 1))
+    if status_filter_norm == "all" and stock_filter_norm == "all" and isinstance(base, dict):
+        total_filtered = int(base.get("total_count") or len(filtered_rows))
+        paged = filtered_rows
+    else:
+        total_filtered = len(filtered_rows)
+        start = (page_n - 1) * page_size_n
+        paged = filtered_rows[start:start + page_size_n]
+    return paged, total_filtered, page_n, page_size_n
+
+
 async def _get_ozon_sales_usd_rub_rate_for_date(calc_date: datetime.date) -> float | None:
     key = calc_date.isoformat()
     if key in _FX_OZON_USD_RUB_MEM:
@@ -602,64 +699,20 @@ async def get_attractiveness_overview(
     # Для status_filter != all или stock_filter != all фильтрация должна идти по всем товарам,
     # а не по текущей странице. Тогда сначала собираем все строки из prices-layer,
     # затем фильтруем и пагинируем здесь.
-    if status_filter_norm == "all" and stock_filter_norm == "all":
-        base = await get_prices_overview(
-            scope=scope,
-            platform=platform,
-            store_id=store_id,
-            tree_mode=tree_mode,
-            tree_source_store_id=tree_source_store_id,
-            category_path=category_path,
-            search=search,
-            stock_filter=stock_filter_norm,
-            page=page,
-            page_size=page_size,
-            force_refresh=bool(fetch_live),
-        )
-        rows = base.get("rows") if isinstance(base, dict) else None
-        stores = base.get("stores") if isinstance(base, dict) else None
-    else:
-        base = await get_prices_overview(
-            scope=scope,
-            platform=platform,
-            store_id=store_id,
-            tree_mode=tree_mode,
-            tree_source_store_id=tree_source_store_id,
-            category_path=category_path,
-            search=search,
-            stock_filter=stock_filter_norm,
-            page=1,
-            page_size=200,
-            force_refresh=bool(fetch_live),
-        )
-        stores = base.get("stores") if isinstance(base, dict) else None
-        rows_all = base.get("rows") if isinstance(base, dict) and isinstance(base.get("rows"), list) else []
-        total_base = int(base.get("total_count") or len(rows_all)) if isinstance(base, dict) else len(rows_all)
-        loaded = len(rows_all)
-        page_i = 1
-        while loaded < total_base:
-            page_i += 1
-            nxt = await get_prices_overview(
-                scope=scope,
-                platform=platform,
-                store_id=store_id,
-                tree_mode=tree_mode,
-                tree_source_store_id=tree_source_store_id,
-                category_path=category_path,
-                search=search,
-                stock_filter=stock_filter_norm,
-                page=page_i,
-                page_size=200,
-                force_refresh=bool(fetch_live),
-            )
-            chunk = nxt.get("rows") if isinstance(nxt, dict) and isinstance(nxt.get("rows"), list) else []
-            if not chunk:
-                break
-            rows_all.extend(chunk)
-            loaded += len(chunk)
-            if page_i > 200:
-                break
-        rows = rows_all
+    base, rows, stores = await _load_attractiveness_base_rows(
+        scope=scope,
+        platform=platform,
+        store_id=store_id,
+        tree_mode=tree_mode,
+        tree_source_store_id=tree_source_store_id,
+        category_path=category_path,
+        search=search,
+        page=page,
+        page_size=page_size,
+        stock_filter_norm=stock_filter_norm,
+        status_filter_norm=status_filter_norm,
+        fetch_live=bool(fetch_live),
+    )
 
     if not isinstance(rows, list) or not isinstance(stores, list) or not rows:
         resp = {
@@ -1163,15 +1216,14 @@ async def get_attractiveness_overview(
             if (_has_stock(r) if stock_filter_norm == "in_stock" else not _has_stock(r))
         ]
 
-    page_size_n = max(1, min(int(page_size or 50), 200))
-    page_n = max(1, int(page or 1))
-    if status_filter_norm == "all" and stock_filter_norm == "all" and isinstance(base, dict):
-        total_filtered = int(base.get("total_count") or len(filtered_rows))
-        paged = filtered_rows
-    else:
-        total_filtered = len(filtered_rows)
-        start = (page_n - 1) * page_size_n
-        paged = filtered_rows[start:start + page_size_n]
+    paged, total_filtered, page_n, page_size_n = _paginate_attractiveness_rows(
+        base=base if isinstance(base, dict) else {},
+        filtered_rows=filtered_rows,
+        page=page,
+        page_size=page_size,
+        status_filter_norm=status_filter_norm,
+        stock_filter_norm=stock_filter_norm,
+    )
 
     resp = {
         **(base if isinstance(base, dict) else {}),

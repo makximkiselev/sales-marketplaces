@@ -106,6 +106,81 @@ def _round_pct(v: float | None) -> float | None:
     return round(float(v), 2)
 
 
+def _strategy_row_matches_filters(
+    *,
+    per_store: dict[str, dict[str, Any]],
+    strategy_filter: str,
+    sales_filter_norm: str,
+) -> bool:
+    if strategy_filter and strategy_filter != "all":
+        if not any(str(item.get("decision_code") or "").strip() == strategy_filter for item in per_store.values()):
+            return False
+    if sales_filter_norm == "with_sales":
+        return any(int(item.get("fact_sales") or 0) > 0 for item in per_store.values())
+    if sales_filter_norm == "without_sales":
+        return not any(int(item.get("fact_sales") or 0) > 0 for item in per_store.values())
+    return True
+
+
+def _normalize_strategy_plan_values(
+    *,
+    out_rows: list[dict[str, Any]],
+    sales_plan_summary: dict[str, Any] | None,
+    search: str,
+    category_path: str,
+    strategy_filter: str,
+    sales_filter_norm: str,
+    stock_filter_norm: str,
+) -> None:
+    plan_summary_by_store = (sales_plan_summary or {}).get("by_store") if isinstance(sales_plan_summary, dict) else {}
+    can_normalize_sku_plan = not any(
+        [
+            str(search or "").strip(),
+            str(category_path or "").strip(),
+            strategy_filter and strategy_filter != "all",
+            sales_filter_norm != "all",
+            stock_filter_norm != "all",
+        ]
+    )
+    if not (can_normalize_sku_plan and isinstance(plan_summary_by_store, dict) and out_rows):
+        return
+
+    raw_plan_totals_by_store: dict[str, float] = {}
+    for out_row in out_rows:
+        revenue_map = out_row.get("sku_sales_plan_revenue_by_store") or {}
+        if not isinstance(revenue_map, dict):
+            continue
+        for suid, value in revenue_map.items():
+            amount = _to_num(value)
+            if amount not in (None, 0):
+                raw_plan_totals_by_store[suid] = float(raw_plan_totals_by_store.get(suid) or 0.0) + float(amount)
+
+    for out_row in out_rows:
+        revenue_map = out_row.get("sku_sales_plan_revenue_by_store") or {}
+        qty_map = out_row.get("sku_sales_plan_qty_by_store") or {}
+        price_map = out_row.get("installed_price_by_store") or {}
+        if not isinstance(revenue_map, dict) or not isinstance(qty_map, dict) or not isinstance(price_map, dict):
+            continue
+        for suid, raw_value in list(revenue_map.items()):
+            raw_amount = _to_num(raw_value)
+            if raw_amount in (None, 0):
+                continue
+            store_summary = plan_summary_by_store.get(suid) if isinstance(plan_summary_by_store.get(suid), dict) else {}
+            planned_revenue_daily = _to_num((store_summary or {}).get("planned_revenue_daily"))
+            raw_total = _to_num(raw_plan_totals_by_store.get(suid))
+            if planned_revenue_daily in (None, 0) or raw_total in (None, 0):
+                continue
+            scale = float(planned_revenue_daily) / float(raw_total)
+            scaled_revenue = round(float(raw_amount) * scale, 2)
+            revenue_map[suid] = scaled_revenue
+            installed_price = _to_num(price_map.get(suid))
+            if installed_price not in (None, 0):
+                scaled_qty = max(0, int(round(float(scaled_revenue) / float(installed_price))))
+                if scaled_revenue > 0 and scaled_qty == 0:
+                    scaled_qty = 1
+                qty_map[suid] = scaled_qty
+
+
 
 
 def _is_stable_report_value(current_value: float | None, previous_value: float | None) -> bool:
@@ -3951,15 +4026,12 @@ async def get_strategy_overview(
         if not per_store:
             continue
 
-        if strategy_filter and strategy_filter != "all":
-            if not any(str(item.get("decision_code") or "").strip() == strategy_filter for item in per_store.values()):
-                continue
-        if sales_filter_norm == "with_sales":
-            if not any(int(item.get("fact_sales") or 0) > 0 for item in per_store.values()):
-                continue
-        elif sales_filter_norm == "without_sales":
-            if any(int(item.get("fact_sales") or 0) > 0 for item in per_store.values()):
-                continue
+        if not _strategy_row_matches_filters(
+            per_store=per_store,
+            strategy_filter=strategy_filter,
+            sales_filter_norm=sales_filter_norm,
+        ):
+            continue
 
         for suid, item in per_store.items():
             decision_by_store[suid] = {
@@ -4065,51 +4137,15 @@ async def get_strategy_overview(
             }
         )
 
-    plan_summary_by_store = (sales_plan_summary or {}).get("by_store") if isinstance(sales_plan_summary, dict) else {}
-    can_normalize_sku_plan = not any(
-        [
-            str(search or "").strip(),
-            str(category_path or "").strip(),
-            strategy_filter and strategy_filter != "all",
-            sales_filter_norm != "all",
-            stock_filter_norm != "all",
-        ]
+    _normalize_strategy_plan_values(
+        out_rows=out_rows,
+        sales_plan_summary=sales_plan_summary if isinstance(sales_plan_summary, dict) else None,
+        search=search,
+        category_path=category_path,
+        strategy_filter=strategy_filter,
+        sales_filter_norm=sales_filter_norm,
+        stock_filter_norm=stock_filter_norm,
     )
-    if can_normalize_sku_plan and isinstance(plan_summary_by_store, dict) and out_rows:
-        raw_plan_totals_by_store: dict[str, float] = {}
-        for out_row in out_rows:
-            revenue_map = out_row.get("sku_sales_plan_revenue_by_store") or {}
-            if not isinstance(revenue_map, dict):
-                continue
-            for suid, value in revenue_map.items():
-                amount = _to_num(value)
-                if amount not in (None, 0):
-                    raw_plan_totals_by_store[suid] = float(raw_plan_totals_by_store.get(suid) or 0.0) + float(amount)
-
-        for out_row in out_rows:
-            revenue_map = out_row.get("sku_sales_plan_revenue_by_store") or {}
-            qty_map = out_row.get("sku_sales_plan_qty_by_store") or {}
-            price_map = out_row.get("installed_price_by_store") or {}
-            if not isinstance(revenue_map, dict) or not isinstance(qty_map, dict) or not isinstance(price_map, dict):
-                continue
-            for suid, raw_value in list(revenue_map.items()):
-                raw_amount = _to_num(raw_value)
-                if raw_amount in (None, 0):
-                    continue
-                store_summary = plan_summary_by_store.get(suid) if isinstance(plan_summary_by_store.get(suid), dict) else {}
-                planned_revenue_daily = _to_num((store_summary or {}).get("planned_revenue_daily"))
-                raw_total = _to_num(raw_plan_totals_by_store.get(suid))
-                if planned_revenue_daily in (None, 0) or raw_total in (None, 0):
-                    continue
-                scale = float(planned_revenue_daily) / float(raw_total)
-                scaled_revenue = round(float(raw_amount) * scale, 2)
-                revenue_map[suid] = scaled_revenue
-                installed_price = _to_num(price_map.get(suid))
-                if installed_price not in (None, 0):
-                    scaled_qty = max(0, int(round(float(scaled_revenue) / float(installed_price))))
-                    if scaled_revenue > 0 and scaled_qty == 0:
-                        scaled_qty = 1
-                    qty_map[suid] = scaled_qty
 
     allowed_sort_keys = {
         "sku_plan_revenue",

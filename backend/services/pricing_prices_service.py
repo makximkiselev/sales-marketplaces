@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import copy
 import datetime
-import hashlib
 import json
 import logging
 import math
@@ -43,6 +41,7 @@ from backend.services.pricing_catalog_helpers import (
     resolve_source_table_name as _resolve_source_table_name,
     to_num as _to_num,
 )
+from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 from backend.services.source_tables import get_registered_source_table
 from backend.services.storage import get_source_by_id, is_source_mode_enabled
 
@@ -64,27 +63,61 @@ logger = logging.getLogger("uvicorn.error")
 
 
 def _cache_key(name: str, payload: dict) -> str:
-    raw = json.dumps({"name": name, "gen": _PRICES_CACHE_GEN, "payload": payload}, sort_keys=True, ensure_ascii=False, default=str)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
+    return make_cache_key(name, payload, _PRICES_CACHE_GEN)
 
 
 def _cache_get(name: str, payload: dict):
     key = _cache_key(name, payload)
-    got = _PRICES_CACHE.get(key)
-    return copy.deepcopy(got) if isinstance(got, dict) else None
+    return cache_get_copy(_PRICES_CACHE, key)
 
 
 def _cache_set(name: str, payload: dict, value: dict):
     key = _cache_key(name, payload)
-    if len(_PRICES_CACHE) >= _PRICES_CACHE_MAX:
-        _PRICES_CACHE.clear()
-    _PRICES_CACHE[key] = copy.deepcopy(value)
+    cache_set_copy(_PRICES_CACHE, key, value, _PRICES_CACHE_MAX)
 
 
 def invalidate_prices_cache():
     global _PRICES_CACHE_GEN
     _PRICES_CACHE.clear()
     _PRICES_CACHE_GEN += 1
+
+
+def _build_empty_prices_overview_response(*, scope_norm: str, page: int, page_size: int) -> dict[str, Any]:
+    return {
+        "ok": True,
+        "scope": scope_norm,
+        "rows": [],
+        "total_count": 0,
+        "page": max(1, page),
+        "page_size": max(1, min(page_size, 100000)),
+        "stores": [],
+        "tree_source": None,
+    }
+
+
+def _resolve_prices_tree_source(
+    *,
+    stores: list[dict[str, Any]],
+    target_stores: list[dict[str, Any]],
+    scope_norm: str,
+    platform_norm: str,
+    store_norm: str,
+    tree_mode_norm: str,
+    tree_source_store_id: str,
+) -> dict[str, Any] | None:
+    tree_source = None
+    if tree_mode_norm == "marketplaces":
+        if scope_norm == "store":
+            tree_source = next(
+                (s for s in target_stores if s["platform"] == platform_norm and s["store_id"] == store_norm),
+                None,
+            )
+        else:
+            chosen = str(tree_source_store_id or "").strip()
+            tree_source = _match_tree_source_store(stores, chosen) if chosen else None
+        if not tree_source:
+            tree_source = next((s for s in stores if s.get("table_name")), None)
+    return tree_source
 
 
 async def _get_cbr_usd_rub_rate_for_date(calc_date: datetime.date) -> float | None:
@@ -528,28 +561,19 @@ async def get_prices_overview(
     target_stores = [s for s in target_stores if s.get("table_name")]
 
     if not target_stores:
-        resp = {
-            "ok": True,
-            "scope": scope_norm,
-            "rows": [],
-            "total_count": 0,
-            "page": max(1, page),
-            "page_size": max(1, min(page_size, 100000)),
-            "stores": [],
-            "tree_source": None,
-        }
+        resp = _build_empty_prices_overview_response(scope_norm=scope_norm, page=page, page_size=page_size)
         _cache_set("overview", cache_payload, resp)
         return resp
 
-    tree_source = None
-    if tree_mode_norm == "marketplaces":
-        if scope_norm == "store":
-            tree_source = next((s for s in target_stores if s["platform"] == platform_norm and s["store_id"] == store_norm), None)
-        else:
-            chosen = str(tree_source_store_id or "").strip()
-            tree_source = _match_tree_source_store(stores, chosen) if chosen else None
-        if not tree_source:
-            tree_source = next((s for s in stores if s.get("table_name")), None)
+    tree_source = _resolve_prices_tree_source(
+        stores=stores,
+        target_stores=target_stores,
+        scope_norm=scope_norm,
+        platform_norm=platform_norm,
+        store_norm=store_norm,
+        tree_mode_norm=tree_mode_norm,
+        tree_source_store_id=tree_source_store_id,
+    )
 
     source_rows_map: dict[str, list[dict]] = {}
     source_row_by_store_sku: dict[str, dict[str, dict]] = {}
