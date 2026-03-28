@@ -75,55 +75,6 @@ def _executemany(conn: Any, sql: str, params_seq: list[tuple[Any, ...]] | list[l
     conn.executemany(sql, params_seq)
 
 
-def _recover_malformed_schema() -> None:
-    conn = sqlite3.connect(DB_PATH, timeout=30)
-    try:
-        conn.row_factory = sqlite3.Row
-        try:
-            rows = conn.execute(
-                """
-                SELECT type, name
-                FROM sqlite_master
-                WHERE type = 'view'
-                  AND (
-                    name LIKE 'v_%'
-                    OR name LIKE 'boost__%'
-                    OR name LIKE 'strategy__%'
-                    OR name LIKE 'prices__%'
-                    OR name LIKE 'attractiveness__%'
-                    OR name LIKE 'promos__%'
-                    OR name LIKE 'promo_offers__%'
-                    OR name LIKE 'store_settings__%'
-                    OR name LIKE 'logistics_store__%'
-                    OR name LIKE 'logistics_products__%'
-                    OR name LIKE 'category_tree__%'
-                    OR name LIKE 'category_settings__%'
-                    OR name LIKE 'store_ref__%'
-                    OR name LIKE '%pricing_categories%'
-                    OR instr(name, ':') > 0
-                  )
-                """
-            ).fetchall()
-        except Exception:
-            rows = []
-        for row in rows:
-            view_name = str(row["name"] or "").strip()
-            if not view_name:
-                continue
-            try:
-                conn.execute(f"DROP VIEW IF EXISTS {_quote_ident(view_name)}")
-            except Exception:
-                continue
-        try:
-            conn.execute("DELETE FROM db_explorer_catalog")
-        except Exception:
-            pass
-        rebuild_db_explorer_views(conn)
-        conn.commit()
-    finally:
-        conn.close()
-
-
 def _connect() -> sqlite3.Connection:
     if not is_postgres_backend():
         raise RuntimeError("SQLite runtime отключен. Используй PostgreSQL backend.")

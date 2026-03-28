@@ -347,14 +347,6 @@ def _parse_iso_datetime(value: Any) -> tuple[str, str]:
     return dt.isoformat(), dt.date().isoformat()
 
 
-def _first_non_empty(node: dict[str, Any], *keys: str) -> Any:
-    for key in keys:
-        value = node.get(key)
-        if value not in (None, ""):
-            return value
-    return None
-
-
 def _norm_key(value: Any) -> str:
     s = str(value or "").strip().lower()
     s = s.replace("\xa0", " ")

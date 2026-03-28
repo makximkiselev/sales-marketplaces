@@ -97,16 +97,6 @@ def seed_sources_if_empty():
     save_sources(default_sources)
 
 
-def load_promos_orders_payload() -> dict[str, Any]:
-    default = {"orders": [], "updated_at": None}
-    data = migrate_legacy_json_if_missing(KEY_PROMOS_ORDERS, PROMOS_ORDERS_FILE, default)
-    if not isinstance(data, dict):
-        return default
-    if "orders" not in data or not isinstance(data["orders"], list):
-        data["orders"] = []
-    return data
-
-
 def load_integrations() -> dict[str, Any]:
     default = {
         "yandex_market": {

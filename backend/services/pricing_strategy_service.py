@@ -120,18 +120,6 @@ def _append_strategy_trace(entry: dict[str, Any]) -> None:
         pass
 
 
-def _round_money(v: float | None) -> float | None:
-    if v is None:
-        return None
-    return float(int(round(v)))
-
-
-def _round_pct(v: float | None) -> float | None:
-    if v is None:
-        return None
-    return round(float(v), 2)
-
-
 def _strategy_row_matches_filters(
     *,
     per_store: dict[str, dict[str, Any]],
@@ -3645,73 +3633,6 @@ async def prime_strategy_cache() -> None:
             )
     except Exception as exc:
         logger.warning("[pricing_strategy] prime cache skipped error=%s", exc)
-
-
-async def _load_strategy_overlay_for_store(*, platform: str, store_id: str, store_uid: str) -> dict[str, dict[str, Any]]:
-    overlay: dict[str, dict[str, Any]] = {}
-    page = 1
-    page_size = 500
-    while True:
-        overview = await get_strategy_overview(
-            scope="store",
-            platform=platform,
-            store_id=store_id,
-            page=page,
-            page_size=page_size,
-            persist_plan_snapshot=(page == 1),
-        )
-        rows = list(overview.get("rows") or [])
-        if not rows:
-            break
-        for row in rows:
-            sku = str(row.get("sku") or "").strip()
-            if not sku:
-                continue
-            installed_price = _to_num((row.get("final_price_by_store") or {}).get(store_uid))
-            installed_profit_abs = _to_num((row.get("final_profit_abs_by_store") or {}).get(store_uid))
-            installed_profit_pct = _to_num((row.get("final_profit_pct_by_store") or {}).get(store_uid))
-            boost_bid = _to_num((row.get("final_boost_by_store") or {}).get(store_uid))
-            decision_label_value = str((row.get("decision_by_store") or {}).get(store_uid, {}).get("label") or "").strip()
-            promo_used = bool((row.get("promo_participation_by_store") or {}).get(store_uid)) or decision_label_value == "Тест промо"
-            attractiveness_status = str((row.get("attractiveness_status_by_store") or {}).get(store_uid) or "").strip()
-            uses_attractiveness = attractiveness_status in {"Выгодная", "Умеренная"}
-            uses_boost = (boost_bid or 0.0) >= 0.5
-            overlay[sku] = {
-                "installed_price": installed_price,
-                "installed_profit_abs": installed_profit_abs,
-                "installed_profit_pct": installed_profit_pct,
-                "boost_bid_percent": 0.0 if (boost_bid or 0.0) < 0.5 else round(float(boost_bid or 0.0), 2),
-                "decision_code": str((row.get("decision_by_store") or {}).get(store_uid, {}).get("code") or "").strip(),
-                "decision_label": decision_label_value,
-                "decision_tone": str((row.get("decision_by_store") or {}).get(store_uid, {}).get("tone") or "").strip(),
-                "hypothesis": str((row.get("hypothesis_by_store") or {}).get(store_uid) or "").strip(),
-                "hypothesis_started_at": str((row.get("hypothesis_started_at_by_store") or {}).get(store_uid) or "").strip(),
-                "hypothesis_expires_at": str((row.get("hypothesis_expires_at_by_store") or {}).get(store_uid) or "").strip(),
-                "control_state": str((row.get("control_state_by_store") or {}).get(store_uid) or "").strip(),
-                "control_state_started_at": str((row.get("control_state_started_at_by_store") or {}).get(store_uid) or "").strip(),
-                "attractiveness_status": attractiveness_status,
-                "uses_promo": promo_used,
-                "uses_attractiveness": uses_attractiveness,
-                "uses_boost": uses_boost,
-                "market_promo_status": str((row.get("market_promo_status_by_store") or {}).get(store_uid) or "").strip(),
-                "market_promo_checked_at": str((row.get("market_promo_checked_at_by_store") or {}).get(store_uid) or "").strip(),
-                "market_promo_message": str((row.get("market_promo_message_by_store") or {}).get(store_uid) or "").strip(),
-                "strategy_code": _compose_strategy_code(
-                    promo=promo_used,
-                    attractiveness=uses_attractiveness,
-                    boost=uses_boost,
-                ),
-                "strategy_label": _compose_strategy_label(
-                    promo=promo_used,
-                    attractiveness=uses_attractiveness,
-                    boost=uses_boost,
-                ),
-            }
-        total_count = int(overview.get("total_count") or 0)
-        if page * page_size >= total_count:
-            break
-        page += 1
-    return overlay
 
 
 async def refresh_strategy_data(

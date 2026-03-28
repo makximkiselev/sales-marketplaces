@@ -261,13 +261,6 @@ async def _get_cbr_usd_rub_rate_for_date(calc_date: datetime.date) -> float | No
     return None
 
 
-def _is_explicit_rub_column(col_name: str) -> bool:
-    n = str(col_name or "").strip().lower()
-    if not n:
-        return False
-    return "руб" in n or "rub" in n or "₽" in n
-
-
 def _resolve_category_settings_for_leaf(
     settings_map: dict[str, dict] | None,
     leaf_path: str,

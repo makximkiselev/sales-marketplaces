@@ -26,29 +26,6 @@ def get_integrations() -> dict[str, Any]:
     return data
 
 
-def get_yandex_accounts() -> list[dict[str, Any]]:
-    data = get_integrations()
-    ym = data.get("yandex_market") or {}
-    accounts = ym.get("accounts")
-    if isinstance(accounts, list):
-        return [a for a in accounts if isinstance(a, dict)]
-
-    # legacy fallback
-    api_key = str(ym.get("api_key") or "").strip()
-    business_id = str(ym.get("business_id") or "").strip()
-    if api_key and business_id:
-        shops = ym.get("shops") if isinstance(ym.get("shops"), list) else []
-        return [{"api_key": api_key, "business_id": business_id, "shops": shops}]
-    return []
-
-
-def is_market_push_enabled() -> bool:
-    flow = get_data_flow_settings()
-    global_export = bool(flow.get("export_enabled", False))
-    yandex_export = bool(((flow.get("platforms") or {}).get(Platform.YANDEX_MARKET) or {}).get("export_enabled", False))
-    return global_export and yandex_export
-
-
 def get_data_flow_settings() -> dict[str, Any]:
     data = get_integrations()
     import_enabled = _as_bool(data.get("data_import_enabled"), True)
@@ -335,4 +312,3 @@ def get_google_credentials() -> tuple[str, str]:
             if raw_json:
                 return raw_json, ""
     return raw_json, raw_b64
-

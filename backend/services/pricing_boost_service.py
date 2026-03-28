@@ -211,52 +211,6 @@ def _profit_for_price_with_ads_rate(
     return float(int(round(pa))), round(pp * 100.0, 2)
 
 
-def _calc_target_price_with_ads_rate(
-    *,
-    calc_ctx: dict[str, Any] | None,
-    target_profit_pct: float | None,
-    target_profit_abs: float | None,
-    market_price: float | None,
-    ads_rate_override: float,
-) -> tuple[float | None, float | None, float | None]:
-    if not isinstance(calc_ctx, dict):
-        return None, None, None
-    target_pct = _to_num(target_profit_pct)
-    target_abs = _to_num(target_profit_abs)
-    if (target_pct is None or target_pct <= 0) and (target_abs is None or target_abs <= 0):
-        return None, None, None
-
-    effective_target_pct = (float(target_pct) / 100.0) if target_pct is not None and target_pct > 0 else None
-
-    def _ok(price_val: float) -> bool:
-        pa, pp = _profit_for_price_with_ads_rate(price=price_val, calc_ctx=calc_ctx, ads_rate_override=ads_rate_override)
-        if pa is None or pp is None:
-            return False
-        if effective_target_pct is not None:
-            return (pp / 100.0) >= effective_target_pct
-        return float(pa) >= float(target_abs or 0.0)
-
-    lo = 1.0
-    hi = max(float(market_price or 0.0), 1000.0)
-    for _ in range(40):
-        if _ok(hi):
-            break
-        hi *= 2.0
-        if hi > 1e9:
-            break
-    if not _ok(hi):
-        return None, None, None
-    for _ in range(60):
-        mid = (lo + hi) / 2.0
-        if _ok(mid):
-            hi = mid
-        else:
-            lo = mid
-    target_price = float(int(round(hi)))
-    pa, pp = _profit_for_price_with_ads_rate(price=target_price, calc_ctx=calc_ctx, ads_rate_override=ads_rate_override)
-    return target_price, pa, pp
-
-
 def _target_met(store_metric: dict[str, Any] | None) -> tuple[float | None, float | None]:
     if not isinstance(store_metric, dict):
         return None, None
