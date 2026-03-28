@@ -146,61 +146,6 @@ async def refresh_yandex_united_orders_history_for_store(*args, **kwargs):
     return await impl(*args, **kwargs)
 
 
-def _sync_sku_cogs_source_from_order_cogs_for_store(*, store_uid: str, settings: dict[str, Any]) -> int:
-    source_id = str(settings.get("cogs_source_id") or "").strip()
-    overview_source_id = str(settings.get("overview_cogs_source_id") or "").strip()
-    sku_column = str(settings.get("cogs_sku_column") or "").strip()
-    value_column = str(settings.get("cogs_value_column") or "").strip()
-    if not source_id or not overview_source_id or source_id != overview_source_id or not sku_column or not value_column:
-        return 0
-    with _connect() as conn:
-        rows = conn.execute(
-            """
-            SELECT
-                sku_key,
-                percentile_disc(0.5) WITHIN GROUP (ORDER BY cogs_value) AS cogs_value
-            FROM sales_overview_cogs_source_rows
-            WHERE store_uid = %s
-              AND sku_key <> ''
-              AND cogs_value IS NOT NULL
-            GROUP BY sku_key
-            ORDER BY sku_key
-            """,
-            (store_uid,),
-        ).fetchall()
-    prepared: list[dict[str, Any]] = []
-    for row in rows:
-        sku = str((row["sku_key"] if isinstance(row, dict) else row[0]) or "").strip()
-        value = row["cogs_value"] if isinstance(row, dict) else row[1]
-        try:
-            cogs_value = float(value)
-        except Exception:
-            continue
-        if not sku:
-            continue
-        prepared.append(
-            {
-                "sku": sku,
-                "sku_original": sku,
-                "price": cogs_value,
-                "currency": "RUB" if "rub" in value_column.lower() or "руб" in value_column.lower() or "₽" in value_column.lower() else "",
-                "payload": {
-                    sku_column: sku,
-                    value_column: cogs_value,
-                },
-            }
-        )
-    if not prepared:
-        return 0
-    return int(
-        replace_source_rows(
-            f"gsheets:{source_id}",
-            prepared,
-            source_type="gsheets",
-            title=str(settings.get("cogs_source_name") or source_id),
-        )
-    )
-
 FULL_CYCLE_JOB_CODES: list[str] = [
     "cogs_hourly_snapshot",
     "prices_refresh",
@@ -486,33 +431,6 @@ def _selected_store_uids(job_row: dict[str, Any], *, platform: str = "") -> list
     if not selected:
         return sorted(available)
     return [uid for uid in selected if uid in available]
-
-
-def _build_store_statuses(
-    *,
-    target_store_uids: list[str],
-    success_rows: list[dict[str, Any]] | None = None,
-    error_rows: list[dict[str, Any]] | None = None,
-) -> list[dict[str, Any]]:
-    success_set = {
-        str((row or {}).get("store_uid") or "").strip()
-        for row in (success_rows or [])
-        if str((row or {}).get("store_uid") or "").strip()
-    }
-    error_map = {
-        str((row or {}).get("store_uid") or "").strip(): str((row or {}).get("error") or (row or {}).get("reason") or "").strip()
-        for row in (error_rows or [])
-        if str((row or {}).get("store_uid") or "").strip()
-    }
-    statuses: list[dict[str, Any]] = []
-    for store_uid in target_store_uids:
-        if store_uid in success_set:
-            statuses.append({"store_uid": store_uid, "status": "success", "message": ""})
-        elif store_uid in error_map:
-            statuses.append({"store_uid": store_uid, "status": "error", "message": error_map.get(store_uid) or "Ошибка"})
-        else:
-            statuses.append({"store_uid": store_uid, "status": "idle", "message": ""})
-    return statuses
 
 
 def _recent_reports_window() -> tuple[str, str]:
@@ -832,29 +750,6 @@ def _update_progress(run_id: int | None, *, progress_percent: int, message: str 
             "current_stage": str(current_stage or "").strip(),
         },
     )
-
-
-def _has_today_coinvest_data(store_uids: list[str] | None = None) -> bool:
-    selected = [str(x or "").strip() for x in (store_uids or []) if str(x or "").strip()] or _all_yandex_store_uids()
-    if not selected:
-        return False
-    today = datetime.now(MSK).date().strftime("%d.%m.%Y")
-    marker = "%s" if is_postgres_backend() else "?"
-    placeholders = ",".join([marker] * len(selected))
-    with _connect() as conn:
-        row = conn.execute(
-            f"""
-            SELECT COUNT(*) AS rows_count
-            FROM sales_overview_order_rows
-            WHERE store_uid IN ({placeholders})
-              AND order_created_date = {marker}
-              AND sale_price_with_coinvest IS NOT NULL
-              AND sale_price_with_coinvest > 0
-            """,
-            [*selected, today],
-        ).fetchone()
-    count = int((row["rows_count"] if isinstance(row, dict) and "rows_count" in row else row[0]) or 0) if row else 0
-    return bool(count)
 
 
 async def _run_cogs_hourly_snapshot(

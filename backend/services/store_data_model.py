@@ -5739,55 +5739,6 @@ def replace_sales_market_order_items_for_period(
     return len(prepared)
 
 
-def get_sales_market_metrics_map(
-    *,
-    store_uids: list[str],
-    skus: list[str],
-    date_from: str,
-    date_to: str,
-) -> dict[str, dict[str, dict[str, Any]]]:
-    init_store_data_model()
-    suids = [str(x or "").strip() for x in store_uids if str(x or "").strip()]
-    sku_list = [str(x or "").strip() for x in skus if str(x or "").strip()]
-    from_date = str(date_from or "").strip()
-    to_date = str(date_to or "").strip()
-    if not suids or not sku_list or not from_date or not to_date:
-        return {}
-
-    out: dict[str, dict[str, dict[str, Any]]] = {}
-    with _connect_history() as conn:
-        for suid in suids:
-            placeholders = _placeholders(len(sku_list))
-            rows = conn.execute(
-                f"""
-                SELECT
-                    store_uid,
-                    sku,
-                    COUNT(*) AS mentions_count,
-                    SUM(COALESCE(line_revenue, sale_price, 0)) AS turnover,
-                    AVG(sale_price) AS avg_sale_price,
-                    SUM(COALESCE(item_count, 1)) AS units_count
-                FROM sales_market_order_items
-                WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
-                  AND order_created_date >= {'%s' if is_postgres_backend() else '?'}
-                  AND order_created_date <= {'%s' if is_postgres_backend() else '?'}
-                  AND sku IN ({placeholders})
-                GROUP BY store_uid, sku
-                """,
-                [suid, from_date, to_date, *sku_list],
-            ).fetchall()
-            local: dict[str, dict[str, Any]] = {}
-            for row in rows:
-                local[str(row["sku"])] = {
-                    "mentions_count": int(row["mentions_count"] or 0),
-                    "turnover": float(row["turnover"] or 0.0),
-                    "avg_sale_price": float(row["avg_sale_price"]) if row["avg_sale_price"] is not None else None,
-                    "units_count": int(row["units_count"] or 0),
-                }
-            out[suid] = local
-    return out
-
-
 def replace_yandex_goods_price_report_items(*, store_uid: str, rows: list[dict[str, Any]]) -> int:
     init_store_data_model()
     suid = str(store_uid or "").strip()

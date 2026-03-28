@@ -407,34 +407,6 @@ def _status_feedback_from_promo_entries(*, promo_entries: list[dict[str, Any]]) 
     return out
 
 
-def _iteration_promo_payload(iteration_row: dict[str, Any] | None) -> dict[str, Any]:
-    row = iteration_row if isinstance(iteration_row, dict) else {}
-    details = row.get("promo_details") if isinstance(row.get("promo_details"), list) else []
-    normalized_details: list[dict[str, Any]] = []
-    for item in details:
-        if not isinstance(item, dict):
-            continue
-        normalized_details.append(
-            {
-                "promo_id": str(item.get("promo_id") or "").strip(),
-                "promo_name": str(item.get("promo_name") or "").strip(),
-                "status_label": str(item.get("status_label") or "").strip(),
-                "status_tone": str(item.get("status_tone") or "").strip(),
-                "threshold_price": _to_num(item.get("threshold_price")),
-                "detail": str(item.get("detail") or "").strip(),
-            }
-        )
-    normalized_details.sort(key=lambda x: str(x.get("promo_name") or ""))
-    return {
-        "price": _to_num(row.get("tested_price")),
-        "boost_pct": _to_num(row.get("tested_boost_pct")),
-        "promo_count": int(row.get("promo_count") or 0),
-        "market_promo_status": str(row.get("market_promo_status") or "").strip(),
-        "market_promo_message": str(row.get("market_promo_message") or "").strip(),
-        "promo_details": normalized_details,
-    }
-
-
 def _scenario_promo_payload_from_current_data(
     *,
     iteration_row: dict[str, Any] | None,
@@ -609,44 +581,6 @@ async def _fetch_yandex_promo_offer_map(*, business_id: str, api_key: str, promo
     return out
 
 
-def _calc_profit_from_ctx(price: float | None, calc_ctx: dict[str, Any] | None) -> tuple[float | None, float | None]:
-    if price is None or not isinstance(calc_ctx, dict):
-        return None, None
-    pa, pp = _profit_for_price(
-        price=float(price),
-        dep_rate=float(calc_ctx.get("dep_rate") or 0.0),
-        tax_rate=float(calc_ctx.get("tax_rate") or 0.0),
-        fixed_cost=float(calc_ctx.get("fixed_cost") or 0.0),
-        apply_tax=bool(calc_ctx.get("apply_tax", True)),
-        handling_mode=str(calc_ctx.get("handling_mode") or "fixed"),
-        handling_fixed=float(calc_ctx.get("handling_fixed") or 0.0),
-        handling_percent=float(calc_ctx.get("handling_percent") or 0.0),
-        handling_min=float(calc_ctx.get("handling_min") or 0.0),
-        handling_max=float(calc_ctx.get("handling_max") or 0.0),
-    )
-    return float(int(round(pa))), round(pp * 100.0, 2)
-
-
-def _calc_profit_from_ctx_without_ads(price: float | None, calc_ctx: dict[str, Any] | None) -> tuple[float | None, float | None]:
-    if price is None or not isinstance(calc_ctx, dict):
-        return None, None
-    dep_rate = float(calc_ctx.get("dep_rate") or 0.0)
-    ads_rate = float(calc_ctx.get("ads_rate") or 0.0)
-    pa, pp = _profit_for_price(
-        price=float(price),
-        dep_rate=max(0.0, dep_rate - ads_rate),
-        tax_rate=float(calc_ctx.get("tax_rate") or 0.0),
-        fixed_cost=float(calc_ctx.get("fixed_cost") or 0.0),
-        apply_tax=bool(calc_ctx.get("apply_tax", True)),
-        handling_mode=str(calc_ctx.get("handling_mode") or "fixed"),
-        handling_fixed=float(calc_ctx.get("handling_fixed") or 0.0),
-        handling_percent=float(calc_ctx.get("handling_percent") or 0.0),
-        handling_min=float(calc_ctx.get("handling_min") or 0.0),
-        handling_max=float(calc_ctx.get("handling_max") or 0.0),
-    )
-    return float(int(round(pa))), round(pp * 100.0, 2)
-
-
 def _calc_profit_from_ctx_with_ads_percent(price: float | None, calc_ctx: dict[str, Any] | None, ads_percent: float | None) -> tuple[float | None, float | None]:
     if price is None or not isinstance(calc_ctx, dict):
         return None, None
@@ -667,127 +601,6 @@ def _calc_profit_from_ctx_with_ads_percent(price: float | None, calc_ctx: dict[s
         handling_max=float(calc_ctx.get("handling_max") or 0.0),
     )
     return float(int(round(pa))), round(pp * 100.0, 2)
-
-
-def _calc_target_price_without_ads(calc_ctx: dict[str, Any] | None, target_profit_pct: float) -> tuple[float | None, float | None, float | None]:
-    if not isinstance(calc_ctx, dict) or target_profit_pct <= 0:
-        return None, None, None
-    dep_rate = float(calc_ctx.get("dep_rate") or 0.0)
-    ads_rate = float(calc_ctx.get("ads_rate") or 0.0)
-    dep_without_ads = max(0.0, dep_rate - ads_rate)
-    tax_rate = float(calc_ctx.get("tax_rate") or 0.0)
-    fixed_cost = float(calc_ctx.get("fixed_cost") or 0.0)
-    apply_tax = bool(calc_ctx.get("apply_tax", True))
-    handling_mode = str(calc_ctx.get("handling_mode") or "fixed")
-    handling_fixed = float(calc_ctx.get("handling_fixed") or 0.0)
-    handling_percent = float(calc_ctx.get("handling_percent") or 0.0)
-    handling_min = float(calc_ctx.get("handling_min") or 0.0)
-    handling_max = float(calc_ctx.get("handling_max") or 0.0)
-    threshold = target_profit_pct / 100.0
-
-    def _pp(price_val: float) -> float:
-        _, pp_v = _profit_for_price(
-            price=price_val,
-            dep_rate=dep_without_ads,
-            tax_rate=tax_rate,
-            fixed_cost=fixed_cost,
-            apply_tax=apply_tax,
-            handling_mode=handling_mode,
-            handling_fixed=handling_fixed,
-            handling_percent=handling_percent,
-            handling_min=handling_min,
-            handling_max=handling_max,
-        )
-        return pp_v
-
-    lo = 1.0
-    hi = 1000.0
-    for _ in range(40):
-        if _pp(hi) >= threshold:
-            break
-        hi *= 2.0
-        if hi > 1e9:
-            break
-    if _pp(hi) < threshold:
-        return None, None, None
-    for _ in range(60):
-        mid = (lo + hi) / 2.0
-        if _pp(mid) >= threshold:
-            hi = mid
-        else:
-            lo = mid
-    target_price = float(int(round(hi)))
-    profit_abs, profit_pct = _profit_for_price(
-        price=target_price,
-        dep_rate=dep_without_ads,
-        tax_rate=tax_rate,
-        fixed_cost=fixed_cost,
-        apply_tax=apply_tax,
-        handling_mode=handling_mode,
-        handling_fixed=handling_fixed,
-        handling_percent=handling_percent,
-        handling_min=handling_min,
-        handling_max=handling_max,
-    )
-    return target_price, float(int(round(profit_abs))), round(profit_pct * 100.0, 2)
-
-
-def _calc_profit_from_ctx_with_target_ads(
-    price: float | None,
-    calc_ctx: dict[str, Any] | None,
-    target_profit_pct: float,
-) -> tuple[float | None, float | None, float | None]:
-    if price is None or not isinstance(calc_ctx, dict) or target_profit_pct <= 0:
-        return None, None, None
-    dep_rate = float(calc_ctx.get("dep_rate") or 0.0)
-    ads_rate_max = max(0.0, float(calc_ctx.get("ads_rate") or 0.0))
-    dep_without_ads = max(0.0, dep_rate - ads_rate_max)
-    tax_rate = float(calc_ctx.get("tax_rate") or 0.0)
-    fixed_cost = float(calc_ctx.get("fixed_cost") or 0.0)
-    apply_tax = bool(calc_ctx.get("apply_tax", True))
-    handling_mode = str(calc_ctx.get("handling_mode") or "fixed")
-    handling_fixed = float(calc_ctx.get("handling_fixed") or 0.0)
-    handling_percent = float(calc_ctx.get("handling_percent") or 0.0)
-    handling_min = float(calc_ctx.get("handling_min") or 0.0)
-    handling_max = float(calc_ctx.get("handling_max") or 0.0)
-    threshold = target_profit_pct / 100.0
-
-    def _profit_for_ads(ads_rate: float) -> tuple[float, float]:
-        return _profit_for_price(
-            price=float(price),
-            dep_rate=max(0.0, dep_without_ads + ads_rate),
-            tax_rate=tax_rate,
-            fixed_cost=fixed_cost,
-            apply_tax=apply_tax,
-            handling_mode=handling_mode,
-            handling_fixed=handling_fixed,
-            handling_percent=handling_percent,
-            handling_min=handling_min,
-            handling_max=handling_max,
-        )
-
-    full_abs, full_pct = _profit_for_ads(ads_rate_max)
-    if full_pct >= threshold:
-        return ads_rate_max, float(int(round(full_abs))), round(full_pct * 100.0, 2)
-
-    no_ads_abs, no_ads_pct = _profit_for_ads(0.0)
-    if no_ads_pct < threshold:
-        return None, None, None
-
-    lo = 0.0
-    hi = ads_rate_max
-    for _ in range(60):
-        mid = (lo + hi) / 2.0
-        _, pp = _profit_for_ads(mid)
-        if pp >= threshold:
-            lo = mid
-        else:
-            hi = mid
-    final_ads_rate = lo
-    if final_ads_rate * 100.0 < 0.5:
-        final_ads_rate = 0.0
-    final_abs, final_pct = _profit_for_ads(final_ads_rate)
-    return final_ads_rate, float(int(round(final_abs))), round(final_pct * 100.0, 2)
 
 
 async def get_promos_context():
