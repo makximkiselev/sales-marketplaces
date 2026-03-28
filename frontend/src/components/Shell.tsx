@@ -179,7 +179,7 @@ export function Shell({ children }: { children: ReactNode }) {
             {groups.map((group) => {
               const items = groupItems(group);
               const selected = currentGroupTitle === group.title;
-              const expanded = mobileGroupTitle === group.title || selected;
+              const expanded = mobileGroupTitle === group.title;
               const directHref = items[0]?.href || "/";
               const isSingleLink = group.title === "Сводка";
               if (isSingleLink) {
@@ -243,7 +243,14 @@ export function Shell({ children }: { children: ReactNode }) {
       <main className="main">
         <header className="topbar">
           <div className="mobile-topbar">
-            <button type="button" className="btn mobile-menu-trigger" onClick={() => setMobileMenuOpen(true)}>
+            <button
+              type="button"
+              className="btn mobile-menu-trigger"
+              onClick={() => {
+                setMobileGroupTitle(currentGroupTitle);
+                setMobileMenuOpen(true);
+              }}
+            >
               Меню
             </button>
             <div className="mobile-topbar-center">
