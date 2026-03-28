@@ -1,6 +1,6 @@
 {
   "name": "SmartMarketplaces",
-  "short_name": "SM",
+  "short_name": "SmartMarket",
   "description": "Analytics app for marketplace sales",
   "start_url": "/",
   "scope": "/",
