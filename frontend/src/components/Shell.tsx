@@ -182,7 +182,21 @@ export function Shell({ children }: { children: ReactNode }) {
               const expanded = mobileGroupTitle === group.title;
               const directHref = items[0]?.href || "/";
               const isSingleLink = group.title === "Сводка";
+              const sectionItems = group.sections
+                ? group.sections
+                    .map((section) => ({
+                      ...section,
+                      items: section.items.filter((item) => !isActive(pathname, item.href)),
+                    }))
+                    .filter((section) => section.items.length > 0)
+                : null;
+              const standaloneItems = group.sections
+                ? null
+                : items.filter((item) => !isActive(pathname, item.href));
               if (isSingleLink) {
+                if (selected) {
+                  return null;
+                }
                 return (
                   <Link key={group.title} to={directHref} className={`mobile-nav-direct${selected ? " active" : ""}`} onClick={() => setMobileMenuOpen(false)}>
                     {group.title}
@@ -202,7 +216,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   {expanded ? (
                     <div className="mobile-nav-links">
                       {group.sections
-                        ? group.sections.map((section) => (
+                        ? sectionItems?.map((section) => (
                             <div key={section.title} className="mobile-nav-section">
                               <div className="mobile-nav-section-title">{section.title}</div>
                               {section.items.map((item) => (
@@ -217,7 +231,7 @@ export function Shell({ children }: { children: ReactNode }) {
                               ))}
                             </div>
                           ))
-                        : items.map((item) => (
+                        : standaloneItems?.map((item) => (
                             <Link
                               key={item.href}
                               to={item.href}
@@ -227,6 +241,8 @@ export function Shell({ children }: { children: ReactNode }) {
                               {item.label}
                             </Link>
                           ))}
+                      {group.sections && !sectionItems?.length ? <div className="mobile-nav-empty">Все страницы этого раздела скрыты</div> : null}
+                      {!group.sections && !standaloneItems?.length ? <div className="mobile-nav-empty">Текущая страница уже открыта</div> : null}
                     </div>
                   ) : null}
                 </section>
