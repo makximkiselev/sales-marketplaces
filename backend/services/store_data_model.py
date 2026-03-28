@@ -4444,27 +4444,26 @@ def get_pricing_price_results_map(*, store_uids: list[str], skus: list[str]) -> 
     sku_list = [str(x or "").strip() for x in skus if str(x or "").strip()]
     if not suids or not sku_list:
         return {}
-    out: dict[str, dict[str, dict[str, Any]]] = {}
+    out: dict[str, dict[str, dict[str, Any]]] = {suid: {} for suid in suids}
     with _connect() as conn:
-        for suid in suids:
-            placeholders = _placeholders(len(sku_list))
-            rows = conn.execute(
-                f"""
-                SELECT store_uid, sku, cogs_price, rrc_no_ads_price, rrc_no_ads_profit_abs, rrc_no_ads_profit_pct,
-                       mrc_price, mrc_profit_abs, mrc_profit_pct,
-                       mrc_with_boost_price, mrc_with_boost_profit_abs, mrc_with_boost_profit_pct,
-                       target_price, target_profit_abs, target_profit_pct,
-                       source_updated_at, calculated_at
-                FROM pricing_price_results
-                WHERE store_uid = {'%s' if is_postgres_backend() else '?'} AND sku IN ({placeholders})
-                """,
-                [suid, *sku_list],
-            ).fetchall()
-            local: dict[str, dict[str, Any]] = {}
-            for row in rows:
-                item = _with_price_result_aliases(dict(row))
-                local[str(row["sku"])] = item
-            out[suid] = local
+        suid_placeholders = _placeholders(len(suids))
+        sku_placeholders = _placeholders(len(sku_list))
+        rows = conn.execute(
+            f"""
+            SELECT store_uid, sku, cogs_price, rrc_no_ads_price, rrc_no_ads_profit_abs, rrc_no_ads_profit_pct,
+                   mrc_price, mrc_profit_abs, mrc_profit_pct,
+                   mrc_with_boost_price, mrc_with_boost_profit_abs, mrc_with_boost_profit_pct,
+                   target_price, target_profit_abs, target_profit_pct,
+                   source_updated_at, calculated_at
+            FROM pricing_price_results
+            WHERE store_uid IN ({suid_placeholders}) AND sku IN ({sku_placeholders})
+            """,
+            [*suids, *sku_list],
+        ).fetchall()
+        for row in rows:
+            item = _with_price_result_aliases(dict(row))
+            suid = str(row["store_uid"])
+            out.setdefault(suid, {})[str(row["sku"])] = item
     return out
 
 
@@ -4894,43 +4893,42 @@ def get_pricing_strategy_results_map(*, store_uids: list[str], skus: list[str]) 
     sku_list = [str(x or "").strip() for x in skus if str(x or "").strip()]
     if not suids or not sku_list:
         return {}
-    out: dict[str, dict[str, dict[str, Any]]] = {}
+    out: dict[str, dict[str, dict[str, Any]]] = {suid: {} for suid in suids}
     with _connect() as conn:
-        for suid in suids:
-            placeholders = _placeholders(len(sku_list))
-            rows = conn.execute(
-                f"""
-                SELECT store_uid, sku, strategy_code, strategy_label, rrc_price, rrc_profit_abs, rrc_profit_pct,
-                       mrc_price, mrc_profit_abs, mrc_profit_pct,
-                       mrc_with_boost_price, mrc_with_boost_profit_abs, mrc_with_boost_profit_pct,
-                       promo_price, promo_profit_abs, promo_profit_pct,
-                       attractiveness_price, attractiveness_profit_abs, attractiveness_profit_pct,
-                       installed_price, installed_profit_abs, installed_profit_pct, boost_bid_percent,
-                       cycle_started_at, market_boost_bid_percent, boost_share, promo_count, coinvest_pct,
-                       decision_code, decision_label, decision_tone, hypothesis, hypothesis_started_at, hypothesis_expires_at,
-                       control_state, control_state_started_at,
-                       attractiveness_status, promo_items_json, uses_promo, uses_attractiveness, uses_boost,
-                       market_promo_status, market_promo_checked_at, market_promo_message,
-                       selected_iteration_code, scenario_matrix_json,
-                       source_updated_at, calculated_at
-                FROM pricing_strategy_results
-                WHERE store_uid = {'%s' if is_postgres_backend() else '?'} AND sku IN ({placeholders})
-                """,
-                [suid, *sku_list],
-            ).fetchall()
-            local: dict[str, dict[str, Any]] = {}
-            for row in rows:
-                item = dict(row)
-                try:
-                    item["promo_items"] = json.loads(item.get("promo_items_json") or "[]")
-                except Exception:
-                    item["promo_items"] = []
-                try:
-                    item["scenario_matrix"] = json.loads(item.get("scenario_matrix_json") or "{}")
-                except Exception:
-                    item["scenario_matrix"] = {}
-                local[str(row["sku"])] = item
-            out[suid] = local
+        suid_placeholders = _placeholders(len(suids))
+        sku_placeholders = _placeholders(len(sku_list))
+        rows = conn.execute(
+            f"""
+            SELECT store_uid, sku, strategy_code, strategy_label, rrc_price, rrc_profit_abs, rrc_profit_pct,
+                   mrc_price, mrc_profit_abs, mrc_profit_pct,
+                   mrc_with_boost_price, mrc_with_boost_profit_abs, mrc_with_boost_profit_pct,
+                   promo_price, promo_profit_abs, promo_profit_pct,
+                   attractiveness_price, attractiveness_profit_abs, attractiveness_profit_pct,
+                   installed_price, installed_profit_abs, installed_profit_pct, boost_bid_percent,
+                   cycle_started_at, market_boost_bid_percent, boost_share, promo_count, coinvest_pct,
+                   decision_code, decision_label, decision_tone, hypothesis, hypothesis_started_at, hypothesis_expires_at,
+                   control_state, control_state_started_at,
+                   attractiveness_status, promo_items_json, uses_promo, uses_attractiveness, uses_boost,
+                   market_promo_status, market_promo_checked_at, market_promo_message,
+                   selected_iteration_code, scenario_matrix_json,
+                   source_updated_at, calculated_at
+            FROM pricing_strategy_results
+            WHERE store_uid IN ({suid_placeholders}) AND sku IN ({sku_placeholders})
+            """,
+            [*suids, *sku_list],
+        ).fetchall()
+        for row in rows:
+            item = dict(row)
+            try:
+                item["promo_items"] = json.loads(item.get("promo_items_json") or "[]")
+            except Exception:
+                item["promo_items"] = []
+            try:
+                item["scenario_matrix"] = json.loads(item.get("scenario_matrix_json") or "{}")
+            except Exception:
+                item["scenario_matrix"] = {}
+            suid = str(row["store_uid"])
+            out.setdefault(suid, {})[str(row["sku"])] = item
     return out
 
 
@@ -5056,68 +5054,68 @@ def get_pricing_strategy_iteration_latest_map(
     sku_list = [str(x or "").strip() for x in skus if str(x or "").strip()]
     if not suids or not sku_list:
         return {}
-    out: dict[str, dict[str, dict[str, dict[str, Any]]]] = {}
+    out: dict[str, dict[str, dict[str, dict[str, Any]]]] = {suid: {} for suid in suids}
     with _connect_history() as conn:
-        for suid in suids:
-            placeholders = _placeholders(len(sku_list))
-            cycle_rows = conn.execute(
-                f"""
-                SELECT sku, cycle_started_at, COUNT(DISTINCT iteration_code) AS iteration_count
-                FROM pricing_strategy_iteration_history
-                WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
-                  AND sku IN ({placeholders})
-                GROUP BY sku, cycle_started_at
-                ORDER BY sku, cycle_started_at DESC
-                """,
-                [suid, *sku_list],
-            ).fetchall()
-            latest_cycle_by_sku: dict[str, str] = {}
-            for row in cycle_rows:
-                item = dict(row)
-                sku = str(item.get("sku") or "").strip()
-                cycle_started_at = str(item.get("cycle_started_at") or "").strip()
-                if not sku or not cycle_started_at:
-                    continue
-                latest_cycle_by_sku.setdefault(sku, cycle_started_at)
-            if not latest_cycle_by_sku:
-                out[suid] = {}
+        suid_placeholders = _placeholders(len(suids))
+        sku_placeholders = _placeholders(len(sku_list))
+        cycle_rows = conn.execute(
+            f"""
+            SELECT store_uid, sku, cycle_started_at, COUNT(DISTINCT iteration_code) AS iteration_count
+            FROM pricing_strategy_iteration_history
+            WHERE store_uid IN ({suid_placeholders})
+              AND sku IN ({sku_placeholders})
+            GROUP BY store_uid, sku, cycle_started_at
+            ORDER BY store_uid, sku, cycle_started_at DESC
+            """,
+            [*suids, *sku_list],
+        ).fetchall()
+        latest_cycle_by_store_sku: dict[tuple[str, str], str] = {}
+        for row in cycle_rows:
+            item = dict(row)
+            suid = str(item.get("store_uid") or "").strip()
+            sku = str(item.get("sku") or "").strip()
+            cycle_started_at = str(item.get("cycle_started_at") or "").strip()
+            if not suid or not sku or not cycle_started_at:
                 continue
-            rows = conn.execute(
-                f"""
-                SELECT outer_rows.store_uid, outer_rows.sku, outer_rows.cycle_started_at, outer_rows.iteration_code, outer_rows.iteration_label,
-                       outer_rows.tested_price, outer_rows.tested_boost_pct, outer_rows.promo_count, outer_rows.attractiveness_status,
-                       outer_rows.coinvest_pct, outer_rows.on_display_price, outer_rows.promo_details_json,
-                       outer_rows.market_promo_status, outer_rows.market_promo_message, outer_rows.source_updated_at, outer_rows.captured_at
-                FROM pricing_strategy_iteration_history AS outer_rows
-                JOIN (
-                    SELECT sku, cycle_started_at, iteration_code, MAX(captured_at) AS latest_captured_at
-                    FROM pricing_strategy_iteration_history
-                    WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
-                      AND sku IN ({placeholders})
-                    GROUP BY sku, cycle_started_at, iteration_code
-                ) AS latest
-                  ON latest.sku = outer_rows.sku
-                 AND latest.cycle_started_at = outer_rows.cycle_started_at
-                 AND latest.iteration_code = outer_rows.iteration_code
-                 AND latest.latest_captured_at = outer_rows.captured_at
-                WHERE outer_rows.store_uid = {'%s' if is_postgres_backend() else '?'}
-                  AND outer_rows.sku IN ({placeholders})
-                """,
-                [suid, *sku_list, suid, *sku_list],
-            ).fetchall()
-            local: dict[str, dict[str, dict[str, Any]]] = {}
-            for row in rows:
-                item = dict(row)
-                sku = str(item.get("sku") or "").strip()
-                cycle_started_at = str(item.get("cycle_started_at") or "").strip()
-                if latest_cycle_by_sku.get(sku) != cycle_started_at:
-                    continue
-                try:
-                    item["promo_details"] = json.loads(item.get("promo_details_json") or "[]")
-                except Exception:
-                    item["promo_details"] = []
-                local.setdefault(sku, {})[str(item.get("iteration_code") or "").strip()] = item
-            out[suid] = local
+            latest_cycle_by_store_sku.setdefault((suid, sku), cycle_started_at)
+        if not latest_cycle_by_store_sku:
+            return out
+        rows = conn.execute(
+            f"""
+            SELECT outer_rows.store_uid, outer_rows.sku, outer_rows.cycle_started_at, outer_rows.iteration_code, outer_rows.iteration_label,
+                   outer_rows.tested_price, outer_rows.tested_boost_pct, outer_rows.promo_count, outer_rows.attractiveness_status,
+                   outer_rows.coinvest_pct, outer_rows.on_display_price, outer_rows.promo_details_json,
+                   outer_rows.market_promo_status, outer_rows.market_promo_message, outer_rows.source_updated_at, outer_rows.captured_at
+            FROM pricing_strategy_iteration_history AS outer_rows
+            JOIN (
+                SELECT store_uid, sku, cycle_started_at, iteration_code, MAX(captured_at) AS latest_captured_at
+                FROM pricing_strategy_iteration_history
+                WHERE store_uid IN ({suid_placeholders})
+                  AND sku IN ({sku_placeholders})
+                GROUP BY store_uid, sku, cycle_started_at, iteration_code
+            ) AS latest
+              ON latest.store_uid = outer_rows.store_uid
+             AND latest.sku = outer_rows.sku
+             AND latest.cycle_started_at = outer_rows.cycle_started_at
+             AND latest.iteration_code = outer_rows.iteration_code
+             AND latest.latest_captured_at = outer_rows.captured_at
+            WHERE outer_rows.store_uid IN ({suid_placeholders})
+              AND outer_rows.sku IN ({sku_placeholders})
+            """,
+            [*suids, *sku_list, *suids, *sku_list],
+        ).fetchall()
+        for row in rows:
+            item = dict(row)
+            suid = str(item.get("store_uid") or "").strip()
+            sku = str(item.get("sku") or "").strip()
+            cycle_started_at = str(item.get("cycle_started_at") or "").strip()
+            if latest_cycle_by_store_sku.get((suid, sku)) != cycle_started_at:
+                continue
+            try:
+                item["promo_details"] = json.loads(item.get("promo_details_json") or "[]")
+            except Exception:
+                item["promo_details"] = []
+            out.setdefault(suid, {}).setdefault(sku, {})[str(item.get("iteration_code") or "").strip()] = item
     return out
 
 
@@ -5188,31 +5186,30 @@ def get_pricing_attractiveness_results_map(*, store_uids: list[str], skus: list[
     sku_list = [str(x or "").strip() for x in skus if str(x or "").strip()]
     if not suids or not sku_list:
         return {}
-    out: dict[str, dict[str, dict[str, Any]]] = {}
+    out: dict[str, dict[str, dict[str, Any]]] = {suid: {} for suid in suids}
     with _connect() as conn:
-        for suid in suids:
-            placeholders = _placeholders(len(sku_list))
-            rows = conn.execute(
-                f"""
-                SELECT store_uid, sku,
-                       attractiveness_overpriced_price,
-                       attractiveness_moderate_price,
-                       attractiveness_profitable_price,
-                       ozon_competitor_price,
-                       external_competitor_price,
-                       attractiveness_chosen_price,
-                       attractiveness_chosen_boost_bid_percent,
-                       source_updated_at, calculated_at
-                FROM pricing_attractiveness_results
-                WHERE store_uid = {'%s' if is_postgres_backend() else '?'} AND sku IN ({placeholders})
-                """,
-                [suid, *sku_list],
-            ).fetchall()
-            local: dict[str, dict[str, Any]] = {}
-            for row in rows:
-                item = _with_attractiveness_aliases(dict(row))
-                local[str(row["sku"])] = item
-            out[suid] = local
+        suid_placeholders = _placeholders(len(suids))
+        sku_placeholders = _placeholders(len(sku_list))
+        rows = conn.execute(
+            f"""
+            SELECT store_uid, sku,
+                   attractiveness_overpriced_price,
+                   attractiveness_moderate_price,
+                   attractiveness_profitable_price,
+                   ozon_competitor_price,
+                   external_competitor_price,
+                   attractiveness_chosen_price,
+                   attractiveness_chosen_boost_bid_percent,
+                   source_updated_at, calculated_at
+            FROM pricing_attractiveness_results
+            WHERE store_uid IN ({suid_placeholders}) AND sku IN ({sku_placeholders})
+            """,
+            [*suids, *sku_list],
+        ).fetchall()
+        for row in rows:
+            item = _with_attractiveness_aliases(dict(row))
+            suid = str(row["store_uid"])
+            out.setdefault(suid, {})[str(row["sku"])] = item
     return out
 
 
@@ -5454,30 +5451,29 @@ def get_pricing_promo_results_map(*, store_uids: list[str], skus: list[str]) -> 
     sku_list = [str(x or "").strip() for x in skus if str(x or "").strip()]
     if not suids or not sku_list:
         return {}
-    out: dict[str, dict[str, dict[str, Any]]] = {}
+    out: dict[str, dict[str, dict[str, Any]]] = {suid: {} for suid in suids}
     with _connect() as conn:
-        for suid in suids:
-            placeholders = _placeholders(len(sku_list))
-            rows = conn.execute(
-                f"""
-                SELECT store_uid, sku, promo_selected_items_json, promo_selected_price,
-                       promo_selected_boost_bid_percent, promo_selected_profit_abs, promo_selected_profit_pct,
-                       source_updated_at, calculated_at
-                FROM pricing_promo_results
-                WHERE store_uid = {'%s' if is_postgres_backend() else '?'} AND sku IN ({placeholders})
-                """,
-                [suid, *sku_list],
-            ).fetchall()
-            local: dict[str, dict[str, Any]] = {}
-            for row in rows:
-                item = dict(row)
-                try:
-                    item["promo_selected_items"] = json.loads(item.get("promo_selected_items_json") or "[]")
-                except Exception:
-                    item["promo_selected_items"] = []
-                item = _with_promo_aliases(item)
-                local[str(row["sku"])] = item
-            out[suid] = local
+        suid_placeholders = _placeholders(len(suids))
+        sku_placeholders = _placeholders(len(sku_list))
+        rows = conn.execute(
+            f"""
+            SELECT store_uid, sku, promo_selected_items_json, promo_selected_price,
+                   promo_selected_boost_bid_percent, promo_selected_profit_abs, promo_selected_profit_pct,
+                   source_updated_at, calculated_at
+            FROM pricing_promo_results
+            WHERE store_uid IN ({suid_placeholders}) AND sku IN ({sku_placeholders})
+            """,
+            [*suids, *sku_list],
+        ).fetchall()
+        for row in rows:
+            item = dict(row)
+            try:
+                item["promo_selected_items"] = json.loads(item.get("promo_selected_items_json") or "[]")
+            except Exception:
+                item["promo_selected_items"] = []
+            item = _with_promo_aliases(item)
+            suid = str(row["store_uid"])
+            out.setdefault(suid, {})[str(row["sku"])] = item
     return out
 
 
@@ -5487,26 +5483,25 @@ def get_pricing_promo_offer_results_map(*, store_uids: list[str], skus: list[str
     sku_list = [str(x or "").strip() for x in skus if str(x or "").strip()]
     if not suids or not sku_list:
         return {}
-    out: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    out: dict[str, dict[str, list[dict[str, Any]]]] = {suid: {} for suid in suids}
     with _connect() as conn:
-        for suid in suids:
-            placeholders = _placeholders(len(sku_list))
-            rows = conn.execute(
-                f"""
-                SELECT store_uid, sku, promo_id, promo_name, promo_price, promo_profit_abs,
-                       promo_profit_pct,
-                       promo_fit_mode, source_updated_at, calculated_at
-                FROM pricing_promo_offer_results
-                WHERE store_uid = {'%s' if is_postgres_backend() else '?'} AND sku IN ({placeholders})
-                ORDER BY promo_name, promo_id
-                """,
-                [suid, *sku_list],
-            ).fetchall()
-            local: dict[str, list[dict[str, Any]]] = {}
-            for row in rows:
-                sku = str(row["sku"])
-                local.setdefault(sku, []).append(dict(row))
-            out[suid] = local
+        suid_placeholders = _placeholders(len(suids))
+        sku_placeholders = _placeholders(len(sku_list))
+        rows = conn.execute(
+            f"""
+            SELECT store_uid, sku, promo_id, promo_name, promo_price, promo_profit_abs,
+                   promo_profit_pct,
+                   promo_fit_mode, source_updated_at, calculated_at
+            FROM pricing_promo_offer_results
+            WHERE store_uid IN ({suid_placeholders}) AND sku IN ({sku_placeholders})
+            ORDER BY store_uid, sku, promo_name, promo_id
+            """,
+            [*suids, *sku_list],
+        ).fetchall()
+        for row in rows:
+            suid = str(row["store_uid"])
+            sku = str(row["sku"])
+            out.setdefault(suid, {}).setdefault(sku, []).append(dict(row))
     return out
 
 
