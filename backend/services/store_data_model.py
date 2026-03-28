@@ -22,9 +22,6 @@ _INIT_DONE = False
 _MAINTENANCE_DONE = False
 
 _HOT_RETENTION_RULES: tuple[tuple[str, str, int], ...] = (
-    ("pricing_attractiveness_history", "captured_at", 2),
-    ("pricing_boost_history", "captured_at", 2),
-    ("pricing_promo_offer_history", "captured_at", 2),
     ("pricing_strategy_history", "captured_at", 2),
     ("pricing_strategy_iteration_history", "captured_at", 2),
     ("pricing_cogs_snapshots", "snapshot_at", 7),
@@ -2010,27 +2007,6 @@ def _init_store_data_model_sqlite_pricing_core_tables(conn: sqlite3.Connection) 
     conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_boost_results_sku ON pricing_boost_results(sku)")
     conn.execute(
         """
-        CREATE TABLE IF NOT EXISTS pricing_boost_history (
-            store_uid TEXT NOT NULL,
-            sku TEXT NOT NULL,
-            captured_at TEXT NOT NULL,
-            recommended_bid REAL NULL,
-            bid_30 REAL NULL,
-            bid_60 REAL NULL,
-            bid_80 REAL NULL,
-            bid_95 REAL NULL,
-            source_updated_at TEXT NULL,
-            PRIMARY KEY (store_uid, sku, captured_at),
-            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-        )
-        """
-    )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_pricing_boost_history_store_sku_time "
-        "ON pricing_boost_history(store_uid, sku, captured_at)"
-    )
-    conn.execute(
-        """
         CREATE TABLE IF NOT EXISTS pricing_market_price_export_history (
             store_uid TEXT NOT NULL,
             sku TEXT NOT NULL,
@@ -2324,30 +2300,6 @@ def _init_store_data_model_sqlite_attractiveness_promo_tables(conn: sqlite3.Conn
     conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_attractiveness_results_sku ON pricing_attractiveness_results(sku)")
     conn.execute(
         """
-        CREATE TABLE IF NOT EXISTS pricing_attractiveness_history (
-            store_uid TEXT NOT NULL,
-            sku TEXT NOT NULL,
-            captured_at TEXT NOT NULL,
-            attractiveness_overpriced_price REAL NULL,
-            attractiveness_moderate_price REAL NULL,
-            attractiveness_profitable_price REAL NULL,
-            ozon_competitor_price REAL NULL,
-            external_competitor_price REAL NULL,
-            attractiveness_chosen_price REAL NULL,
-            attractiveness_chosen_boost_bid_percent REAL NULL,
-            source_updated_at TEXT NULL,
-            PRIMARY KEY (store_uid, sku, captured_at),
-            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-        )
-        """
-    )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_pricing_attractiveness_history_store_sku_time "
-        "ON pricing_attractiveness_history(store_uid, sku, captured_at)"
-    )
-
-    conn.execute(
-        """
         CREATE TABLE IF NOT EXISTS pricing_promo_results (
             store_uid TEXT NOT NULL,
             sku TEXT NOT NULL,
@@ -2402,29 +2354,6 @@ def _init_store_data_model_sqlite_attractiveness_promo_tables(conn: sqlite3.Conn
     conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_results_store ON pricing_promo_offer_results(store_uid)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_results_sku ON pricing_promo_offer_results(sku)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_results_promo ON pricing_promo_offer_results(store_uid, promo_id)")
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS pricing_promo_offer_history (
-            store_uid TEXT NOT NULL,
-            sku TEXT NOT NULL,
-            promo_id TEXT NOT NULL,
-            captured_at TEXT NOT NULL,
-            promo_name TEXT NOT NULL DEFAULT '',
-            promo_price REAL NULL,
-            promo_profit_abs REAL NULL,
-            promo_profit_pct REAL NULL,
-            promo_fit_mode TEXT NOT NULL DEFAULT 'rejected',
-            source_updated_at TEXT NULL,
-            PRIMARY KEY (store_uid, sku, promo_id, captured_at),
-            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-        )
-        """
-    )
-    conn.execute(
-        "CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_history_store_sku_time "
-        "ON pricing_promo_offer_history(store_uid, sku, captured_at)"
-    )
-
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS pricing_promo_campaign_raw (
