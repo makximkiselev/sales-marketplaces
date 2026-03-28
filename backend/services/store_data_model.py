@@ -1922,329 +1922,7 @@ def init_store_data_model() -> None:
             _run_retention_cleanup()
             _MAINTENANCE_DONE = True
         conn = _connect()
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS stores (
-                store_uid TEXT PRIMARY KEY,
-                platform TEXT NOT NULL,
-                store_id TEXT NOT NULL,
-                store_name TEXT NOT NULL DEFAULT '',
-                currency_code TEXT NOT NULL DEFAULT 'RUB',
-                fulfillment_model TEXT NOT NULL DEFAULT 'FBO',
-                business_id TEXT NOT NULL DEFAULT '',
-                seller_id TEXT NOT NULL DEFAULT '',
-                account_id TEXT NOT NULL DEFAULT '',
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_stores_platform ON stores(platform)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_stores_store_id ON stores(store_id)")
-        store_cols = {row[1] for row in conn.execute("PRAGMA table_info(stores)").fetchall()}
-        if "currency_code" not in store_cols:
-            conn.execute("ALTER TABLE stores ADD COLUMN currency_code TEXT NOT NULL DEFAULT 'RUB'")
-        if "fulfillment_model" not in store_cols:
-            conn.execute("ALTER TABLE stores ADD COLUMN fulfillment_model TEXT NOT NULL DEFAULT 'FBO'")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS store_datasets (
-                dataset_key TEXT PRIMARY KEY,
-                store_uid TEXT NOT NULL,
-                task_code TEXT NOT NULL,
-                title TEXT NOT NULL DEFAULT '',
-                status TEXT NOT NULL DEFAULT 'ready',
-                row_count INTEGER NOT NULL DEFAULT 0,
-                meta_json TEXT NOT NULL DEFAULT '{}',
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_store_datasets_store_uid ON store_datasets(store_uid)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_store_datasets_task_code ON store_datasets(task_code)")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_category_tree (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                dataset_key TEXT NOT NULL,
-                store_uid TEXT NOT NULL,
-                category TEXT NOT NULL DEFAULT '',
-                subcategory_1 TEXT NOT NULL DEFAULT '',
-                subcategory_2 TEXT NOT NULL DEFAULT '',
-                subcategory_3 TEXT NOT NULL DEFAULT '',
-                subcategory_4 TEXT NOT NULL DEFAULT '',
-                subcategory_5 TEXT NOT NULL DEFAULT '',
-                leaf_path TEXT NOT NULL DEFAULT '',
-                items_count INTEGER NOT NULL DEFAULT 0,
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (dataset_key) REFERENCES store_datasets(dataset_key) ON DELETE CASCADE,
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE,
-                UNIQUE (
-                    dataset_key,
-                    category,
-                    subcategory_1,
-                    subcategory_2,
-                    subcategory_3,
-                    subcategory_4,
-                    subcategory_5
-                )
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_category_tree_dataset ON pricing_category_tree(dataset_key)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_category_tree_store_uid ON pricing_category_tree(store_uid)")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_catalog_sku_paths (
-                priority_platform TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                anchor_store_uid TEXT NOT NULL DEFAULT '',
-                source_store_uid TEXT NOT NULL DEFAULT '',
-                resolved_category TEXT NOT NULL DEFAULT '',
-                resolved_subcategory_1 TEXT NOT NULL DEFAULT '',
-                resolved_subcategory_2 TEXT NOT NULL DEFAULT '',
-                resolved_subcategory_3 TEXT NOT NULL DEFAULT '',
-                resolved_subcategory_4 TEXT NOT NULL DEFAULT '',
-                resolved_subcategory_5 TEXT NOT NULL DEFAULT '',
-                leaf_path TEXT NOT NULL DEFAULT '',
-                resolution_kind TEXT NOT NULL DEFAULT 'undefined',
-                updated_at TEXT NOT NULL,
-                PRIMARY KEY (priority_platform, sku)
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_catalog_sku_paths_platform ON pricing_catalog_sku_paths(priority_platform)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_catalog_sku_paths_leaf ON pricing_catalog_sku_paths(priority_platform, leaf_path)")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_category_settings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                dataset_key TEXT NOT NULL,
-                store_uid TEXT NOT NULL,
-                leaf_path TEXT NOT NULL,
-                commission_percent REAL NULL,
-                acquiring_percent REAL NULL,
-                logistics_rub REAL NULL,
-                ads_percent REAL NULL,
-                returns_percent REAL NULL,
-                tax_percent REAL NULL,
-                other_expenses_rub REAL NULL,
-                other_expenses_percent REAL NULL,
-                cogs_rub REAL NULL,
-                target_profit_rub REAL NULL,
-                target_profit_percent REAL NULL,
-                target_margin_rub REAL NULL,
-                target_margin_percent REAL NULL,
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (dataset_key) REFERENCES store_datasets(dataset_key) ON DELETE CASCADE,
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE,
-                UNIQUE (dataset_key, leaf_path)
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_category_settings_dataset ON pricing_category_settings(dataset_key)")
-        pcs_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_category_settings)").fetchall()}
-        if "tax_percent" not in pcs_cols:
-            conn.execute("ALTER TABLE pricing_category_settings ADD COLUMN tax_percent REAL NULL")
-        if "other_expenses_rub" not in pcs_cols:
-            conn.execute("ALTER TABLE pricing_category_settings ADD COLUMN other_expenses_rub REAL NULL")
-        if "other_expenses_percent" not in pcs_cols:
-            conn.execute("ALTER TABLE pricing_category_settings ADD COLUMN other_expenses_percent REAL NULL")
-        if "target_profit_percent" not in pcs_cols:
-            conn.execute("ALTER TABLE pricing_category_settings ADD COLUMN target_profit_percent REAL NULL")
-        if "target_margin_rub" not in pcs_cols:
-            conn.execute("ALTER TABLE pricing_category_settings ADD COLUMN target_margin_rub REAL NULL")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS category_tree_cache_nodes (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                cache_key TEXT NOT NULL,
-                platform TEXT NOT NULL,
-                account_id TEXT NOT NULL,
-                tree_code TEXT NOT NULL,
-                node_kind TEXT NOT NULL DEFAULT 'category',
-                category_id TEXT NOT NULL,
-                type_id TEXT NOT NULL DEFAULT '',
-                parent_category_id TEXT NOT NULL DEFAULT '',
-                name TEXT NOT NULL DEFAULT '',
-                type_name TEXT NOT NULL DEFAULT '',
-                level INTEGER NOT NULL DEFAULT 0,
-                path TEXT NOT NULL DEFAULT '',
-                updated_at TEXT NOT NULL,
-                UNIQUE (cache_key, category_id)
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_category_tree_cache_key ON category_tree_cache_nodes(cache_key)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_category_tree_cache_platform_account ON category_tree_cache_nodes(platform, account_id, tree_code)")
-        # Миграция старой схемы кэша дерева (если таблица уже существует без type/node_kind полей)
-        cache_cols = {row[1] for row in conn.execute("PRAGMA table_info(category_tree_cache_nodes)").fetchall()}
-        if "node_kind" not in cache_cols:
-            conn.execute("ALTER TABLE category_tree_cache_nodes ADD COLUMN node_kind TEXT NOT NULL DEFAULT 'category'")
-        if "type_id" not in cache_cols:
-            conn.execute("ALTER TABLE category_tree_cache_nodes ADD COLUMN type_id TEXT NOT NULL DEFAULT ''")
-        if "type_name" not in cache_cols:
-            conn.execute("ALTER TABLE category_tree_cache_nodes ADD COLUMN type_name TEXT NOT NULL DEFAULT ''")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_store_settings (
-                store_uid TEXT PRIMARY KEY,
-                earning_mode TEXT NOT NULL DEFAULT 'margin',
-                earning_unit TEXT NOT NULL DEFAULT 'percent',
-                strategy_mode TEXT NOT NULL DEFAULT 'mix',
-                planned_revenue REAL NULL,
-                target_profit_rub REAL NULL,
-                target_profit_percent REAL NULL,
-                minimum_profit_percent REAL NULL,
-                target_margin_rub REAL NULL,
-                target_margin_percent REAL NULL,
-                target_drr_percent REAL NULL,
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        # Миграция: добавляем поля источника себестоимости если их нет
-        store_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_store_settings)").fetchall()}
-        if "planned_revenue" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN planned_revenue REAL NULL")
-        if "strategy_mode" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN strategy_mode TEXT NOT NULL DEFAULT 'mix'")
-        if "cogs_source_type" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN cogs_source_type TEXT NULL")
-        if "cogs_source_id" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN cogs_source_id TEXT NULL")
-        if "cogs_source_name" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN cogs_source_name TEXT NULL")
-        if "cogs_sku_column" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN cogs_sku_column TEXT NULL")
-        if "cogs_value_column" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN cogs_value_column TEXT NULL")
-        if "stock_source_type" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN stock_source_type TEXT NULL")
-        if "stock_source_id" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN stock_source_id TEXT NULL")
-        if "stock_source_name" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN stock_source_name TEXT NULL")
-        if "stock_sku_column" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN stock_sku_column TEXT NULL")
-        if "stock_value_column" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN stock_value_column TEXT NULL")
-        if "overview_cogs_source_type" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_source_type TEXT NULL")
-        if "overview_cogs_source_id" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_source_id TEXT NULL")
-        if "overview_cogs_source_name" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_source_name TEXT NULL")
-        if "overview_cogs_order_column" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_order_column TEXT NULL")
-        if "overview_cogs_sku_column" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_sku_column TEXT NULL")
-        if "overview_cogs_value_column" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_value_column TEXT NULL")
-        if "export_prices_source_type" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_prices_source_type TEXT NULL")
-        if "export_prices_source_id" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_prices_source_id TEXT NULL")
-        if "export_prices_source_name" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_prices_source_name TEXT NULL")
-        if "export_prices_sku_column" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_prices_sku_column TEXT NULL")
-        if "export_prices_value_column" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_prices_value_column TEXT NULL")
-        if "export_ads_source_type" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_ads_source_type TEXT NULL")
-        if "export_ads_source_id" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_ads_source_id TEXT NULL")
-        if "export_ads_source_name" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_ads_source_name TEXT NULL")
-        if "export_ads_sku_column" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_ads_sku_column TEXT NULL")
-        if "export_ads_value_column" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_ads_value_column TEXT NULL")
-        if "target_profit_percent" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN target_profit_percent REAL NULL")
-        if "minimum_profit_percent" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN minimum_profit_percent REAL NULL")
-        if "target_margin_rub" not in store_cols:
-            conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN target_margin_rub REAL NULL")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_logistics_store_settings (
-                store_uid TEXT PRIMARY KEY,
-                fulfillment_model TEXT NOT NULL DEFAULT 'FBO',
-                handling_mode TEXT NOT NULL DEFAULT 'fixed',
-                handling_fixed_amount REAL NULL,
-                handling_percent REAL NULL,
-                handling_min_amount REAL NULL,
-                handling_max_amount REAL NULL,
-                delivery_cost_per_kg REAL NULL,
-                return_processing_cost REAL NULL,
-                disposal_cost REAL NULL,
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        ls_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_logistics_store_settings)").fetchall()}
-        if "handling_mode" not in ls_cols:
-            conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN handling_mode TEXT NOT NULL DEFAULT 'fixed'")
-        if "handling_fixed_amount" not in ls_cols:
-            conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN handling_fixed_amount REAL NULL")
-        if "handling_percent" not in ls_cols:
-            conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN handling_percent REAL NULL")
-        if "handling_min_amount" not in ls_cols:
-            conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN handling_min_amount REAL NULL")
-        if "handling_max_amount" not in ls_cols:
-            conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN handling_max_amount REAL NULL")
-        if "delivery_cost_per_kg" not in ls_cols:
-            conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN delivery_cost_per_kg REAL NULL")
-        if "return_processing_cost" not in ls_cols:
-            conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN return_processing_cost REAL NULL")
-        if "disposal_cost" not in ls_cols:
-            conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN disposal_cost REAL NULL")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_logistics_product_settings (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                width_cm REAL NULL,
-                length_cm REAL NULL,
-                height_cm REAL NULL,
-                weight_kg REAL NULL,
-                updated_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, sku),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_logistics_product_store ON pricing_logistics_product_settings(store_uid)")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS fx_rates_cache (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                source TEXT NOT NULL,
-                pair TEXT NOT NULL DEFAULT 'USD_RUB',
-                rate_date TEXT NOT NULL,
-                rate_value REAL NOT NULL,
-                loaded_at TEXT NOT NULL,
-                meta_json TEXT NOT NULL DEFAULT '{}',
-                UNIQUE(source, pair, rate_date)
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_fx_rates_cache_source_date ON fx_rates_cache(source, pair, rate_date)")
+        _init_store_data_model_sqlite_reference_tables(conn)
 
         conn.execute(
             """
@@ -3079,180 +2757,507 @@ def init_store_data_model() -> None:
             "CREATE INDEX IF NOT EXISTS idx_pricing_cogs_snapshots_sku "
             "ON pricing_cogs_snapshots(store_uid, sku)"
         )
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS refresh_jobs (
-                job_code TEXT PRIMARY KEY,
-                title TEXT NOT NULL DEFAULT '',
-                enabled INTEGER NOT NULL DEFAULT 1,
-                schedule_kind TEXT NOT NULL DEFAULT 'interval',
-                interval_minutes INTEGER NULL,
-                time_of_day TEXT NULL,
-                date_from TEXT NULL,
-                date_to TEXT NULL,
-                stores_json TEXT NOT NULL DEFAULT '[]',
-                updated_at TEXT NOT NULL
-            )
-            """
-        )
-        refresh_job_cols = _table_columns(conn, "refresh_jobs")
-        if "stores_json" not in refresh_job_cols:
-            conn.execute("ALTER TABLE refresh_jobs ADD COLUMN stores_json TEXT NOT NULL DEFAULT '[]'")
-        if "date_from" not in refresh_job_cols:
-            conn.execute("ALTER TABLE refresh_jobs ADD COLUMN date_from TEXT NULL")
-        if "date_to" not in refresh_job_cols:
-            conn.execute("ALTER TABLE refresh_jobs ADD COLUMN date_to TEXT NULL")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS refresh_job_runs (
-                run_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                job_code TEXT NOT NULL,
-                trigger_source TEXT NOT NULL DEFAULT '',
-                started_at TEXT NOT NULL,
-                finished_at TEXT NULL,
-                status TEXT NOT NULL DEFAULT 'running',
-                message TEXT NOT NULL DEFAULT '',
-                meta_json TEXT NOT NULL DEFAULT '{}'
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_refresh_job_runs_job_started "
-            "ON refresh_job_runs(job_code, started_at DESC)"
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_refresh_job_runs_status "
-            "ON refresh_job_runs(status, started_at DESC)"
-        )
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS yandex_goods_price_report_items (
-                store_uid TEXT NOT NULL,
-                offer_id TEXT NOT NULL,
-                offer_name TEXT NOT NULL DEFAULT '',
-                currency TEXT NOT NULL DEFAULT '',
-                shop_price REAL NULL,
-                basic_price REAL NULL,
-                on_display_raw TEXT NOT NULL DEFAULT '',
-                on_display_price REAL NULL,
-                price_value_outside_market REAL NULL,
-                price_value_on_market REAL NULL,
-                price_green_threshold REAL NULL,
-                price_red_threshold REAL NULL,
-                source_updated_at TEXT NOT NULL DEFAULT '',
-                loaded_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, offer_id)
-            )
-            """
-        )
-        goods_cols = _table_columns(conn, "yandex_goods_price_report_items")
-        if "price_value_outside_market" not in goods_cols:
-            conn.execute("ALTER TABLE yandex_goods_price_report_items ADD COLUMN price_value_outside_market REAL NULL")
-        if "price_value_on_market" not in goods_cols:
-            conn.execute("ALTER TABLE yandex_goods_price_report_items ADD COLUMN price_value_on_market REAL NULL")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_yandex_goods_price_report_store ON yandex_goods_price_report_items(store_uid)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_yandex_goods_price_report_offer ON yandex_goods_price_report_items(offer_id)")
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS yandex_goods_price_report_history (
-                store_uid TEXT NOT NULL,
-                offer_id TEXT NOT NULL,
-                captured_at TEXT NOT NULL,
-                offer_name TEXT NOT NULL DEFAULT '',
-                currency TEXT NOT NULL DEFAULT '',
-                shop_price REAL NULL,
-                basic_price REAL NULL,
-                on_display_raw TEXT NOT NULL DEFAULT '',
-                on_display_price REAL NULL,
-                price_value_outside_market REAL NULL,
-                price_value_on_market REAL NULL,
-                price_green_threshold REAL NULL,
-                price_red_threshold REAL NULL,
-                source_updated_at TEXT NOT NULL DEFAULT '',
-                PRIMARY KEY (store_uid, offer_id, captured_at),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_yandex_goods_price_report_history_store_offer_time "
-            "ON yandex_goods_price_report_history(store_uid, offer_id, captured_at)"
-        )
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_daily_plan_history (
-                store_uid TEXT NOT NULL,
-                plan_date TEXT NOT NULL,
-                captured_at TEXT NOT NULL,
-                planned_revenue_daily REAL NULL,
-                planned_profit_daily REAL NULL,
-                today_revenue REAL NULL,
-                today_profit REAL NULL,
-                weighted_day_profit_pct REAL NULL,
-                minimum_profit_percent REAL NULL,
-                experimental_floor_pct REAL NULL,
-                PRIMARY KEY (store_uid, plan_date, captured_at),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pricing_daily_plan_history_store_date_time "
-            "ON pricing_daily_plan_history(store_uid, plan_date, captured_at)"
-        )
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_autopilot_snapshots (
-                snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                snapshot_at TEXT NOT NULL,
-                time_bucket_start TEXT NOT NULL,
-                time_bucket_end TEXT NOT NULL,
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                payload_json TEXT NOT NULL DEFAULT '{}',
-                UNIQUE (time_bucket_start, store_uid, sku)
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_autopilot_snapshots_bucket ON pricing_autopilot_snapshots(time_bucket_start)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_autopilot_snapshots_store_sku ON pricing_autopilot_snapshots(store_uid, sku)")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_autopilot_decisions (
-                decision_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                created_at TEXT NOT NULL,
-                review_after TEXT NOT NULL,
-                reviewed_at TEXT NULL,
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                decision_status TEXT NOT NULL DEFAULT 'pending',
-                decision_mode TEXT NOT NULL DEFAULT 'simulate',
-                action_code TEXT NOT NULL DEFAULT '',
-                action_unit TEXT NOT NULL DEFAULT '',
-                action_value REAL NULL,
-                previous_value REAL NULL,
-                proposed_value REAL NULL,
-                baseline_snapshot_id INTEGER NULL,
-                review_snapshot_id INTEGER NULL,
-                reason_json TEXT NOT NULL DEFAULT '{}',
-                result_json TEXT NOT NULL DEFAULT '{}'
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_autopilot_decisions_status ON pricing_autopilot_decisions(decision_status, review_after)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_autopilot_decisions_store_sku ON pricing_autopilot_decisions(store_uid, sku, created_at)")
-        _drop_legacy_tables_if_exist(conn)
-        _rebuild_logical_views(conn)
-        rebuild_db_explorer_views(conn)
+        _init_store_data_model_sqlite_operational_tables(conn)
         conn.commit()
         conn.close()
         _backfill_system_settings_from_legacy()
         _INIT_DONE = True
+
+
+def _init_store_data_model_sqlite_reference_tables(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS stores (
+            store_uid TEXT PRIMARY KEY,
+            platform TEXT NOT NULL,
+            store_id TEXT NOT NULL,
+            store_name TEXT NOT NULL DEFAULT '',
+            currency_code TEXT NOT NULL DEFAULT 'RUB',
+            fulfillment_model TEXT NOT NULL DEFAULT 'FBO',
+            business_id TEXT NOT NULL DEFAULT '',
+            seller_id TEXT NOT NULL DEFAULT '',
+            account_id TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_stores_platform ON stores(platform)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_stores_store_id ON stores(store_id)")
+    store_cols = {row[1] for row in conn.execute("PRAGMA table_info(stores)").fetchall()}
+    if "currency_code" not in store_cols:
+        conn.execute("ALTER TABLE stores ADD COLUMN currency_code TEXT NOT NULL DEFAULT 'RUB'")
+    if "fulfillment_model" not in store_cols:
+        conn.execute("ALTER TABLE stores ADD COLUMN fulfillment_model TEXT NOT NULL DEFAULT 'FBO'")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS store_datasets (
+            dataset_key TEXT PRIMARY KEY,
+            store_uid TEXT NOT NULL,
+            task_code TEXT NOT NULL,
+            title TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'ready',
+            row_count INTEGER NOT NULL DEFAULT 0,
+            meta_json TEXT NOT NULL DEFAULT '{}',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_store_datasets_store_uid ON store_datasets(store_uid)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_store_datasets_task_code ON store_datasets(task_code)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_category_tree (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dataset_key TEXT NOT NULL,
+            store_uid TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT '',
+            subcategory_1 TEXT NOT NULL DEFAULT '',
+            subcategory_2 TEXT NOT NULL DEFAULT '',
+            subcategory_3 TEXT NOT NULL DEFAULT '',
+            subcategory_4 TEXT NOT NULL DEFAULT '',
+            subcategory_5 TEXT NOT NULL DEFAULT '',
+            leaf_path TEXT NOT NULL DEFAULT '',
+            items_count INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (dataset_key) REFERENCES store_datasets(dataset_key) ON DELETE CASCADE,
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE,
+            UNIQUE (
+                dataset_key,
+                category,
+                subcategory_1,
+                subcategory_2,
+                subcategory_3,
+                subcategory_4,
+                subcategory_5
+            )
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_category_tree_dataset ON pricing_category_tree(dataset_key)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_category_tree_store_uid ON pricing_category_tree(store_uid)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_catalog_sku_paths (
+            priority_platform TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            anchor_store_uid TEXT NOT NULL DEFAULT '',
+            source_store_uid TEXT NOT NULL DEFAULT '',
+            resolved_category TEXT NOT NULL DEFAULT '',
+            resolved_subcategory_1 TEXT NOT NULL DEFAULT '',
+            resolved_subcategory_2 TEXT NOT NULL DEFAULT '',
+            resolved_subcategory_3 TEXT NOT NULL DEFAULT '',
+            resolved_subcategory_4 TEXT NOT NULL DEFAULT '',
+            resolved_subcategory_5 TEXT NOT NULL DEFAULT '',
+            leaf_path TEXT NOT NULL DEFAULT '',
+            resolution_kind TEXT NOT NULL DEFAULT 'undefined',
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (priority_platform, sku)
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_catalog_sku_paths_platform ON pricing_catalog_sku_paths(priority_platform)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_catalog_sku_paths_leaf ON pricing_catalog_sku_paths(priority_platform, leaf_path)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_category_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dataset_key TEXT NOT NULL,
+            store_uid TEXT NOT NULL,
+            leaf_path TEXT NOT NULL,
+            commission_percent REAL NULL,
+            acquiring_percent REAL NULL,
+            logistics_rub REAL NULL,
+            ads_percent REAL NULL,
+            returns_percent REAL NULL,
+            tax_percent REAL NULL,
+            other_expenses_rub REAL NULL,
+            other_expenses_percent REAL NULL,
+            cogs_rub REAL NULL,
+            target_profit_rub REAL NULL,
+            target_profit_percent REAL NULL,
+            target_margin_rub REAL NULL,
+            target_margin_percent REAL NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (dataset_key) REFERENCES store_datasets(dataset_key) ON DELETE CASCADE,
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE,
+            UNIQUE (dataset_key, leaf_path)
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_category_settings_dataset ON pricing_category_settings(dataset_key)")
+    pcs_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_category_settings)").fetchall()}
+    if "tax_percent" not in pcs_cols:
+        conn.execute("ALTER TABLE pricing_category_settings ADD COLUMN tax_percent REAL NULL")
+    if "other_expenses_rub" not in pcs_cols:
+        conn.execute("ALTER TABLE pricing_category_settings ADD COLUMN other_expenses_rub REAL NULL")
+    if "other_expenses_percent" not in pcs_cols:
+        conn.execute("ALTER TABLE pricing_category_settings ADD COLUMN other_expenses_percent REAL NULL")
+    if "target_profit_percent" not in pcs_cols:
+        conn.execute("ALTER TABLE pricing_category_settings ADD COLUMN target_profit_percent REAL NULL")
+    if "target_margin_rub" not in pcs_cols:
+        conn.execute("ALTER TABLE pricing_category_settings ADD COLUMN target_margin_rub REAL NULL")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS category_tree_cache_nodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cache_key TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            account_id TEXT NOT NULL,
+            tree_code TEXT NOT NULL,
+            node_kind TEXT NOT NULL DEFAULT 'category',
+            category_id TEXT NOT NULL,
+            type_id TEXT NOT NULL DEFAULT '',
+            parent_category_id TEXT NOT NULL DEFAULT '',
+            name TEXT NOT NULL DEFAULT '',
+            type_name TEXT NOT NULL DEFAULT '',
+            level INTEGER NOT NULL DEFAULT 0,
+            path TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL,
+            UNIQUE (cache_key, category_id)
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_category_tree_cache_key ON category_tree_cache_nodes(cache_key)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_category_tree_cache_platform_account ON category_tree_cache_nodes(platform, account_id, tree_code)")
+    cache_cols = {row[1] for row in conn.execute("PRAGMA table_info(category_tree_cache_nodes)").fetchall()}
+    if "node_kind" not in cache_cols:
+        conn.execute("ALTER TABLE category_tree_cache_nodes ADD COLUMN node_kind TEXT NOT NULL DEFAULT 'category'")
+    if "type_id" not in cache_cols:
+        conn.execute("ALTER TABLE category_tree_cache_nodes ADD COLUMN type_id TEXT NOT NULL DEFAULT ''")
+    if "type_name" not in cache_cols:
+        conn.execute("ALTER TABLE category_tree_cache_nodes ADD COLUMN type_name TEXT NOT NULL DEFAULT ''")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_store_settings (
+            store_uid TEXT PRIMARY KEY,
+            earning_mode TEXT NOT NULL DEFAULT 'margin',
+            earning_unit TEXT NOT NULL DEFAULT 'percent',
+            strategy_mode TEXT NOT NULL DEFAULT 'mix',
+            planned_revenue REAL NULL,
+            target_profit_rub REAL NULL,
+            target_profit_percent REAL NULL,
+            minimum_profit_percent REAL NULL,
+            target_margin_rub REAL NULL,
+            target_margin_percent REAL NULL,
+            target_drr_percent REAL NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    store_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_store_settings)").fetchall()}
+    if "planned_revenue" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN planned_revenue REAL NULL")
+    if "strategy_mode" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN strategy_mode TEXT NOT NULL DEFAULT 'mix'")
+    if "cogs_source_type" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN cogs_source_type TEXT NULL")
+    if "cogs_source_id" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN cogs_source_id TEXT NULL")
+    if "cogs_source_name" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN cogs_source_name TEXT NULL")
+    if "cogs_sku_column" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN cogs_sku_column TEXT NULL")
+    if "cogs_value_column" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN cogs_value_column TEXT NULL")
+    if "stock_source_type" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN stock_source_type TEXT NULL")
+    if "stock_source_id" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN stock_source_id TEXT NULL")
+    if "stock_source_name" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN stock_source_name TEXT NULL")
+    if "stock_sku_column" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN stock_sku_column TEXT NULL")
+    if "stock_value_column" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN stock_value_column TEXT NULL")
+    if "overview_cogs_source_type" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_source_type TEXT NULL")
+    if "overview_cogs_source_id" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_source_id TEXT NULL")
+    if "overview_cogs_source_name" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_source_name TEXT NULL")
+    if "overview_cogs_order_column" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_order_column TEXT NULL")
+    if "overview_cogs_sku_column" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_sku_column TEXT NULL")
+    if "overview_cogs_value_column" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN overview_cogs_value_column TEXT NULL")
+    if "export_prices_source_type" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_prices_source_type TEXT NULL")
+    if "export_prices_source_id" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_prices_source_id TEXT NULL")
+    if "export_prices_source_name" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_prices_source_name TEXT NULL")
+    if "export_prices_sku_column" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_prices_sku_column TEXT NULL")
+    if "export_prices_value_column" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_prices_value_column TEXT NULL")
+    if "export_ads_source_type" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_ads_source_type TEXT NULL")
+    if "export_ads_source_id" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_ads_source_id TEXT NULL")
+    if "export_ads_source_name" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_ads_source_name TEXT NULL")
+    if "export_ads_sku_column" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_ads_sku_column TEXT NULL")
+    if "export_ads_value_column" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN export_ads_value_column TEXT NULL")
+    if "target_profit_percent" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN target_profit_percent REAL NULL")
+    if "minimum_profit_percent" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN minimum_profit_percent REAL NULL")
+    if "target_margin_rub" not in store_cols:
+        conn.execute("ALTER TABLE pricing_store_settings ADD COLUMN target_margin_rub REAL NULL")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_logistics_store_settings (
+            store_uid TEXT PRIMARY KEY,
+            fulfillment_model TEXT NOT NULL DEFAULT 'FBO',
+            handling_mode TEXT NOT NULL DEFAULT 'fixed',
+            handling_fixed_amount REAL NULL,
+            handling_percent REAL NULL,
+            handling_min_amount REAL NULL,
+            handling_max_amount REAL NULL,
+            delivery_cost_per_kg REAL NULL,
+            return_processing_cost REAL NULL,
+            disposal_cost REAL NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    ls_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_logistics_store_settings)").fetchall()}
+    if "handling_mode" not in ls_cols:
+        conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN handling_mode TEXT NOT NULL DEFAULT 'fixed'")
+    if "handling_fixed_amount" not in ls_cols:
+        conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN handling_fixed_amount REAL NULL")
+    if "handling_percent" not in ls_cols:
+        conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN handling_percent REAL NULL")
+    if "handling_min_amount" not in ls_cols:
+        conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN handling_min_amount REAL NULL")
+    if "handling_max_amount" not in ls_cols:
+        conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN handling_max_amount REAL NULL")
+    if "delivery_cost_per_kg" not in ls_cols:
+        conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN delivery_cost_per_kg REAL NULL")
+    if "return_processing_cost" not in ls_cols:
+        conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN return_processing_cost REAL NULL")
+    if "disposal_cost" not in ls_cols:
+        conn.execute("ALTER TABLE pricing_logistics_store_settings ADD COLUMN disposal_cost REAL NULL")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_logistics_product_settings (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            width_cm REAL NULL,
+            length_cm REAL NULL,
+            height_cm REAL NULL,
+            weight_kg REAL NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, sku),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_logistics_product_store ON pricing_logistics_product_settings(store_uid)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS fx_rates_cache (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source TEXT NOT NULL,
+            pair TEXT NOT NULL DEFAULT 'USD_RUB',
+            rate_date TEXT NOT NULL,
+            rate_value REAL NOT NULL,
+            loaded_at TEXT NOT NULL,
+            meta_json TEXT NOT NULL DEFAULT '{}',
+            UNIQUE(source, pair, rate_date)
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_fx_rates_cache_source_date ON fx_rates_cache(source, pair, rate_date)")
+
+
+def _init_store_data_model_sqlite_operational_tables(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS refresh_jobs (
+            job_code TEXT PRIMARY KEY,
+            title TEXT NOT NULL DEFAULT '',
+            enabled INTEGER NOT NULL DEFAULT 1,
+            schedule_kind TEXT NOT NULL DEFAULT 'interval',
+            interval_minutes INTEGER NULL,
+            time_of_day TEXT NULL,
+            date_from TEXT NULL,
+            date_to TEXT NULL,
+            stores_json TEXT NOT NULL DEFAULT '[]',
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    refresh_job_cols = _table_columns(conn, "refresh_jobs")
+    if "stores_json" not in refresh_job_cols:
+        conn.execute("ALTER TABLE refresh_jobs ADD COLUMN stores_json TEXT NOT NULL DEFAULT '[]'")
+    if "date_from" not in refresh_job_cols:
+        conn.execute("ALTER TABLE refresh_jobs ADD COLUMN date_from TEXT NULL")
+    if "date_to" not in refresh_job_cols:
+        conn.execute("ALTER TABLE refresh_jobs ADD COLUMN date_to TEXT NULL")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS refresh_job_runs (
+            run_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            job_code TEXT NOT NULL,
+            trigger_source TEXT NOT NULL DEFAULT '',
+            started_at TEXT NOT NULL,
+            finished_at TEXT NULL,
+            status TEXT NOT NULL DEFAULT 'running',
+            message TEXT NOT NULL DEFAULT '',
+            meta_json TEXT NOT NULL DEFAULT '{}'
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_refresh_job_runs_job_started "
+        "ON refresh_job_runs(job_code, started_at DESC)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_refresh_job_runs_status "
+        "ON refresh_job_runs(status, started_at DESC)"
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS yandex_goods_price_report_items (
+            store_uid TEXT NOT NULL,
+            offer_id TEXT NOT NULL,
+            offer_name TEXT NOT NULL DEFAULT '',
+            currency TEXT NOT NULL DEFAULT '',
+            shop_price REAL NULL,
+            basic_price REAL NULL,
+            on_display_raw TEXT NOT NULL DEFAULT '',
+            on_display_price REAL NULL,
+            price_value_outside_market REAL NULL,
+            price_value_on_market REAL NULL,
+            price_green_threshold REAL NULL,
+            price_red_threshold REAL NULL,
+            source_updated_at TEXT NOT NULL DEFAULT '',
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, offer_id)
+        )
+        """
+    )
+    goods_cols = _table_columns(conn, "yandex_goods_price_report_items")
+    if "price_value_outside_market" not in goods_cols:
+        conn.execute("ALTER TABLE yandex_goods_price_report_items ADD COLUMN price_value_outside_market REAL NULL")
+    if "price_value_on_market" not in goods_cols:
+        conn.execute("ALTER TABLE yandex_goods_price_report_items ADD COLUMN price_value_on_market REAL NULL")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_yandex_goods_price_report_store ON yandex_goods_price_report_items(store_uid)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_yandex_goods_price_report_offer ON yandex_goods_price_report_items(offer_id)")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS yandex_goods_price_report_history (
+            store_uid TEXT NOT NULL,
+            offer_id TEXT NOT NULL,
+            captured_at TEXT NOT NULL,
+            offer_name TEXT NOT NULL DEFAULT '',
+            currency TEXT NOT NULL DEFAULT '',
+            shop_price REAL NULL,
+            basic_price REAL NULL,
+            on_display_raw TEXT NOT NULL DEFAULT '',
+            on_display_price REAL NULL,
+            price_value_outside_market REAL NULL,
+            price_value_on_market REAL NULL,
+            price_green_threshold REAL NULL,
+            price_red_threshold REAL NULL,
+            source_updated_at TEXT NOT NULL DEFAULT '',
+            PRIMARY KEY (store_uid, offer_id, captured_at),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_yandex_goods_price_report_history_store_offer_time "
+        "ON yandex_goods_price_report_history(store_uid, offer_id, captured_at)"
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_daily_plan_history (
+            store_uid TEXT NOT NULL,
+            plan_date TEXT NOT NULL,
+            captured_at TEXT NOT NULL,
+            planned_revenue_daily REAL NULL,
+            planned_profit_daily REAL NULL,
+            today_revenue REAL NULL,
+            today_profit REAL NULL,
+            weighted_day_profit_pct REAL NULL,
+            minimum_profit_percent REAL NULL,
+            experimental_floor_pct REAL NULL,
+            PRIMARY KEY (store_uid, plan_date, captured_at),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pricing_daily_plan_history_store_date_time "
+        "ON pricing_daily_plan_history(store_uid, plan_date, captured_at)"
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_autopilot_snapshots (
+            snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            snapshot_at TEXT NOT NULL,
+            time_bucket_start TEXT NOT NULL,
+            time_bucket_end TEXT NOT NULL,
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            payload_json TEXT NOT NULL DEFAULT '{}',
+            UNIQUE (time_bucket_start, store_uid, sku)
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_autopilot_snapshots_bucket ON pricing_autopilot_snapshots(time_bucket_start)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_autopilot_snapshots_store_sku ON pricing_autopilot_snapshots(store_uid, sku)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_autopilot_decisions (
+            decision_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at TEXT NOT NULL,
+            review_after TEXT NOT NULL,
+            reviewed_at TEXT NULL,
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            decision_status TEXT NOT NULL DEFAULT 'pending',
+            decision_mode TEXT NOT NULL DEFAULT 'simulate',
+            action_code TEXT NOT NULL DEFAULT '',
+            action_unit TEXT NOT NULL DEFAULT '',
+            action_value REAL NULL,
+            previous_value REAL NULL,
+            proposed_value REAL NULL,
+            baseline_snapshot_id INTEGER NULL,
+            review_snapshot_id INTEGER NULL,
+            reason_json TEXT NOT NULL DEFAULT '{}',
+            result_json TEXT NOT NULL DEFAULT '{}'
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_autopilot_decisions_status ON pricing_autopilot_decisions(decision_status, review_after)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_autopilot_decisions_store_sku ON pricing_autopilot_decisions(store_uid, sku, created_at)")
+    _drop_legacy_tables_if_exist(conn)
+    _rebuild_logical_views(conn)
+    rebuild_db_explorer_views(conn)
 
 
 def replace_category_tree_cache_nodes(
@@ -4505,12 +4510,6 @@ def upsert_pricing_boost_results_bulk(*, rows: list[dict[str, Any]]) -> int:
         conn.commit()
     return len(prepared)
 
-
-def append_pricing_boost_history_bulk(*, rows: list[dict[str, Any]], captured_at: str | None = None) -> int:
-    init_store_data_model()
-    return 0
-
-
 def append_pricing_market_price_export_history_bulk(
     *,
     store_uid: str,
@@ -5163,12 +5162,6 @@ def upsert_pricing_attractiveness_results_bulk(*, rows: list[dict[str, Any]]) ->
         conn.commit()
     return len(prepared)
 
-
-def append_pricing_attractiveness_history_bulk(*, rows: list[dict[str, Any]], captured_at: str | None = None) -> int:
-    init_store_data_model()
-    return 0
-
-
 def get_pricing_attractiveness_results_map(*, store_uids: list[str], skus: list[str]) -> dict[str, dict[str, dict[str, Any]]]:
     init_store_data_model()
     suids = [str(x or "").strip() for x in store_uids if str(x or "").strip()]
@@ -5434,12 +5427,6 @@ def upsert_pricing_promo_offer_results_bulk(*, rows: list[dict[str, Any]]) -> in
         )
         conn.commit()
     return len(prepared)
-
-
-def append_pricing_promo_offer_history_bulk(*, rows: list[dict[str, Any]], captured_at: str | None = None) -> int:
-    init_store_data_model()
-    return 0
-
 
 def get_pricing_promo_results_map(*, store_uids: list[str], skus: list[str]) -> dict[str, dict[str, dict[str, Any]]]:
     init_store_data_model()
@@ -5839,122 +5826,6 @@ def get_sales_market_metrics_map(
     return out
 
 
-def get_sales_market_activity_items(
-    *,
-    store_uids: list[str],
-    date_from: str,
-    date_to: str,
-) -> dict[str, dict[str, dict[str, Any]]]:
-    init_store_data_model()
-    suids = [str(x or "").strip() for x in store_uids if str(x or "").strip()]
-    from_date = str(date_from or "").strip()
-    to_date = str(date_to or "").strip()
-    if not suids or not from_date or not to_date:
-        return {}
-
-    out: dict[str, dict[str, dict[str, Any]]] = {}
-    with _connect_history() as conn:
-        for suid in suids:
-            rows = conn.execute(
-                f"""
-                SELECT
-                    store_uid,
-                    sku,
-                    MAX(COALESCE(item_name, '')) AS item_name
-                FROM sales_market_order_items
-                WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
-                  AND order_created_date >= {'%s' if is_postgres_backend() else '?'}
-                  AND order_created_date <= {'%s' if is_postgres_backend() else '?'}
-                GROUP BY store_uid, sku
-                """,
-                (suid, from_date, to_date),
-            ).fetchall()
-            local: dict[str, dict[str, Any]] = {}
-            for row in rows:
-                sku = str(row["sku"] or "").strip()
-                if not sku:
-                    continue
-                local[sku] = {
-                    "sku": sku,
-                    "item_name": str(row["item_name"] or "").strip(),
-                }
-            out[suid] = local
-    return out
-
-
-def get_sales_market_date_bounds(*, store_uids: list[str]) -> dict[str, str]:
-    init_store_data_model()
-    suids = [str(x or "").strip() for x in store_uids if str(x or "").strip()]
-    if not suids:
-        return {}
-
-    placeholders = _placeholders(len(suids))
-    with _connect_history() as conn:
-        row = conn.execute(
-            f"""
-            SELECT
-                MIN(order_created_date) AS min_date,
-                MAX(order_created_date) AS max_date
-            FROM sales_market_order_items
-            WHERE store_uid IN ({placeholders})
-            """,
-            suids,
-        ).fetchone()
-    if not row:
-        return {}
-    min_date = str(row["min_date"] or "").strip()
-    max_date = str(row["max_date"] or "").strip()
-    out: dict[str, str] = {}
-    if min_date:
-        out["min_date"] = min_date
-    if max_date:
-        out["max_date"] = max_date
-    return out
-
-
-def get_sales_market_order_rows(
-    *,
-    store_uids: list[str],
-    skus: list[str],
-    date_from: str,
-    date_to: str,
-) -> list[dict[str, Any]]:
-    init_store_data_model()
-    suids = [str(x or "").strip() for x in store_uids if str(x or "").strip()]
-    sku_list = [str(x or "").strip() for x in skus if str(x or "").strip()]
-    from_date = str(date_from or "").strip()
-    to_date = str(date_to or "").strip()
-    if not suids or not sku_list or not from_date or not to_date:
-        return []
-
-    store_placeholders = _placeholders(len(suids))
-    sku_placeholders = _placeholders(len(sku_list))
-    with _connect_history() as conn:
-        rows = conn.execute(
-            f"""
-            SELECT
-                store_uid,
-                order_id,
-                order_item_id,
-                order_created_date,
-                sku,
-                item_name,
-                sale_price,
-                payment_price,
-                subsidy_amount,
-                item_count,
-                line_revenue
-            FROM sales_market_order_items
-            WHERE store_uid IN ({store_placeholders})
-              AND order_created_date >= {'%s' if is_postgres_backend() else '?'}
-              AND order_created_date <= {'%s' if is_postgres_backend() else '?'}
-              AND sku IN ({sku_placeholders})
-            """,
-            [*suids, from_date, to_date, *sku_list],
-        ).fetchall()
-    return [dict(row) for row in rows]
-
-
 def replace_yandex_goods_price_report_items(*, store_uid: str, rows: list[dict[str, Any]]) -> int:
     init_store_data_model()
     suid = str(store_uid or "").strip()
@@ -6004,67 +5875,6 @@ def replace_yandex_goods_price_report_items(*, store_uid: str, rows: list[dict[s
                 """,
                 prepared,
             )
-        conn.commit()
-    return len(prepared)
-
-
-def append_yandex_goods_price_report_history_bulk(*, store_uid: str, rows: list[dict[str, Any]], captured_at: str | None = None) -> int:
-    init_store_data_model()
-    suid = str(store_uid or "").strip()
-    if not suid or not rows:
-        return 0
-    now = str(captured_at or _now_iso()).strip() or _now_iso()
-    prepared: list[tuple[Any, ...]] = []
-    for row in rows or []:
-        if not isinstance(row, dict):
-            continue
-        offer_id = str(row.get("offer_id") or row.get("sku") or "").strip()
-        if not offer_id:
-            continue
-        prepared.append(
-            (
-                suid,
-                offer_id,
-                now,
-                str(row.get("offer_name") or "").strip(),
-                str(row.get("currency") or "").strip(),
-                row.get("shop_price"),
-                row.get("basic_price"),
-                str(row.get("on_display_raw") or "").strip(),
-                row.get("on_display_price"),
-                row.get("price_value_outside_market"),
-                row.get("price_value_on_market"),
-                row.get("price_green_threshold"),
-                row.get("price_red_threshold"),
-                str(row.get("source_updated_at") or "").strip(),
-            )
-        )
-    if not prepared:
-        return 0
-    with _connect_history() as conn:
-        values_sql = _placeholders(14)
-        _executemany(conn, 
-            f"""
-            INSERT INTO yandex_goods_price_report_history (
-                store_uid, offer_id, captured_at, offer_name, currency, shop_price, basic_price,
-                on_display_raw, on_display_price, price_value_outside_market, price_value_on_market,
-                price_green_threshold, price_red_threshold, source_updated_at
-            ) VALUES ({values_sql})
-            ON CONFLICT(store_uid, offer_id, captured_at) DO UPDATE SET
-                offer_name = excluded.offer_name,
-                currency = excluded.currency,
-                shop_price = excluded.shop_price,
-                basic_price = excluded.basic_price,
-                on_display_raw = excluded.on_display_raw,
-                on_display_price = excluded.on_display_price,
-                price_value_outside_market = excluded.price_value_outside_market,
-                price_value_on_market = excluded.price_value_on_market,
-                price_green_threshold = excluded.price_green_threshold,
-                price_red_threshold = excluded.price_red_threshold,
-                source_updated_at = excluded.source_updated_at
-            """,
-            prepared,
-        )
         conn.commit()
     return len(prepared)
 
@@ -6387,134 +6197,6 @@ def replace_sales_shows_boost_report_rows_for_period(
             )
         conn.commit()
     return len(prepared)
-
-
-def get_sales_united_order_transactions(
-    *,
-    page: int = 1,
-    page_size: int = 200,
-    store_uid: str = "",
-    item_status: str = "",
-) -> dict[str, Any]:
-    init_store_data_model()
-    page_num = max(1, int(page or 1))
-    size = max(1, min(int(page_size or 200), 1000))
-    offset = (page_num - 1) * size
-    suid = str(store_uid or "").strip()
-    status = str(item_status or "").strip()
-    with _connect_history() as conn:
-        scope_where_parts: list[str] = []
-        scope_params: list[Any] = []
-        if suid:
-            scope_where_parts.append(f"t.store_uid = {'%s' if is_postgres_backend() else '?'}")
-            scope_params.append(suid)
-        scope_where_sql = f"WHERE {' AND '.join(scope_where_parts)}" if scope_where_parts else ""
-        available_status_rows = conn.execute(
-            f"""
-            SELECT t.item_status
-            FROM sales_united_order_transactions t
-            {scope_where_sql}
-            AND TRIM(COALESCE(t.item_status, '')) <> ''
-            GROUP BY t.item_status
-            ORDER BY t.item_status ASC
-            """
-            if scope_where_sql
-            else """
-            SELECT t.item_status
-            FROM sales_united_order_transactions t
-            WHERE TRIM(COALESCE(t.item_status, '')) <> ''
-            GROUP BY t.item_status
-            ORDER BY t.item_status ASC
-            """,
-            scope_params,
-        ).fetchall()
-        where_parts = list(scope_where_parts)
-        params = list(scope_params)
-        if status:
-            where_parts.append(f"t.item_status = {'%s' if is_postgres_backend() else '?'}")
-            params.append(status)
-        where_sql = f"WHERE {' AND '.join(where_parts)}" if where_parts else ""
-        total_count_row = conn.execute(
-            f"SELECT COUNT(*) AS c FROM sales_united_order_transactions t {where_sql}",
-            params,
-        ).fetchone()
-        total_count = int((total_count_row["c"] if total_count_row else 0) or 0)
-        rows = conn.execute(
-            f"""
-            SELECT
-                t.store_uid,
-                s.platform,
-                s.store_id,
-                s.store_name,
-                t.order_id,
-                t.order_created_at,
-                t.order_created_date,
-                t.shipment_date,
-                t.delivery_date,
-                t.sku,
-                t.item_name,
-                t.item_status,
-                t.payload_json,
-                t.source_updated_at,
-                t.loaded_at
-            FROM sales_united_order_transactions t
-            LEFT JOIN stores s ON s.store_uid = t.store_uid
-            {where_sql}
-            ORDER BY t.order_created_at DESC, t.order_id DESC, t.sku ASC
-            LIMIT {'%s' if is_postgres_backend() else '?'} OFFSET {'%s' if is_postgres_backend() else '?'}
-            """,
-            [*params, size, offset],
-        ).fetchall()
-        bounds = conn.execute(
-            f"""
-            SELECT
-                MIN(order_created_date) AS min_date,
-                MAX(order_created_date) AS max_date,
-                MAX(loaded_at) AS loaded_at
-            FROM sales_united_order_transactions
-            {where_sql.replace('t.', '')}
-            """,
-            params,
-        ).fetchone()
-    normalized_rows: list[dict[str, Any]] = []
-    for row in rows:
-        item = dict(row)
-        payload_raw = str(item.pop("payload_json", "") or "").strip()
-        payload: dict[str, Any] = {}
-        if payload_raw:
-            try:
-                parsed_payload = json.loads(payload_raw)
-                if isinstance(parsed_payload, dict):
-                    payload = parsed_payload
-            except Exception:
-                payload = {}
-        billing_price = payload.get("billingPrice")
-        marketplace_subsidy = payload.get("marketplaceSubsidy")
-        item["sale_price"] = billing_price
-        item["sale_price_with_coinvest"] = (
-            float(billing_price) - float(marketplace_subsidy)
-            if billing_price not in (None, "", "—") and marketplace_subsidy not in (None, "", "—")
-            else billing_price
-        )
-        item["commission"] = None
-        item["acquiring"] = None
-        item["delivery"] = None
-        item["ads"] = None
-        normalized_rows.append(item)
-    return {
-        "rows": normalized_rows,
-        "total_count": total_count,
-        "page": page_num,
-        "page_size": size,
-        "available_statuses": [
-            str((row["item_status"] if row else "") or "").strip()
-            for row in available_status_rows
-            if str((row["item_status"] if row else "") or "").strip()
-        ],
-        "min_date": str((bounds["min_date"] if bounds else "") or "").strip(),
-        "max_date": str((bounds["max_date"] if bounds else "") or "").strip(),
-        "loaded_at": str((bounds["loaded_at"] if bounds else "") or "").strip(),
-    }
 
 
 def replace_sales_overview_order_rows(

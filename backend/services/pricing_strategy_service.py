@@ -12,6 +12,19 @@ from zoneinfo import ZoneInfo
 import calendar
 
 from backend.services.db import _connect, is_postgres_backend
+from backend.services.pricing_runtime_bridge import (
+    build_market_promo_details,
+    get_cbr_usd_rub_rate_for_date as _get_cbr_usd_rub_rate_for_date,
+    get_prices_context,
+    get_prices_overview,
+    get_prices_tree,
+    profit_for_price_with_ads_rate as _profit_for_price_with_ads_rate,
+    refresh_attractiveness_data,
+    refresh_boost_data,
+    refresh_promos_data,
+    refresh_sales_coinvest_data,
+    target_met as _target_met,
+)
 from backend.services.store_data_model import (
     _load_sales_overview_order_rows_combined,
     append_pricing_daily_plan_history_bulk,
@@ -34,61 +47,6 @@ from backend.services.store_data_model import (
     get_yandex_goods_price_report_prev_map,
     upsert_pricing_strategy_results_bulk,
 )
-
-
-async def refresh_attractiveness_data(*args, **kwargs):
-    from backend.services.pricing_attractiveness_service import refresh_attractiveness_data as impl
-    return await impl(*args, **kwargs)
-
-
-async def refresh_boost_data(*args, **kwargs):
-    from backend.services.pricing_boost_service import refresh_boost_data as impl
-    return await impl(*args, **kwargs)
-
-
-def _get_cbr_usd_rub_rate_for_date(*args, **kwargs):
-    from backend.services.pricing_prices_service import _get_cbr_usd_rub_rate_for_date as impl
-    return impl(*args, **kwargs)
-
-
-async def get_prices_context(*args, **kwargs):
-    from backend.services.pricing_prices_service import get_prices_context as impl
-    return await impl(*args, **kwargs)
-
-
-async def get_prices_overview(*args, **kwargs):
-    from backend.services.pricing_prices_service import get_prices_overview as impl
-    return await impl(*args, **kwargs)
-
-
-async def get_prices_tree(*args, **kwargs):
-    from backend.services.pricing_prices_service import get_prices_tree as impl
-    return await impl(*args, **kwargs)
-
-
-def build_market_promo_details(*args, **kwargs):
-    from backend.services.pricing_promos_service import build_market_promo_details as impl
-    return impl(*args, **kwargs)
-
-
-async def refresh_promos_data(*args, **kwargs):
-    from backend.services.pricing_promos_service import refresh_promos_data as impl
-    return await impl(*args, **kwargs)
-
-
-def _profit_for_price_with_ads_rate(*args, **kwargs):
-    from backend.services.pricing_boost_service import _profit_for_price_with_ads_rate as impl
-    return impl(*args, **kwargs)
-
-
-def _target_met(*args, **kwargs):
-    from backend.services.pricing_boost_service import _target_met as impl
-    return impl(*args, **kwargs)
-
-
-async def refresh_sales_coinvest_data(*args, **kwargs):
-    from backend.services.sales_coinvest_service import refresh_sales_coinvest_data as impl
-    return await impl(*args, **kwargs)
 
 _STRATEGY_CACHE: dict[str, dict] = {}
 _STRATEGY_CACHE_GEN = 1

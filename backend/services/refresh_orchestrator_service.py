@@ -12,6 +12,12 @@ from zoneinfo import ZoneInfo
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from backend.routers._shared import _catalog_marketplace_stores_context
+from backend.services.pricing_runtime_bridge import (
+    refresh_attractiveness_data,
+    refresh_boost_data,
+    refresh_promos_data,
+    refresh_sales_coinvest_data,
+)
 from backend.services.store_data_model import (
     _connect,
     create_refresh_job_run,
@@ -40,16 +46,6 @@ _QUEUED_RUN_IDS: set[int] = set()
 MSK = ZoneInfo("Europe/Moscow")
 
 
-async def refresh_attractiveness_data(*args, **kwargs):
-    from backend.services.pricing_attractiveness_service import refresh_attractiveness_data as impl
-    return await impl(*args, **kwargs)
-
-
-async def refresh_boost_data(*args, **kwargs):
-    from backend.services.pricing_boost_service import refresh_boost_data as impl
-    return await impl(*args, **kwargs)
-
-
 def refresh_pricing_catalog_trees_from_sources(*args, **kwargs):
     from backend.services.pricing_catalog_tree_service import refresh_pricing_catalog_trees_from_sources as impl
     return impl(*args, **kwargs)
@@ -62,11 +58,6 @@ def _load_cogs_map_from_source(*args, **kwargs):
 
 async def refresh_prices_data(*args, **kwargs):
     from backend.services.pricing_prices_service import refresh_prices_data as impl
-    return await impl(*args, **kwargs)
-
-
-async def refresh_promos_data(*args, **kwargs):
-    from backend.services.pricing_promos_service import refresh_promos_data as impl
     return await impl(*args, **kwargs)
 
 
@@ -92,11 +83,6 @@ def _strategy_iteration_count_for_mode(strategy_mode: str | None) -> int:
 
 async def export_strategy_outputs_for_store(*args, **kwargs):
     from backend.services.pricing_export_service import export_strategy_outputs_for_store as impl
-    return await impl(*args, **kwargs)
-
-
-async def refresh_sales_coinvest_data(*args, **kwargs):
-    from backend.services.sales_coinvest_service import refresh_sales_coinvest_data as impl
     return await impl(*args, **kwargs)
 
 

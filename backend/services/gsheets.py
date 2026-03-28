@@ -172,60 +172,6 @@ def read_sheet_all(
     }
 
 
-def update_pricing_in_sheet(spreadsheet_url: str, updates: dict[str, dict], worksheet: str | None = "Прайс"):
-    """
-    Обновляет цены и ставки буста в Google Sheets батчево:
-    - AM (39) → новая цена
-    - AT (46) → ставка буста (boost_bid / 10000)
-    """
-    spreadsheet_id = parse_sheet_id(spreadsheet_url)
-    gc = get_gs_client()
-    sh = _with_gsheets_retry(lambda: gc.open_by_key(spreadsheet_id))
-    ws = _with_gsheets_retry(lambda: sh.worksheet(worksheet)) if worksheet else _with_gsheets_retry(lambda: sh.sheet1)
-
-    all_rows = _with_gsheets_retry(lambda: ws.get_all_values())
-    batch_updates = []
-
-    for row_idx, row in enumerate(all_rows, start=1):
-        if len(row) < 5:
-            continue
-        sku = row[4].strip()
-        if not sku or sku not in updates:
-            continue
-
-        entry = updates[sku]
-        if "price" in entry:
-            batch_updates.append({
-                "range": f"U{row_idx}",
-                "values": [[entry["price"]]]
-            })
-        if "boost" in entry:
-            batch_updates.append({
-                "range": f"AT{row_idx}",
-                "values": [[entry["boost"]]]
-            })
-
-    if not batch_updates:
-        print("⚠️ Нет данных для обновления в Google Sheets")
-        return 0
-
-    _with_gsheets_retry(lambda: ws.batch_update(batch_updates))
-    print(f"✅ Обновлено строк в Google Sheets: {len(batch_updates)}")
-    return len(batch_updates)
-
-
-def push_pricing_to_sheet(spreadsheet_url: str, worksheet: str | None = "Прайс"):
-    """
-    Загружает pricing_decisions.json и обновляет Google Sheet батчево:
-    - AM (39) → новая цена (всегда new_price, если есть)
-    - AT (46) → ставка буста (boost_bid / 10000, иначе 0)
-    """
-    # Заглушка в урезанном backend: модуль pricing_control удален.
-    # Функцию сохраняем для будущего этапа, но сейчас она ничего не делает.
-    _ = (spreadsheet_url, worksheet)
-    return 0
-
-
 def update_sheet_column_by_sku(
     *,
     spreadsheet_id: str,

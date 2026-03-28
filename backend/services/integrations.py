@@ -42,23 +42,6 @@ def get_yandex_accounts() -> list[dict[str, Any]]:
     return []
 
 
-def get_yandex_credentials(prefer_business_id: str | None = None) -> tuple[str, str]:
-    accounts = get_yandex_accounts()
-    pb = str(prefer_business_id or "").strip()
-    if pb:
-        acc = next((a for a in accounts if str(a.get("business_id") or "") == pb), None)
-        if acc:
-            return str(acc.get("api_key") or "").strip(), str(acc.get("business_id") or "").strip()
-
-    if accounts:
-        first = accounts[0]
-        return str(first.get("api_key") or "").strip(), str(first.get("business_id") or "").strip()
-
-    data = get_integrations()
-    ym = data.get("yandex_market") or {}
-    return str(ym.get("api_key") or "").strip(), str(ym.get("business_id") or "").strip()
-
-
 def is_market_push_enabled() -> bool:
     flow = get_data_flow_settings()
     global_export = bool(flow.get("export_enabled", False))
@@ -83,20 +66,6 @@ def get_data_flow_settings() -> dict[str, Any]:
         "export_enabled": export_enabled,
         "platforms": platforms,
     }
-
-
-def save_data_flow_settings(import_enabled: bool | None = None, export_enabled: bool | None = None) -> dict[str, bool]:
-    data = get_integrations()
-    current = get_data_flow_settings()
-    next_import = current["import_enabled"] if import_enabled is None else bool(import_enabled)
-    next_export = current["export_enabled"] if export_enabled is None else bool(export_enabled)
-
-    data["data_import_enabled"] = next_import
-    data["data_export_enabled"] = next_export
-    # legacy mirror for existing сервисы, которые читают is_market_push_enabled()
-    data["market_push_enabled"] = next_export
-    save_integrations(data)
-    return {"import_enabled": next_import, "export_enabled": next_export}
 
 
 def _apply_on_obj(obj: dict[str, Any], *, import_enabled: bool | None, export_enabled: bool | None) -> None:
@@ -367,72 +336,3 @@ def get_google_credentials() -> tuple[str, str]:
                 return raw_json, ""
     return raw_json, raw_b64
 
-
-def migrate_env_secrets_to_db() -> None:
-    """
-    Одноразовая миграция legacy-секретов из .env в DB.
-    Ничего не затираем, если в DB уже есть значения.
-    """
-    data = get_integrations()
-
-    ym = data.get("yandex_market") or {}
-    accounts = ym.get("accounts") if isinstance(ym.get("accounts"), list) else []
-
-    env_api = (os.getenv("YANDEX_MARKET_API_KEY") or "").strip()
-    env_business = (os.getenv("YANDEX_MARKET_BUSINESS_ID") or "").strip()
-
-    changed = False
-    if env_api and env_business and not accounts:
-        ym.setdefault("accounts", [])
-        ym["accounts"].append(
-            {
-                "api_key": env_api,
-                "business_id": env_business,
-                "connected_at": None,
-                "shops": [],
-            }
-        )
-        ym.setdefault("api_key", env_api)
-        ym.setdefault("business_id", env_business)
-        data["yandex_market"] = ym
-        changed = True
-
-    g = data.get("google") or {}
-    env_g_json = (os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON") or "").strip()
-    env_g_b64 = (os.getenv("GOOGLE_SERVICE_ACCOUNT_B64") or "").strip()
-
-    if env_g_json and not str(g.get("service_account_json") or "").strip():
-        g["service_account_json"] = env_g_json
-        changed = True
-    if env_g_b64 and not str(g.get("service_account_b64") or "").strip():
-        g["service_account_b64"] = env_g_b64
-        changed = True
-
-    if g:
-        data["google"] = g
-
-    env_push = (os.getenv("MARKET_PUSH_ENABLED") or "").strip().lower()
-    if env_push in {"1", "true", "yes", "on", "0", "false", "no", "off"} and "market_push_enabled" not in data:
-        data["market_push_enabled"] = env_push in {"1", "true", "yes", "on"}
-        changed = True
-
-    # синхронизируем новые флаги обмена данными
-    if "data_import_enabled" not in data:
-        data["data_import_enabled"] = True
-        changed = True
-    if "data_export_enabled" not in data:
-        data["data_export_enabled"] = bool(data.get("market_push_enabled", False))
-        changed = True
-    if not isinstance(data.get("platform_data_flow"), dict):
-        data["platform_data_flow"] = {}
-        changed = True
-    for platform in PLATFORMS:
-        if not isinstance(data["platform_data_flow"].get(platform), dict):
-            data["platform_data_flow"][platform] = {
-                "import_enabled": bool(data.get("data_import_enabled", True)),
-                "export_enabled": bool(data.get("data_export_enabled", False)),
-            }
-            changed = True
-
-    if changed:
-        save_integrations(data)

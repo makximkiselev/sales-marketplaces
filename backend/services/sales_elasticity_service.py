@@ -1266,16 +1266,3 @@ async def refresh_sales_elasticity_data(*, mode: str = "recent", manual: bool = 
 def get_sales_elasticity_sync_state() -> dict[str, Any]:
     return _load_sync_state()
 
-
-def run_sales_elasticity_nightly_sync() -> None:
-    try:
-        asyncio.run(refresh_sales_elasticity_data(mode="year", manual=False))
-    except Exception as exc:
-        logger.warning("[sales_elasticity] nightly sync failed error=%s", exc)
-
-
-def run_sales_elasticity_recent_sync() -> None:
-    try:
-        asyncio.run(refresh_sales_elasticity_data(mode="month", manual=False))
-    except Exception as exc:
-        logger.warning("[sales_elasticity] recent sync failed error=%s", exc)

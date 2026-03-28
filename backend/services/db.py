@@ -510,14 +510,6 @@ def save_json(key: str, payload: Any) -> None:
         conn.commit()
 
 
-def has_key(key: str) -> bool:
-    init_db()
-    with _connect() as conn:
-        row = conn.execute(
-            "SELECT 1 FROM kv_store WHERE key = %s LIMIT 1" if is_postgres_backend() else "SELECT 1 FROM kv_store WHERE key = ? LIMIT 1",
-            (key,),
-        ).fetchone()
-    return row is not None
 
 
 def migrate_legacy_json_if_missing(key: str, path: Path, default: Any) -> Any:

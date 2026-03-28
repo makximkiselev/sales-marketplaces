@@ -97,15 +97,6 @@ def seed_sources_if_empty():
     save_sources(default_sources)
 
 
-def load_promotions_mapping() -> dict[str, Any]:
-    data = migrate_legacy_json_if_missing(KEY_MAPPINGS_PROMOTIONS, PROMOTIONS_MAPPING_FILE, {})
-    return data if isinstance(data, dict) else {}
-
-
-def save_promotions_mapping(data: dict[str, Any]) -> None:
-    save_json(KEY_MAPPINGS_PROMOTIONS, data)
-
-
 def load_promos_orders_payload() -> dict[str, Any]:
     default = {"orders": [], "updated_at": None}
     data = migrate_legacy_json_if_missing(KEY_PROMOS_ORDERS, PROMOS_ORDERS_FILE, default)
@@ -114,17 +105,6 @@ def load_promos_orders_payload() -> dict[str, Any]:
     if "orders" not in data or not isinstance(data["orders"], list):
         data["orders"] = []
     return data
-
-
-def save_promos_orders_payload(data: dict[str, Any]) -> None:
-    data = dict(data or {})
-    data.setdefault("orders", [])
-    save_json(KEY_PROMOS_ORDERS, data)
-
-
-def load_promos_orders_set() -> set[str]:
-    payload = load_promos_orders_payload()
-    return {str(o).strip() for o in payload.get("orders", []) if str(o).strip()}
 
 
 def load_integrations() -> dict[str, Any]:

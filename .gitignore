@@ -9,6 +9,7 @@ venv/
 .playwright-cli/
 output/
 logs/
+frontend_dist_upload.tgz
 
 data/
 !data/.gitkeep
