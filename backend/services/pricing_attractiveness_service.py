@@ -251,14 +251,11 @@ def _build_attractiveness_page_from_snapshot(
         status_filter_norm=status_filter_norm,
         stock_filter_norm=stock_filter_norm,
     )
-    paged, total_filtered, page_n, page_size_n = _paginate_attractiveness_rows(
-        base=snapshot,
-        filtered_rows=filtered_rows,
-        page=page,
-        page_size=page_size,
-        status_filter_norm=status_filter_norm,
-        stock_filter_norm=stock_filter_norm,
-    )
+    page_size_n = max(1, min(int(page_size or 50), 200))
+    page_n = max(1, int(page or 1))
+    total_filtered = len(filtered_rows)
+    start = (page_n - 1) * page_size_n
+    paged = filtered_rows[start:start + page_size_n]
     return {
         "ok": True,
         "scope": snapshot.get("scope"),
