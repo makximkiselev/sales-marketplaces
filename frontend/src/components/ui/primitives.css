@@ -171,3 +171,20 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+@media (max-width: 960px) {
+  .btn {
+    min-height: 38px;
+    padding: 9px 11px;
+  }
+
+  .btn.inline {
+    min-height: 28px;
+  }
+
+  .btn.icon-only {
+    min-width: 34px;
+    width: 34px;
+    min-height: 34px;
+  }
+}

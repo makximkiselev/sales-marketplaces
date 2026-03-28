@@ -142,18 +142,77 @@
 }
 
 @media (max-width: 960px) {
+  .frameInner {
+    padding: 14px 12px 16px;
+    gap: 12px;
+  }
+
   .hero {
     flex-direction: column;
     align-items: stretch;
+    gap: 12px;
   }
 
   .heroAside {
     min-width: 0;
     max-width: none;
     justify-items: stretch;
+    gap: 10px;
   }
 
   .heroMeta {
     text-align: left;
+  }
+
+  .heroTitle {
+    font-size: 16px;
+  }
+
+  .heroSubtitle {
+    font-size: 13px;
+  }
+
+  .toolbar {
+    padding-top: 10px;
+    gap: 10px;
+  }
+
+  .toolbarLeft,
+  .toolbarRight {
+    width: 100%;
+    gap: 8px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+  }
+
+  .sectionRow {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sectionTitleBlock {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .modalOverlay {
+    padding: 0;
+    place-items: stretch;
+  }
+
+  .modalCard {
+    width: 100%;
+    max-height: 100vh;
+    min-height: 100vh;
+    border-radius: 0;
+    border-inline: 0;
+  }
+
+  .modalHead,
+  .modalBody {
+    padding-inline: 14px;
   }
 }
