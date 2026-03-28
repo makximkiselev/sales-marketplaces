@@ -772,7 +772,7 @@ def _build_sales_metrics(store_uids: list[str], skus: list[str]) -> tuple[dict[s
     sku_set = set(sku_list)
     rows: list[dict[str, Any]] = []
     for suid in suids:
-        for row in _load_sales_overview_order_rows_combined(store_uid=suid):
+        for row in _load_sales_overview_order_rows_combined(store_uid=suid, skus=sku_list):
             sku = str(row.get("sku") or "").strip()
             if sku and sku in sku_set:
                 rows.append(

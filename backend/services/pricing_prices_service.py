@@ -1508,3 +1508,40 @@ async def refresh_prices_data(*, store_uids: list[str] | None = None):
         "stores_updated": len(store_statuses),
         "store_statuses": store_statuses,
     }
+
+
+async def prime_prices_cache() -> None:
+    try:
+        ctx = await get_prices_context()
+        stores = list(ctx.get("marketplace_stores") or [])
+        if not stores:
+            return
+        first_store_uid = str(stores[0].get("store_uid") or "").strip()
+        first_store_id = str(stores[0].get("store_id") or "").strip()
+        common_params = {
+            "scope": "all",
+            "tree_mode": "marketplaces",
+            "tree_source_store_id": first_store_uid,
+        }
+        await get_prices_tree(**common_params)
+        await get_prices_overview_full(
+            **common_params,
+            page=1,
+            page_size=50,
+        )
+        if first_store_id:
+            store_params = {
+                "scope": "store",
+                "platform": str(stores[0].get("platform") or "").strip(),
+                "store_id": first_store_id,
+                "tree_mode": "marketplaces",
+                "tree_source_store_id": first_store_uid,
+            }
+            await get_prices_tree(**store_params)
+            await get_prices_overview_full(
+                **store_params,
+                page=1,
+                page_size=50,
+            )
+    except Exception as exc:
+        logger.warning("[pricing_prices] prime cache skipped error=%s", exc)

@@ -1035,3 +1035,45 @@ async def save_catalog_import_config(payload: dict):
             "blockers": blockers,
         },
     }
+
+
+async def prime_catalog_cache() -> None:
+    try:
+        ctx = await catalog_products_context()
+        stores = list(ctx.get("marketplace_stores") or [])
+        if not stores:
+            return
+        first_store_uid = str(stores[0].get("store_uid") or "").strip()
+        first_store_id = str(stores[0].get("store_id") or "").strip()
+        first_platform = str(stores[0].get("platform") or "").strip()
+        await catalog_products_tree(
+            tree_mode="marketplaces",
+            tree_source_store_id=first_store_uid,
+            scope="all",
+        )
+        await catalog_products_overview(
+            scope="all",
+            tree_mode="marketplaces",
+            tree_source_store_id=first_store_uid,
+            page=1,
+            page_size=50,
+        )
+        if first_store_id:
+            await catalog_products_tree(
+                tree_mode="marketplaces",
+                tree_source_store_id=first_store_uid,
+                scope="store",
+                platform=first_platform,
+                store_id=first_store_id,
+            )
+            await catalog_products_overview(
+                scope="store",
+                platform=first_platform,
+                store_id=first_store_id,
+                tree_mode="marketplaces",
+                tree_source_store_id=first_store_uid,
+                page=1,
+                page_size=50,
+            )
+    except Exception:
+        pass

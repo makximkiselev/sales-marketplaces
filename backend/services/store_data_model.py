@@ -6505,37 +6505,46 @@ def _current_month_start_iso() -> str:
     return now_msk.replace(day=1).isoformat()
 
 
-def _load_sales_overview_order_rows_combined(*, store_uid: str) -> list[dict[str, Any]]:
+def _load_sales_overview_order_rows_combined(
+    *,
+    store_uid: str,
+    skus: list[str] | tuple[str, ...] | set[str] | None = None,
+) -> list[dict[str, Any]]:
     suid = str(store_uid or "").strip()
     if not suid:
         return []
+    sku_list = [str(sku or "").strip() for sku in (skus or []) if str(sku or "").strip()]
     current_month_start = _current_month_start_iso()
     merged: dict[tuple[str, str], dict[str, Any]] = {}
+    history_sql = f"""
+        SELECT *
+        FROM sales_overview_order_rows
+        WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
+          AND order_created_date < {'%s' if is_postgres_backend() else '?'}
+    """
+    history_params: list[Any] = [suid, current_month_start]
+    if sku_list:
+        history_sql += f" AND sku IN ({_placeholders(len(sku_list))})"
+        history_params.extend(sku_list)
     with _connect_history() as conn:
-        rows = conn.execute(
-            f"""
-            SELECT *
-            FROM sales_overview_order_rows
-            WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
-              AND order_created_date < {'%s' if is_postgres_backend() else '?'}
-            """,
-            (suid, current_month_start),
-        ).fetchall()
+        rows = conn.execute(history_sql, tuple(history_params)).fetchall()
     for row in rows:
         item = dict(row)
         key = (str(item.get("order_id") or "").strip(), str(item.get("sku") or "").strip())
         if all(key):
             merged[key] = item
     try:
+        hot_sql = f"""
+            SELECT *
+            FROM sales_overview_order_rows_hot
+            WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
+        """
+        hot_params: list[Any] = [suid]
+        if sku_list:
+            hot_sql += f" AND sku IN ({_placeholders(len(sku_list))})"
+            hot_params.extend(sku_list)
         with _connect() as conn:
-            hot_rows = conn.execute(
-                f"""
-                SELECT *
-                FROM sales_overview_order_rows_hot
-                WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
-                """,
-                (suid,),
-            ).fetchall()
+            hot_rows = conn.execute(hot_sql, tuple(hot_params)).fetchall()
         for row in hot_rows:
             item = dict(row)
             key = (str(item.get("order_id") or "").strip(), str(item.get("sku") or "").strip())

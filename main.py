@@ -44,11 +44,15 @@ from backend.services.source_tables import init_source_registry
 from backend.services.storage import load_integrations, seed_sources_if_empty
 from backend.services.pricing_autopilot_service import run_pricing_autopilot_simulation
 from backend.services.pricing_catalog_tree_service import refresh_pricing_catalog_trees_from_sources
+from backend.services.pricing_attractiveness_service import prime_attractiveness_cache
+from backend.services.pricing_prices_service import prime_prices_cache
+from backend.routers.catalog import prime_catalog_cache
 from backend.services.yandex_united_orders_report_service import refresh_sales_overview_cogs_sources
 from backend.services.refresh_orchestrator_service import (
     bind_refresh_scheduler,
     configure_refresh_scheduler,
     ensure_refresh_jobs_defaults,
+    prime_strategy_cache,
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -92,6 +96,22 @@ async def _run_startup_refreshes() -> None:
         pass
     try:
         await asyncio.to_thread(refresh_sales_overview_cogs_sources)
+    except Exception:
+        pass
+    try:
+        await prime_catalog_cache()
+    except Exception:
+        pass
+    try:
+        await prime_prices_cache()
+    except Exception:
+        pass
+    try:
+        await prime_attractiveness_cache()
+    except Exception:
+        pass
+    try:
+        await prime_strategy_cache()
     except Exception:
         pass
 

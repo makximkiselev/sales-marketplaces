@@ -1290,3 +1290,42 @@ async def refresh_attractiveness_data(*, refresh_base: bool = True, store_uids: 
         "stores_total": len(stores),
         "stores_updated": len(stores_success),
     }
+
+
+async def prime_attractiveness_cache() -> None:
+    try:
+        ctx = await get_prices_context()
+        stores = list(ctx.get("marketplace_stores") or [])
+        yandex_stores = [
+            store for store in stores
+            if str(store.get("platform") or "").strip().lower() == "yandex_market"
+        ]
+        if not yandex_stores:
+            return
+        first_store_uid = str(yandex_stores[0].get("store_uid") or "").strip()
+        first_store_id = str(yandex_stores[0].get("store_id") or "").strip()
+        common_params = {
+            "scope": "all",
+            "tree_mode": "marketplaces",
+            "tree_source_store_id": first_store_uid,
+        }
+        await get_prices_tree(**common_params)
+        await get_attractiveness_overview(
+            **common_params,
+            page=1,
+            page_size=50,
+            fetch_live=False,
+        )
+        if first_store_id:
+            await get_attractiveness_overview(
+                scope="store",
+                platform="yandex_market",
+                store_id=first_store_id,
+                tree_mode="marketplaces",
+                tree_source_store_id=first_store_uid,
+                page=1,
+                page_size=50,
+                fetch_live=False,
+            )
+    except Exception as exc:
+        logger.warning("[pricing_attractiveness] prime cache skipped error=%s", exc)
