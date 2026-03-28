@@ -83,6 +83,7 @@ BACKEND_HOST = os.getenv("BACKEND_HOST", "127.0.0.1")
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 START_FRONTEND = _env_bool("START_FRONTEND", "NEXT_AUTOSTART", default=True)
 BACKEND_RELOAD_ENABLED = _env_bool("BACKEND_RELOAD", "UVICORN_RELOAD", default=True)
+BLOCKING_STARTUP_PRIME = _env_bool("STARTUP_PRIME_BLOCKING", default=not BACKEND_RELOAD_ENABLED)
 ELASTICITY_SCHEDULER = BackgroundScheduler(
     executors={"default": APSchedulerThreadPoolExecutor(1)},
     job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 7200},
@@ -127,7 +128,10 @@ async def lifespan(_: FastAPI):
     seed_sources_if_empty()
     load_integrations()
     ensure_refresh_jobs_defaults()
-    asyncio.create_task(_run_startup_refreshes())
+    if BLOCKING_STARTUP_PRIME:
+        await _run_startup_refreshes()
+    else:
+        asyncio.create_task(_run_startup_refreshes())
     if not ELASTICITY_SCHEDULER.running:
         bind_refresh_scheduler(ELASTICITY_SCHEDULER)
         ELASTICITY_SCHEDULER.add_job(
