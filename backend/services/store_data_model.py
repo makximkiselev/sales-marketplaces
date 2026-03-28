@@ -1927,207 +1927,7 @@ def init_store_data_model() -> None:
 
         _init_store_data_model_sqlite_strategy_tables(conn)
 
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_attractiveness_results (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                attractiveness_overpriced_price REAL NULL,
-                attractiveness_moderate_price REAL NULL,
-                attractiveness_profitable_price REAL NULL,
-                ozon_competitor_price REAL NULL,
-                external_competitor_price REAL NULL,
-                attractiveness_chosen_price REAL NULL,
-                attractiveness_chosen_boost_bid_percent REAL NULL,
-                source_updated_at TEXT NULL,
-                calculated_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, sku),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "rrc", "base_price")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "current_profit_abs", "base_profit_abs")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "current_profit_pct", "base_profit_pct")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "set_price", "attractiveness_set_price")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "set_profit_abs", "attractiveness_set_profit_abs")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "set_profit_pct", "attractiveness_set_profit_pct")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "non_profitable_price", "attractiveness_overpriced_price")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "non_profitable_profit_abs", "attractiveness_overpriced_profit_abs")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "non_profitable_profit_pct", "attractiveness_overpriced_profit_pct")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "moderate_price", "attractiveness_moderate_price")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "moderate_profit_abs", "attractiveness_moderate_profit_abs")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "moderate_profit_pct", "attractiveness_moderate_profit_pct")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "profitable_price", "attractiveness_profitable_price")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "profitable_profit_abs", "attractiveness_profitable_profit_abs")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "profitable_profit_pct", "attractiveness_profitable_profit_pct")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "chosen_price", "attractiveness_chosen_price")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "chosen_boost_bid_percent", "attractiveness_chosen_boost_bid_percent")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "total_profit_abs", "attractiveness_chosen_profit_abs")
-        _rename_column_if_exists(conn, "pricing_attractiveness_results", "total_profit_pct", "attractiveness_chosen_profit_pct")
-        _rebuild_pricing_attractiveness_results_if_needed(conn)
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_attractiveness_results_store ON pricing_attractiveness_results(store_uid)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_attractiveness_results_sku ON pricing_attractiveness_results(sku)")
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_attractiveness_history (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                captured_at TEXT NOT NULL,
-                attractiveness_overpriced_price REAL NULL,
-                attractiveness_moderate_price REAL NULL,
-                attractiveness_profitable_price REAL NULL,
-                ozon_competitor_price REAL NULL,
-                external_competitor_price REAL NULL,
-                attractiveness_chosen_price REAL NULL,
-                attractiveness_chosen_boost_bid_percent REAL NULL,
-                source_updated_at TEXT NULL,
-                PRIMARY KEY (store_uid, sku, captured_at),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pricing_attractiveness_history_store_sku_time "
-            "ON pricing_attractiveness_history(store_uid, sku, captured_at)"
-        )
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_promo_results (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                promo_selected_items_json TEXT NOT NULL DEFAULT '[]',
-                promo_selected_price REAL NULL,
-                promo_selected_boost_bid_percent REAL NULL,
-                promo_selected_profit_abs REAL NULL,
-                promo_selected_profit_pct REAL NULL,
-                source_updated_at TEXT NULL,
-                calculated_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, sku),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        _rename_column_if_exists(conn, "pricing_promo_results", "selected_promo_price", "promo_selected_price")
-        promo_results_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_promo_results)").fetchall()}
-        if "promo_selected_items_json" not in promo_results_cols:
-            conn.execute("ALTER TABLE pricing_promo_results ADD COLUMN promo_selected_items_json TEXT NOT NULL DEFAULT '[]'")
-        if "promo_selected_boost_bid_percent" not in promo_results_cols:
-            conn.execute("ALTER TABLE pricing_promo_results ADD COLUMN promo_selected_boost_bid_percent REAL NULL")
-        if "promo_selected_profit_abs" not in promo_results_cols:
-            conn.execute("ALTER TABLE pricing_promo_results ADD COLUMN promo_selected_profit_abs REAL NULL")
-        if "promo_selected_profit_pct" not in promo_results_cols:
-            conn.execute("ALTER TABLE pricing_promo_results ADD COLUMN promo_selected_profit_pct REAL NULL")
-        _rebuild_pricing_promo_results_if_needed(conn)
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_results_store ON pricing_promo_results(store_uid)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_results_sku ON pricing_promo_results(sku)")
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_promo_offer_results (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                promo_id TEXT NOT NULL,
-                promo_name TEXT NOT NULL DEFAULT '',
-                promo_price REAL NULL,
-                promo_profit_abs REAL NULL,
-                promo_profit_pct REAL NULL,
-                promo_fit_mode TEXT NOT NULL DEFAULT 'rejected',
-                source_updated_at TEXT NULL,
-                calculated_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, sku, promo_id),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        promo_offer_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_promo_offer_results)").fetchall()}
-        if "promo_fit_mode" not in promo_offer_cols:
-            conn.execute("ALTER TABLE pricing_promo_offer_results ADD COLUMN promo_fit_mode TEXT NOT NULL DEFAULT 'rejected'")
-        _rebuild_pricing_promo_offer_results_if_needed(conn)
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_results_store ON pricing_promo_offer_results(store_uid)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_results_sku ON pricing_promo_offer_results(sku)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_results_promo ON pricing_promo_offer_results(store_uid, promo_id)")
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_promo_offer_history (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                promo_id TEXT NOT NULL,
-                captured_at TEXT NOT NULL,
-                promo_name TEXT NOT NULL DEFAULT '',
-                promo_price REAL NULL,
-                promo_profit_abs REAL NULL,
-                promo_profit_pct REAL NULL,
-                promo_fit_mode TEXT NOT NULL DEFAULT 'rejected',
-                source_updated_at TEXT NULL,
-                PRIMARY KEY (store_uid, sku, promo_id, captured_at),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_history_store_sku_time "
-            "ON pricing_promo_offer_history(store_uid, sku, captured_at)"
-        )
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_promo_campaign_raw (
-                store_uid TEXT NOT NULL,
-                promo_id TEXT NOT NULL,
-                promo_name TEXT NOT NULL DEFAULT '',
-                date_time_from TEXT NULL,
-                date_time_to TEXT NULL,
-                source_updated_at TEXT NULL,
-                payload_json TEXT NOT NULL DEFAULT '{}',
-                loaded_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, promo_id),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_campaign_raw_store ON pricing_promo_campaign_raw(store_uid)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_campaign_raw_dates ON pricing_promo_campaign_raw(store_uid, date_time_from, date_time_to)")
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_promo_coinvest_settings (
-                store_uid TEXT NOT NULL,
-                promo_id TEXT NOT NULL,
-                promo_name TEXT NOT NULL DEFAULT '',
-                max_discount_percent REAL NULL,
-                updated_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, promo_id),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_pricing_promo_coinvest_settings_store "
-            "ON pricing_promo_coinvest_settings(store_uid)"
-        )
-
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS pricing_promo_offer_raw (
-                store_uid TEXT NOT NULL,
-                sku TEXT NOT NULL,
-                promo_id TEXT NOT NULL,
-                promo_name TEXT NOT NULL DEFAULT '',
-                date_time_from TEXT NULL,
-                date_time_to TEXT NULL,
-                promo_price REAL NULL,
-                payload_json TEXT NOT NULL DEFAULT '{}',
-                source_updated_at TEXT NULL,
-                loaded_at TEXT NOT NULL,
-                PRIMARY KEY (store_uid, sku, promo_id),
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
-            )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_raw_store ON pricing_promo_offer_raw(store_uid)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_raw_sku ON pricing_promo_offer_raw(store_uid, sku)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_raw_promo ON pricing_promo_offer_raw(store_uid, promo_id)")
+        _init_store_data_model_sqlite_attractiveness_promo_tables(conn)
 
         conn.execute(
             """
@@ -2774,6 +2574,210 @@ def _init_store_data_model_sqlite_strategy_tables(conn: sqlite3.Connection) -> N
         conn.execute("ALTER TABLE pricing_strategy_iteration_history ADD COLUMN market_boost_bid_percent REAL NULL")
     if "boost_share" not in iteration_history_cols:
         conn.execute("ALTER TABLE pricing_strategy_iteration_history ADD COLUMN boost_share REAL NULL")
+
+
+def _init_store_data_model_sqlite_attractiveness_promo_tables(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_attractiveness_results (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            attractiveness_overpriced_price REAL NULL,
+            attractiveness_moderate_price REAL NULL,
+            attractiveness_profitable_price REAL NULL,
+            ozon_competitor_price REAL NULL,
+            external_competitor_price REAL NULL,
+            attractiveness_chosen_price REAL NULL,
+            attractiveness_chosen_boost_bid_percent REAL NULL,
+            source_updated_at TEXT NULL,
+            calculated_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, sku),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "rrc", "base_price")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "current_profit_abs", "base_profit_abs")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "current_profit_pct", "base_profit_pct")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "set_price", "attractiveness_set_price")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "set_profit_abs", "attractiveness_set_profit_abs")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "set_profit_pct", "attractiveness_set_profit_pct")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "non_profitable_price", "attractiveness_overpriced_price")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "non_profitable_profit_abs", "attractiveness_overpriced_profit_abs")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "non_profitable_profit_pct", "attractiveness_overpriced_profit_pct")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "moderate_price", "attractiveness_moderate_price")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "moderate_profit_abs", "attractiveness_moderate_profit_abs")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "moderate_profit_pct", "attractiveness_moderate_profit_pct")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "profitable_price", "attractiveness_profitable_price")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "profitable_profit_abs", "attractiveness_profitable_profit_abs")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "profitable_profit_pct", "attractiveness_profitable_profit_pct")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "chosen_price", "attractiveness_chosen_price")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "chosen_boost_bid_percent", "attractiveness_chosen_boost_bid_percent")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "total_profit_abs", "attractiveness_chosen_profit_abs")
+    _rename_column_if_exists(conn, "pricing_attractiveness_results", "total_profit_pct", "attractiveness_chosen_profit_pct")
+    _rebuild_pricing_attractiveness_results_if_needed(conn)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_attractiveness_results_store ON pricing_attractiveness_results(store_uid)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_attractiveness_results_sku ON pricing_attractiveness_results(sku)")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_attractiveness_history (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            captured_at TEXT NOT NULL,
+            attractiveness_overpriced_price REAL NULL,
+            attractiveness_moderate_price REAL NULL,
+            attractiveness_profitable_price REAL NULL,
+            ozon_competitor_price REAL NULL,
+            external_competitor_price REAL NULL,
+            attractiveness_chosen_price REAL NULL,
+            attractiveness_chosen_boost_bid_percent REAL NULL,
+            source_updated_at TEXT NULL,
+            PRIMARY KEY (store_uid, sku, captured_at),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pricing_attractiveness_history_store_sku_time "
+        "ON pricing_attractiveness_history(store_uid, sku, captured_at)"
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_promo_results (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            promo_selected_items_json TEXT NOT NULL DEFAULT '[]',
+            promo_selected_price REAL NULL,
+            promo_selected_boost_bid_percent REAL NULL,
+            promo_selected_profit_abs REAL NULL,
+            promo_selected_profit_pct REAL NULL,
+            source_updated_at TEXT NULL,
+            calculated_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, sku),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    _rename_column_if_exists(conn, "pricing_promo_results", "selected_promo_price", "promo_selected_price")
+    promo_results_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_promo_results)").fetchall()}
+    if "promo_selected_items_json" not in promo_results_cols:
+        conn.execute("ALTER TABLE pricing_promo_results ADD COLUMN promo_selected_items_json TEXT NOT NULL DEFAULT '[]'")
+    if "promo_selected_boost_bid_percent" not in promo_results_cols:
+        conn.execute("ALTER TABLE pricing_promo_results ADD COLUMN promo_selected_boost_bid_percent REAL NULL")
+    if "promo_selected_profit_abs" not in promo_results_cols:
+        conn.execute("ALTER TABLE pricing_promo_results ADD COLUMN promo_selected_profit_abs REAL NULL")
+    if "promo_selected_profit_pct" not in promo_results_cols:
+        conn.execute("ALTER TABLE pricing_promo_results ADD COLUMN promo_selected_profit_pct REAL NULL")
+    _rebuild_pricing_promo_results_if_needed(conn)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_results_store ON pricing_promo_results(store_uid)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_results_sku ON pricing_promo_results(sku)")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_promo_offer_results (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            promo_id TEXT NOT NULL,
+            promo_name TEXT NOT NULL DEFAULT '',
+            promo_price REAL NULL,
+            promo_profit_abs REAL NULL,
+            promo_profit_pct REAL NULL,
+            promo_fit_mode TEXT NOT NULL DEFAULT 'rejected',
+            source_updated_at TEXT NULL,
+            calculated_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, sku, promo_id),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    promo_offer_cols = {row[1] for row in conn.execute("PRAGMA table_info(pricing_promo_offer_results)").fetchall()}
+    if "promo_fit_mode" not in promo_offer_cols:
+        conn.execute("ALTER TABLE pricing_promo_offer_results ADD COLUMN promo_fit_mode TEXT NOT NULL DEFAULT 'rejected'")
+    _rebuild_pricing_promo_offer_results_if_needed(conn)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_results_store ON pricing_promo_offer_results(store_uid)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_results_sku ON pricing_promo_offer_results(sku)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_results_promo ON pricing_promo_offer_results(store_uid, promo_id)")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_promo_offer_history (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            promo_id TEXT NOT NULL,
+            captured_at TEXT NOT NULL,
+            promo_name TEXT NOT NULL DEFAULT '',
+            promo_price REAL NULL,
+            promo_profit_abs REAL NULL,
+            promo_profit_pct REAL NULL,
+            promo_fit_mode TEXT NOT NULL DEFAULT 'rejected',
+            source_updated_at TEXT NULL,
+            PRIMARY KEY (store_uid, sku, promo_id, captured_at),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_history_store_sku_time "
+        "ON pricing_promo_offer_history(store_uid, sku, captured_at)"
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_promo_campaign_raw (
+            store_uid TEXT NOT NULL,
+            promo_id TEXT NOT NULL,
+            promo_name TEXT NOT NULL DEFAULT '',
+            date_time_from TEXT NULL,
+            date_time_to TEXT NULL,
+            source_updated_at TEXT NULL,
+            payload_json TEXT NOT NULL DEFAULT '{}',
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, promo_id),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_campaign_raw_store ON pricing_promo_campaign_raw(store_uid)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_campaign_raw_dates ON pricing_promo_campaign_raw(store_uid, date_time_from, date_time_to)")
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_promo_coinvest_settings (
+            store_uid TEXT NOT NULL,
+            promo_id TEXT NOT NULL,
+            promo_name TEXT NOT NULL DEFAULT '',
+            max_discount_percent REAL NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, promo_id),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_pricing_promo_coinvest_settings_store "
+        "ON pricing_promo_coinvest_settings(store_uid)"
+    )
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS pricing_promo_offer_raw (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            promo_id TEXT NOT NULL,
+            promo_name TEXT NOT NULL DEFAULT '',
+            date_time_from TEXT NULL,
+            date_time_to TEXT NULL,
+            promo_price REAL NULL,
+            payload_json TEXT NOT NULL DEFAULT '{}',
+            source_updated_at TEXT NULL,
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, sku, promo_id),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_raw_store ON pricing_promo_offer_raw(store_uid)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_raw_sku ON pricing_promo_offer_raw(store_uid, sku)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_promo_offer_raw_promo ON pricing_promo_offer_raw(store_uid, promo_id)")
 
 
 def _init_store_data_model_sqlite_reference_tables(conn: sqlite3.Connection) -> None:
