@@ -40,6 +40,8 @@ from backend.services.service_cache_helpers import cache_get_copy, cache_set_cop
 _ATTR_CACHE: dict[str, dict] = {}
 _ATTR_CACHE_GEN = 1
 _ATTR_CACHE_MAX = 400
+_ATTR_SNAPSHOT_CACHE: dict[str, dict] = {}
+_ATTR_SNAPSHOT_CACHE_MAX = 24
 logger = logging.getLogger("uvicorn.error")
 _FX_OZON_USD_RUB_MEM: dict[str, float] = {}
 
@@ -82,9 +84,32 @@ def _cache_set(name: str, payload: dict, value: dict):
     cache_set_copy(_ATTR_CACHE, key, value, _ATTR_CACHE_MAX)
 
 
+def _snapshot_payload_from_overview_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "scope": payload.get("scope"),
+        "platform": payload.get("platform"),
+        "store_id": payload.get("store_id"),
+        "tree_mode": payload.get("tree_mode"),
+        "tree_source_store_id": payload.get("tree_source_store_id"),
+        "category_path": payload.get("category_path"),
+        "search": payload.get("search"),
+    }
+
+
+def _snapshot_get(payload: dict[str, Any]) -> dict[str, Any] | None:
+    key = _cache_key("overview_full", payload)
+    return cache_get_copy(_ATTR_SNAPSHOT_CACHE, key)
+
+
+def _snapshot_set(payload: dict[str, Any], value: dict[str, Any]) -> None:
+    key = _cache_key("overview_full", payload)
+    cache_set_copy(_ATTR_SNAPSHOT_CACHE, key, value, _ATTR_SNAPSHOT_CACHE_MAX)
+
+
 def invalidate_attractiveness_cache():
     global _ATTR_CACHE_GEN
     _ATTR_CACHE.clear()
+    _ATTR_SNAPSHOT_CACHE.clear()
     _ATTR_CACHE_GEN += 1
 
 
@@ -160,6 +185,96 @@ def _paginate_attractiveness_rows(
         start = (page_n - 1) * page_size_n
         paged = filtered_rows[start:start + page_size_n]
     return paged, total_filtered, page_n, page_size_n
+
+
+def _filter_attractiveness_rows_from_snapshot(
+    *,
+    rows: list[dict[str, Any]],
+    scope: str,
+    platform: str,
+    store_id: str,
+    status_filter_norm: str,
+    stock_filter_norm: str,
+) -> list[dict[str, Any]]:
+    filtered_rows = rows
+    if status_filter_norm != "all":
+        scope_norm = str(scope or "all").strip().lower()
+        platform_norm = str(platform or "").strip().lower()
+        store_norm = str(store_id or "").strip()
+        if scope_norm == "store":
+            target_uid = f"{platform_norm}:{store_norm}"
+            filtered_rows = [
+                r for r in filtered_rows
+                if isinstance(r.get("status_by_store"), dict) and r["status_by_store"].get(target_uid) == status_filter_norm
+            ]
+        else:
+            filtered_rows = [
+                r for r in filtered_rows
+                if isinstance(r.get("status_by_store"), dict) and any(v == status_filter_norm for v in r["status_by_store"].values())
+            ]
+
+    if stock_filter_norm in {"in_stock", "out_of_stock"}:
+        scope_norm = str(scope or "all").strip().lower()
+        platform_norm = str(platform or "").strip().lower()
+        store_norm = str(store_id or "").strip()
+        current_store_uid = f"{platform_norm}:{store_norm}" if scope_norm == "store" and platform_norm and store_norm else ""
+
+        def _has_stock(row_obj: dict[str, Any]) -> bool:
+            stock_map = row_obj.get("stock_by_store") if isinstance(row_obj.get("stock_by_store"), dict) else {}
+            values = [stock_map.get(current_store_uid)] if current_store_uid else list(stock_map.values())
+            return any((_to_num(v) or 0) > 0 for v in values)
+
+        filtered_rows = [
+            r for r in filtered_rows
+            if (_has_stock(r) if stock_filter_norm == "in_stock" else not _has_stock(r))
+        ]
+    return filtered_rows
+
+
+def _build_attractiveness_page_from_snapshot(
+    snapshot: dict[str, Any],
+    *,
+    scope: str,
+    platform: str,
+    store_id: str,
+    page: int,
+    page_size: int,
+    status_filter_norm: str,
+    stock_filter_norm: str,
+) -> dict[str, Any]:
+    rows_all = list(snapshot.get("rows") or [])
+    filtered_rows = _filter_attractiveness_rows_from_snapshot(
+        rows=rows_all,
+        scope=scope,
+        platform=platform,
+        store_id=store_id,
+        status_filter_norm=status_filter_norm,
+        stock_filter_norm=stock_filter_norm,
+    )
+    paged, total_filtered, page_n, page_size_n = _paginate_attractiveness_rows(
+        base=snapshot,
+        filtered_rows=filtered_rows,
+        page=page,
+        page_size=page_size,
+        status_filter_norm=status_filter_norm,
+        stock_filter_norm=stock_filter_norm,
+    )
+    return {
+        "ok": True,
+        "scope": snapshot.get("scope"),
+        "platform": snapshot.get("platform"),
+        "store_id": snapshot.get("store_id"),
+        "tree_mode": snapshot.get("tree_mode"),
+        "tree_source": snapshot.get("tree_source"),
+        "stores": list(snapshot.get("stores") or []),
+        "rows": paged,
+        "total_count": total_filtered,
+        "page": page_n,
+        "page_size": page_size_n,
+        "status_filter": status_filter_norm,
+        "stock_filter": stock_filter_norm,
+        "debug_yandex_recommendations": snapshot.get("debug_yandex_recommendations") or {},
+    }
 
 
 async def _get_ozon_sales_usd_rub_rate_for_date(calc_date: datetime.date) -> float | None:
@@ -658,6 +773,20 @@ async def get_attractiveness_overview(
         "fetch_live": bool(fetch_live),
     }
     if not fetch_live:
+        snapshot_cached = _snapshot_get(_snapshot_payload_from_overview_payload(cache_payload))
+        if snapshot_cached:
+            resp = _build_attractiveness_page_from_snapshot(
+                snapshot_cached,
+                scope=scope,
+                platform=platform,
+                store_id=store_id,
+                page=page,
+                page_size=page_size,
+                status_filter_norm=status_filter_norm,
+                stock_filter_norm=stock_filter_norm,
+            )
+            _cache_set("overview", cache_payload, resp)
+            return resp
         cached = _cache_get("overview", cache_payload)
         if cached:
             return cached
@@ -673,20 +802,35 @@ async def get_attractiveness_overview(
     # Для status_filter != all или stock_filter != all фильтрация должна идти по всем товарам,
     # а не по текущей странице. Тогда сначала собираем все строки из prices-layer,
     # затем фильтруем и пагинируем здесь.
-    base, rows, stores = await _load_attractiveness_base_rows(
-        scope=scope,
-        platform=platform,
-        store_id=store_id,
-        tree_mode=tree_mode,
-        tree_source_store_id=tree_source_store_id,
-        category_path=category_path,
-        search=search,
-        page=page,
-        page_size=page_size,
-        stock_filter_norm=stock_filter_norm,
-        status_filter_norm=status_filter_norm,
-        fetch_live=bool(fetch_live),
-    )
+    if fetch_live:
+        base, rows, stores = await _load_attractiveness_base_rows(
+            scope=scope,
+            platform=platform,
+            store_id=store_id,
+            tree_mode=tree_mode,
+            tree_source_store_id=tree_source_store_id,
+            category_path=category_path,
+            search=search,
+            page=page,
+            page_size=page_size,
+            stock_filter_norm=stock_filter_norm,
+            status_filter_norm=status_filter_norm,
+            fetch_live=True,
+        )
+    else:
+        base = await get_prices_overview_full(
+            scope=scope,
+            platform=platform,
+            store_id=store_id,
+            tree_mode=tree_mode,
+            tree_source_store_id=tree_source_store_id,
+            category_path=category_path,
+            search=search,
+            stock_filter="all",
+            force_refresh=False,
+        )
+        rows = base.get("rows") if isinstance(base, dict) and isinstance(base.get("rows"), list) else []
+        stores = base.get("stores") if isinstance(base, dict) and isinstance(base.get("stores"), list) else []
 
     if not isinstance(rows, list) or not isinstance(stores, list) or not rows:
         resp = {
@@ -1157,38 +1301,41 @@ async def get_attractiveness_overview(
         except Exception:
             pass
 
-    filtered_rows = rows_with_status
-    if status_filter_norm != "all":
-        scope_norm = str(scope or "all").strip().lower()
-        platform_norm = str(platform or "").strip().lower()
-        store_norm = str(store_id or "").strip()
-        if scope_norm == "store":
-            target_uid = f"{platform_norm}:{store_norm}"
-            filtered_rows = [
-                r for r in rows_with_status
-                if isinstance(r.get("status_by_store"), dict) and r["status_by_store"].get(target_uid) == status_filter_norm
-            ]
-        else:
-            filtered_rows = [
-                r for r in rows_with_status
-                if isinstance(r.get("status_by_store"), dict) and any(v == status_filter_norm for v in r["status_by_store"].values())
-            ]
+    if not fetch_live:
+        snapshot_resp = {
+            "ok": True,
+            "scope": base.get("scope") if isinstance(base, dict) else scope,
+            "platform": base.get("platform") if isinstance(base, dict) else platform,
+            "store_id": base.get("store_id") if isinstance(base, dict) else store_id,
+            "tree_mode": base.get("tree_mode") if isinstance(base, dict) else tree_mode,
+            "tree_source": base.get("tree_source") if isinstance(base, dict) else None,
+            "stores": list(stores),
+            "rows": rows_with_status,
+            "total_count": len(rows_with_status),
+            "debug_yandex_recommendations": ym_debug_by_store_uid,
+        }
+        _snapshot_set(_snapshot_payload_from_overview_payload(cache_payload), snapshot_resp)
+        resp = _build_attractiveness_page_from_snapshot(
+            snapshot_resp,
+            scope=scope,
+            platform=platform,
+            store_id=store_id,
+            page=page,
+            page_size=page_size,
+            status_filter_norm=status_filter_norm,
+            stock_filter_norm=stock_filter_norm,
+        )
+        _cache_set("overview", cache_payload, resp)
+        return resp
 
-    if stock_filter_norm in {"in_stock", "out_of_stock"}:
-        scope_norm = str(scope or "all").strip().lower()
-        platform_norm = str(platform or "").strip().lower()
-        store_norm = str(store_id or "").strip()
-        current_store_uid = f"{platform_norm}:{store_norm}" if scope_norm == "store" and platform_norm and store_norm else ""
-
-        def _has_stock(row_obj: dict) -> bool:
-            stock_map = row_obj.get("stock_by_store") if isinstance(row_obj.get("stock_by_store"), dict) else {}
-            values = [stock_map.get(current_store_uid)] if current_store_uid else list(stock_map.values())
-            return any((_to_num(v) or 0) > 0 for v in values)
-
-        filtered_rows = [
-            r for r in filtered_rows
-            if (_has_stock(r) if stock_filter_norm == "in_stock" else not _has_stock(r))
-        ]
+    filtered_rows = _filter_attractiveness_rows_from_snapshot(
+        rows=rows_with_status,
+        scope=scope,
+        platform=platform,
+        store_id=store_id,
+        status_filter_norm=status_filter_norm,
+        stock_filter_norm=stock_filter_norm,
+    )
 
     paged, total_filtered, page_n, page_size_n = _paginate_attractiveness_rows(
         base=base if isinstance(base, dict) else {},
