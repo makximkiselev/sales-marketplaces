@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from datetime import date, datetime, timedelta
@@ -12,7 +11,6 @@ import calendar
 from backend.services.db import _connect, is_postgres_backend
 from backend.services.pricing_currency_helpers import (
     convert_price_between_currencies as _convert_price_between_currencies,
-    get_pricing_fx_usd_rub_rate_for_date as _get_pricing_fx_usd_rub_rate_for_date,
     promo_matches_installed_price as _promo_matches_installed_price,
     resolve_goods_report_currency as _resolve_goods_report_currency,
     to_num_simple as _to_num,
@@ -25,11 +23,6 @@ from backend.services.pricing_runtime_bridge import (
     get_prices_overview_full,
     get_prices_tree,
     profit_for_price_with_ads_rate as _profit_for_price_with_ads_rate,
-    refresh_attractiveness_data,
-    refresh_boost_data,
-    refresh_promos_data,
-    refresh_sales_coinvest_data,
-    target_met as _target_met,
 )
 from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 from backend.services.store_data_model import (
@@ -37,12 +30,9 @@ from backend.services.store_data_model import (
     append_pricing_daily_plan_history_bulk,
     append_pricing_strategy_iteration_history_bulk,
     append_pricing_strategy_history_bulk,
-    clear_pricing_strategy_results_for_store,
     get_active_pricing_promo_campaigns,
-    get_fx_rates_cache,
     get_pricing_attractiveness_results_map,
     get_pricing_boost_results_map,
-    get_pricing_price_results_map,
     get_pricing_promo_coinvest_settings_map,
     get_pricing_promo_offer_results_map,
     get_pricing_promo_offer_raw_map,

@@ -5,7 +5,6 @@ from typing import Any
 
 from backend.services.pricing_currency_helpers import (
     convert_price_between_currencies as _convert_price_between_currencies,
-    get_pricing_fx_usd_rub_rate_for_date as _get_pricing_fx_usd_rub_rate_for_date,
     promo_matches_installed_price as _promo_matches_installed_price,
     resolve_goods_report_currency as _resolve_goods_report_currency,
     summary_round as _summary_round,
@@ -24,7 +23,6 @@ from backend.services.sales_elasticity_service import (
 )
 from backend.services.store_data_model import (
     get_active_pricing_promo_campaigns,
-    get_fx_rates_cache,
     get_pricing_promo_coinvest_settings_map,
     get_pricing_promo_coinvest_settings,
     get_pricing_promo_offer_results_map,

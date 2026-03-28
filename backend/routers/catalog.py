@@ -6,7 +6,6 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from backend.routers._shared import (
-    _catalog_db_connect,
     _build_catalog_import_options,
     _catalog_marketplace_stores_context,
     _catalog_external_tree_sources_context,
@@ -20,7 +19,6 @@ from backend.routers._shared import (
     _read_source_rows,
     _fetch_cbr_usd_rates,
     _sanitize_catalog_mapping,
-    _safe_source_table_name,
     get_pricing_store_settings,
     load_sources,
     _read_source_rows,
@@ -37,7 +35,6 @@ from backend.services.pricing_catalog_helpers import (
     norm_col_name as _norm_col_name,
     num0 as _num0,
     profit_for_price as _profit_for_price,
-    resolve_source_table_name as _resolve_source_table_name,
     to_num as _to_num,
 )
 from backend.services.store_data_model import (

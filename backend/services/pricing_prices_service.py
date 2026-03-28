@@ -1,20 +1,16 @@
 from __future__ import annotations
 
 import datetime
-import json
 import logging
 import math
 from typing import Any
 
 from backend.routers._shared import (
-    _catalog_db_connect,
     _catalog_marketplace_stores_context,
     _catalog_external_tree_sources_context,
-    _catalog_path_from_row,
     _catalog_tree_from_paths,
     _fetch_cbr_usd_rates,
     _read_source_rows,
-    _safe_source_table_name,
 )
 from backend.services.store_data_model import (
     clear_pricing_strategy_results_for_store,
@@ -43,7 +39,6 @@ from backend.services.pricing_catalog_helpers import (
     to_num as _to_num,
 )
 from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
-from backend.services.source_tables import get_registered_source_table
 from backend.services.storage import get_source_by_id, is_source_mode_enabled
 
 

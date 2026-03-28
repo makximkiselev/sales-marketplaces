@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from datetime import datetime
 from typing import Any
@@ -20,9 +19,6 @@ from backend.services.pricing_prices_service import (
 )
 from backend.services.store_data_model import (
     clear_pricing_boost_results_for_store,
-    get_pricing_attractiveness_results_map,
-    get_pricing_boost_results_map,
-    get_pricing_promo_offer_results_map,
     get_pricing_strategy_results_map,
     get_sales_overview_order_rows,
     upsert_pricing_boost_results_bulk,

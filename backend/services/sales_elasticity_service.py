@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import asyncio
 import datetime
 import hashlib
 import json
@@ -11,7 +10,6 @@ from typing import Any
 import httpx
 
 from backend.routers._shared import (
-    YANDEX_BASE_URL,
     _catalog_marketplace_stores_context,
     _catalog_path_from_row,
     _catalog_tree_from_paths,
@@ -23,7 +21,6 @@ from backend.services.db import is_postgres_backend
 from backend.services.store_data_model import (
     _connect,
     get_pricing_store_settings,
-    get_sales_market_metrics_map,
     get_fx_rates_cache,
     replace_sales_market_order_items_for_period,
 )
@@ -1265,4 +1262,3 @@ async def refresh_sales_elasticity_data(*, mode: str = "recent", manual: bool = 
 
 def get_sales_elasticity_sync_state() -> dict[str, Any]:
     return _load_sync_state()
-

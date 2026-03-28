@@ -14,7 +14,6 @@ import httpx
 
 from backend.routers._shared import (
     YANDEX_BASE_URL,
-    _catalog_db_connect,
     _catalog_marketplace_stores_context,
     _fetch_cbr_usd_rates,
     _find_yandex_shop_credentials,

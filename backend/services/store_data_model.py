@@ -9,12 +9,8 @@ from zoneinfo import ZoneInfo
 
 from backend.services.db import (
     DATABASE_URL,
-    DB_PATH,
     HISTORY_DATABASE_URL,
-    HISTORY_DB_PATH,
     SYSTEM_DATABASE_URL,
-    SYSTEM_DB_PATH,
-    apply_sqlite_pragmas,
     is_postgres_backend,
     rebuild_db_explorer_views,
     run_sqlite_maintenance,

@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from typing import Any
 
 from backend.services.db import (
-    BASE_DIR,
     DATABASE_URL,
     SYSTEM_DATABASE_URL,
     is_postgres_backend,
