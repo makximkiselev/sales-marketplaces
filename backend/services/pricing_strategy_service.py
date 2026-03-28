@@ -390,18 +390,6 @@ def _build_strategy_peer_snapshot(
 
 
 
-def _is_stable_report_value(current_value: float | None, previous_value: float | None) -> bool:
-    if current_value in (None, 0) or previous_value in (None, 0):
-        return False
-    current = float(current_value)
-    previous = float(previous_value)
-    delta_abs = abs(current - previous)
-    if delta_abs <= 1.0:
-        return True
-    baseline = max(abs(previous), 1.0)
-    return (delta_abs / baseline) <= 0.005
-
-
 def _build_profit_first_daily_plan(
     *,
     plan_revenue_total: float | None,
@@ -708,28 +696,6 @@ def _arc_elasticity(
     return pct_qty / pct_price
 
 
-def _compose_strategy_label(*, promo: bool, attractiveness: bool, boost: bool) -> str:
-    parts: list[str] = []
-    if promo:
-        parts.append("промо")
-    if attractiveness:
-        parts.append("привлекательность")
-    if boost:
-        parts.append("буст")
-    return " + ".join(parts) if parts else "базовая"
-
-
-def _compose_strategy_code(*, promo: bool, attractiveness: bool, boost: bool) -> str:
-    parts: list[str] = []
-    if promo:
-        parts.append("promo")
-    if attractiveness:
-        parts.append("attractiveness")
-    if boost:
-        parts.append("boost")
-    return "+".join(parts) if parts else "base"
-
-
 def _decision_code_from_label(label: str | None) -> str:
     normalized = str(label or "").strip().lower()
     if not normalized:
@@ -763,86 +729,6 @@ def _decision_code_from_label(label: str | None) -> str:
         "невыгодная цена": "overpriced",
     }
     return mapping.get(normalized, normalized.replace(" ", "_"))
-
-
-def _build_plan_fact_summary(
-    *,
-    stores: list[dict[str, Any]],
-    store_totals: dict[str, dict[str, float | None]],
-    today: date,
-) -> dict[str, Any]:
-    by_store: dict[str, dict[str, Any]] = {}
-    overall_plan_revenue = 0.0
-    overall_plan_profit = 0.0
-    overall_fact_revenue = 0.0
-    overall_fact_profit = 0.0
-    has_overall_plan_revenue = False
-    has_overall_plan_profit = False
-    has_overall_fact_revenue = False
-    has_overall_fact_profit = False
-
-    for store in stores:
-        suid = str(store.get("store_uid") or "").strip()
-        if not suid:
-            continue
-        totals = store_totals.get(suid) or {}
-        plan_revenue = _to_num(totals.get("planned_revenue"))
-        plan_profit = _to_num(totals.get("target_profit_rub"))
-        fact_revenue = _to_num(totals.get("today_revenue"))
-        fact_profit = _to_num(totals.get("today_profit"))
-        month_revenue_before_today = _to_num(totals.get("month_revenue_before_today"))
-        month_profit_before_today = _to_num(totals.get("month_profit_before_today"))
-        minimum_profit_percent = _to_num(totals.get("minimum_profit_percent"))
-        fact_profit_pct = (
-            (float(fact_profit) / float(fact_revenue)) * 100.0
-        ) if fact_profit not in (None, 0) and fact_revenue not in (None, 0) else None
-        day_plan = _build_profit_first_daily_plan(
-            plan_revenue_total=plan_revenue,
-            plan_profit_total=plan_profit,
-            month_revenue_before_today=month_revenue_before_today,
-            month_profit_before_today=month_profit_before_today,
-            minimum_profit_percent=minimum_profit_percent,
-            weighted_day_profit_pct=fact_profit_pct,
-            calc_date=today,
-        )
-        daily_plan_revenue = _to_num(day_plan.get("planned_revenue_daily"))
-        daily_plan_profit = _to_num(day_plan.get("planned_profit_daily"))
-        daily_plan_profit_pct = _to_num(day_plan.get("planned_profit_pct"))
-
-        by_store[suid] = {
-            "store_uid": suid,
-            "label": str(store.get("label") or "").strip(),
-            "currency_code": str(store.get("currency_code") or "RUB").strip().upper() or "RUB",
-            "plan_revenue": daily_plan_revenue,
-            "plan_profit_pct": daily_plan_profit_pct,
-            "plan_profit_abs": daily_plan_profit,
-            "fact_revenue": fact_revenue,
-            "fact_profit_pct": fact_profit_pct,
-            "fact_profit_abs": fact_profit,
-        }
-
-        if daily_plan_revenue not in (None, 0):
-            overall_plan_revenue += float(daily_plan_revenue)
-            has_overall_plan_revenue = True
-        if daily_plan_profit not in (None, 0):
-            overall_plan_profit += float(daily_plan_profit)
-            has_overall_plan_profit = True
-        if fact_revenue not in (None, 0):
-            overall_fact_revenue += float(fact_revenue)
-            has_overall_fact_revenue = True
-        if fact_profit not in (None, 0):
-            overall_fact_profit += float(fact_profit)
-            has_overall_fact_profit = True
-
-    overall = {
-        "plan_revenue": overall_plan_revenue if has_overall_plan_revenue else None,
-        "plan_profit_pct": ((overall_plan_profit / overall_plan_revenue) * 100.0) if has_overall_plan_profit and has_overall_plan_revenue and overall_plan_revenue > 0 else None,
-        "plan_profit_abs": overall_plan_profit if has_overall_plan_profit else None,
-        "fact_revenue": overall_fact_revenue if has_overall_fact_revenue else None,
-        "fact_profit_pct": ((overall_fact_profit / overall_fact_revenue) * 100.0) if has_overall_fact_profit and has_overall_fact_revenue and overall_fact_revenue > 0 else None,
-        "fact_profit_abs": overall_fact_profit if has_overall_fact_profit else None,
-    }
-    return {"overall": overall, "by_store": by_store}
 
 
 def _strategy_sort_metric_value(row: dict[str, Any], key: str) -> float:
@@ -1507,26 +1393,6 @@ def _resolve_internal_economy_boost_pct(
     return 0.0 if base_bid < 0.01 else round(base_bid, 2)
 
 
-def _next_recommended_boost_step_with_cap(
-    *,
-    current_bid_pct: float | None,
-    boost_metric: dict[str, Any] | None,
-    max_allowed_bid_pct: float | None,
-) -> float | None:
-    current = round(float(current_bid_pct or 0.0), 2)
-    cap = _to_num(max_allowed_bid_pct)
-    if cap is None or cap <= current + 0.01:
-        return None
-    steps = [step for step in _recommended_boost_steps(boost_metric) if step <= float(cap) + 0.01]
-    for step in steps:
-        if step > current + 0.01:
-            return step
-    safe_cap = round(float(cap), 2)
-    if safe_cap > current + 0.01:
-        return safe_cap
-    return None
-
-
 def _same_num(left: float | None, right: float | None, tol: float = 0.5) -> bool:
     if left in (None, "") and right in (None, ""):
         return True
@@ -1989,104 +1855,6 @@ def _build_strategy_coinvest_metrics(
     }
 
 
-def _promo_supports_price(offers: list[dict[str, Any]], price: float | None) -> bool:
-    if price is None:
-        return False
-    for offer in offers:
-        offer_price = _to_num(offer.get("promo_price"))
-        if offer_price is not None and offer_price >= float(price):
-            return True
-    return False
-
-
-def _lowest_safe_candidate(candidates: list[dict[str, Any]], *, min_profit_pct: float = 3.0) -> dict[str, Any] | None:
-    threshold = float(min_profit_pct) - 0.05
-    usable = [
-        item
-        for item in candidates
-        if item.get("price") is not None and (_to_num(item.get("profit_pct")) or -999999.0) >= threshold
-    ]
-    if not usable:
-        return None
-    usable.sort(
-        key=lambda item: (
-            float(_to_num(item.get("price")) or 0.0),
-            0 if str(item.get("source") or "") == "promo" else 1 if str(item.get("source") or "") == "attractiveness" else 2,
-        )
-    )
-    return usable[0]
-
-
-def _lowest_candidate_meeting_pct(candidates: list[dict[str, Any]], *, target_pct: float | None) -> dict[str, Any] | None:
-    threshold = float(target_pct or 0.0) - 0.05
-    usable = [
-        item
-        for item in candidates
-        if item.get("price") is not None and (_to_num(item.get("profit_pct")) or -999999.0) >= threshold
-    ]
-    if not usable:
-        return None
-    usable.sort(
-        key=lambda item: (
-            float(_to_num(item.get("price")) or 0.0),
-            0 if str(item.get("source") or "") == "promo" else 1 if str(item.get("source") or "") == "attractiveness" else 2,
-        )
-    )
-    return usable[0]
-
-
-def _highest_candidate_meeting_pct(candidates: list[dict[str, Any]], *, target_pct: float | None) -> dict[str, Any] | None:
-    threshold = float(target_pct or 0.0) - 0.05
-    usable = [
-        item
-        for item in candidates
-        if item.get("price") is not None and (_to_num(item.get("profit_pct")) or -999999.0) >= threshold
-    ]
-    if not usable:
-        return None
-    usable.sort(
-        key=lambda item: (
-            -float(_to_num(item.get("price")) or 0.0),
-            -float(_to_num(item.get("profit_pct")) or -999999.0),
-        )
-    )
-    return usable[0]
-
-
-def _highest_safe_candidate(candidates: list[dict[str, Any]], *, min_profit_pct: float = 3.0) -> dict[str, Any] | None:
-    threshold = float(min_profit_pct) - 0.05
-    usable = [
-        item
-        for item in candidates
-        if item.get("price") is not None and (_to_num(item.get("profit_pct")) or -999999.0) >= threshold
-    ]
-    if not usable:
-        return None
-    usable.sort(
-        key=lambda item: (
-            -float(_to_num(item.get("price")) or 0.0),
-            -float(_to_num(item.get("profit_pct")) or -999999.0),
-        )
-    )
-    return usable[0]
-
-
-def _meets_floor_pct(profit_pct: float | None, floor_pct: float | None, *, tolerance: float = 0.05) -> bool:
-    if floor_pct is None:
-        return True
-    if profit_pct is None:
-        return False
-    return float(profit_pct) >= (float(floor_pct) - float(tolerance))
-
-
-def _meets_target_pct(target_pct: float | None, profit_pct: float | None) -> bool:
-    if target_pct is None:
-        return (profit_pct or 0.0) >= 0.0
-    if profit_pct is None:
-        return False
-    return float(profit_pct) >= float(target_pct)
-
-
 def _meets_target(*, target_pct: float | None, target_abs: float | None, profit_pct: float | None, profit_abs: float | None) -> bool:
     if target_pct is not None and target_pct > 0:
         return profit_pct is not None and float(profit_pct) >= float(target_pct)
@@ -2132,121 +1900,6 @@ def _max_ads_rate_for_price(
     return round(best_rate, 2), best_abs, best_pct
 
 
-def _find_min_price_for_zone(
-    *,
-    calc_ctx: dict[str, Any] | None,
-    target_pct: float | None,
-    target_abs: float | None,
-    max_ads_rate_pct: float | None,
-    low_price: float | None,
-    high_price: float | None,
-) -> tuple[float | None, float | None, float | None, float | None]:
-    if not isinstance(calc_ctx, dict):
-        return None, None, None, None
-    if low_price is None or high_price is None:
-        return None, None, None, None
-    lo = max(1.0, float(low_price))
-    hi = max(lo, float(high_price))
-    best_price: float | None = None
-    best_bid: float | None = None
-    best_abs: float | None = None
-    best_pct: float | None = None
-    for _ in range(50):
-        mid = float(int(round((lo + hi) / 2.0)))
-        bid_pct, pa, pp = _max_ads_rate_for_price(
-            price=mid,
-            calc_ctx=calc_ctx,
-            target_pct=target_pct,
-            target_abs=target_abs,
-            max_ads_rate_pct=max_ads_rate_pct,
-        )
-        if bid_pct is not None:
-            best_price = mid
-            best_bid = bid_pct
-            best_abs = pa
-            best_pct = pp
-            hi = max(lo, mid - 1.0)
-        else:
-            lo = mid + 1.0
-    return best_price, best_bid, best_abs, best_pct
-
-
-def _build_promo_items(offers: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = []
-    seen: set[tuple[str, str]] = set()
-    label_map = {
-        "with_ads": "Проходит",
-        "without_ads": "Проходит без ДРР",
-        "rejected": "Не проходит",
-    }
-    for offer in offers:
-        name = str(offer.get("promo_name") or offer.get("promo_id") or "").strip()
-        mode = str(offer.get("promo_fit_mode") or "rejected").strip() or "rejected"
-        key = (name, mode)
-        if not name or key in seen:
-            continue
-        seen.add(key)
-        out.append({"name": name, "status": label_map.get(mode, "Не проходит")})
-    return out
-
-
-def _pick_best_promo_offer(
-    offers: list[dict[str, Any]],
-    *,
-    target_profit_pct: float | None,
-) -> tuple[dict[str, Any] | None, bool]:
-    valid = [o for o in offers if isinstance(o, dict)]
-    if not valid:
-        return None, False
-    valid.sort(key=lambda x: (_to_num(x.get("promo_price")) is None, _to_num(x.get("promo_price")) or 0.0))
-
-    passing: list[tuple[dict[str, Any], bool]] = []
-    for offer in valid:
-        mode = str(offer.get("promo_fit_mode") or "rejected")
-        if mode == "with_ads":
-            ok = _meets_target_pct(target_profit_pct, _to_num(offer.get("promo_profit_pct")))
-            if ok:
-                passing.append((offer, True))
-        elif mode == "without_ads":
-            ok = _meets_target_pct(target_profit_pct, _to_num(offer.get("promo_profit_pct")))
-            if ok:
-                passing.append((offer, False))
-    if passing:
-        passing.sort(key=lambda pair: (_to_num(pair[0].get("promo_price")) is None, _to_num(pair[0].get("promo_price")) or 0.0))
-        return passing[0]
-    return None, False
-
-
-def _pick_best_promo_offer_for_floor(
-    offers: list[dict[str, Any]],
-    *,
-    min_profit_pct: float | None,
-) -> tuple[dict[str, Any] | None, bool]:
-    valid = [o for o in offers if isinstance(o, dict) and _to_num(o.get("promo_price")) is not None]
-    if not valid:
-        return None, False
-    floor_pct = float(min_profit_pct or 0.0) - 0.05
-    passing: list[tuple[dict[str, Any], bool]] = []
-    for offer in valid:
-        profit_pct = _to_num(offer.get("promo_profit_pct"))
-        if profit_pct is None or float(profit_pct) < floor_pct:
-            continue
-        mode = str(offer.get("promo_fit_mode") or "rejected").strip().lower()
-        uses_ads = mode == "with_ads"
-        passing.append((offer, uses_ads))
-    if not passing:
-        return None, False
-    passing.sort(
-        key=lambda pair: (
-            _to_num(pair[0].get("promo_price")) is None,
-            _to_num(pair[0].get("promo_price")) or 0.0,
-            str(pair[0].get("promo_name") or ""),
-        )
-    )
-    chosen, uses_ads = passing[0]
-    return chosen, uses_ads
-
-
 def _selected_offer_by_price(offers: list[dict[str, Any]], selected_price: float | None) -> dict[str, Any] | None:
     if selected_price is None:
         return None
@@ -2258,18 +1911,6 @@ def _selected_offer_by_price(offers: list[dict[str, Any]], selected_price: float
         return None
     matched.sort(key=lambda offer: (0 if str(offer.get("promo_fit_mode") or "").strip().lower() in {"with_ads", "without_ads"} else 1, str(offer.get("promo_name") or "")))
     return matched[0]
-
-
-def _target_price_profit_pct(row: dict[str, Any]) -> float | None:
-    metrics = row.get("price_metrics_by_store") if isinstance(row.get("price_metrics_by_store"), dict) else {}
-    return _to_num(metrics.get("target_profit_pct"))
-
-
-def _recalculate_for_price_with_drr(price_row: dict[str, Any], price: float | None, drr_percent: float) -> tuple[float | None, float | None]:
-    calc_ctx = price_row.get("calc_ctx") if isinstance(price_row.get("calc_ctx"), dict) else None
-    if price is None or not isinstance(calc_ctx, dict):
-        return None, None
-    return _profit_for_price_with_ads_rate(price=price, calc_ctx=calc_ctx, ads_rate_override=max(0.0, float(drr_percent or 0.0)) / 100.0)
 
 
 def _find_min_price_for_fixed_boost_target(
@@ -2532,19 +2173,6 @@ def _build_strategy_iteration_snapshot(
     }
 
 
-def _fallback_rrc_no_ads_strategy(
-    *,
-    price_metric: dict[str, Any] | None,
-    boost_metric: dict[str, Any] | None,
-) -> tuple[float | None, float, float | None, float | None]:
-    metric = price_metric if isinstance(price_metric, dict) else {}
-    price = _to_num(metric.get("rrc_no_ads_price"))
-    profit_abs = _to_num(metric.get("rrc_no_ads_profit_abs"))
-    profit_pct = _to_num(metric.get("rrc_no_ads_profit_pct"))
-    _ = boost_metric
-    return price, 0.0, profit_abs, profit_pct
-
-
 def _matrix_decision_meta(
     *,
     promo_count: int,
@@ -2754,128 +2382,6 @@ def _decision_from_selected_scenario(
         "selection_reason": selection_reason,
         "promo_count": promo_count,
     }
-
-
-def _resolve_portfolio_role(
-    *,
-    sales_metric: dict[str, Any] | None,
-    store_revenue_total: float,
-) -> str:
-    metric = sales_metric if isinstance(sales_metric, dict) else {}
-    fact_sales = int(metric.get("today_sales") or 0)
-    forecast_sales = int(metric.get("forecast_sales") or 0)
-    week_avg_daily = float(metric.get("week_avg_daily") or 0.0)
-    month_avg_daily = float(metric.get("month_avg_daily") or 0.0)
-    today_revenue = float(_to_num(metric.get("today_revenue")) or 0.0)
-    revenue_share = (today_revenue / store_revenue_total) if store_revenue_total > 0 else 0.0
-
-    if (
-        fact_sales >= 3
-        or forecast_sales >= 3
-        or week_avg_daily >= 1.5
-        or month_avg_daily >= 1.5
-        or revenue_share >= 0.08
-    ):
-        return "A"
-    if (
-        fact_sales >= 1
-        or forecast_sales >= 1
-        or week_avg_daily >= 0.3
-        or month_avg_daily >= 0.3
-        or revenue_share >= 0.02
-    ):
-        return "B"
-    return "C"
-
-
-def _select_scenario_by_codes(
-    *,
-    candidates: list[dict[str, Any]],
-    preferred_codes: Sequence[str],
-) -> dict[str, Any] | None:
-    preferred = [str(code or "").strip() for code in preferred_codes if str(code or "").strip()]
-    for code in preferred:
-        match = next((item for item in candidates if str(item.get("iteration_code") or "").strip() == code), None)
-        if match is not None:
-            return match
-    return None
-
-
-def _scenario_has_boost(snapshot: dict[str, Any] | None) -> bool:
-    if not isinstance(snapshot, dict):
-        return False
-    return float(_to_num(snapshot.get("tested_boost_pct")) or 0.0) > 0.5
-
-
-def _scenario_group_rank(snapshot: dict[str, Any] | None) -> int:
-    if not isinstance(snapshot, dict):
-        return 999
-    promo_count = min(2, max(0, int(snapshot.get("promo_count") or 0)))
-    attr_rank = _attr_rank(str(snapshot.get("attractiveness_status") or ""))
-    has_boost = _scenario_has_boost(snapshot)
-    if promo_count >= 2 and attr_rank >= 2 and has_boost:
-        return 0
-    if promo_count >= 2 and attr_rank >= 2:
-        return 1
-    if promo_count == 1 and attr_rank >= 2 and has_boost:
-        return 2
-    if promo_count == 1 and attr_rank >= 2:
-        return 3
-    if promo_count >= 2 and attr_rank >= 1 and has_boost:
-        return 4
-    if promo_count >= 2 and attr_rank >= 1:
-        return 5
-    if promo_count == 1 and attr_rank >= 1 and has_boost:
-        return 6
-    if promo_count == 1 and attr_rank >= 1:
-        return 7
-    if attr_rank >= 2 and has_boost:
-        return 8
-    if attr_rank >= 2:
-        return 9
-    if attr_rank >= 1 and has_boost:
-        return 10
-    if attr_rank >= 1:
-        return 11
-    return 12
-
-
-def _choose_portfolio_scenario(
-    *,
-    ordered: list[dict[str, Any]],
-    sales_metric: dict[str, Any] | None,
-) -> tuple[dict[str, Any] | None, str, str]:
-    _ = sales_metric
-    preferred_codes_by_rank: dict[int, list[str]] = {
-        0: ["mrc_with_boost", "rrc_with_boost"],
-        1: ["mrc", "rrc_no_ads"],
-        2: ["mrc_with_boost", "rrc_with_boost"],
-        3: ["mrc", "rrc_no_ads"],
-        4: ["mrc_with_boost", "rrc_with_boost"],
-        5: ["mrc", "rrc_no_ads"],
-        6: ["mrc_with_boost", "rrc_with_boost"],
-        7: ["mrc", "rrc_no_ads"],
-        8: ["mrc_with_boost", "rrc_with_boost"],
-        9: ["mrc", "rrc_no_ads"],
-        10: ["mrc_with_boost", "rrc_with_boost"],
-        11: ["mrc", "rrc_no_ads"],
-        12: ["rrc_with_boost", "rrc_no_ads", "mrc_with_boost", "mrc"],
-    }
-    for rank in range(13):
-        candidates = [row for row in ordered if _scenario_group_rank(row) == rank]
-        if not candidates:
-            continue
-        selected = _select_scenario_by_codes(
-            candidates=candidates,
-            preferred_codes=preferred_codes_by_rank.get(rank, ["rrc_with_boost", "rrc_no_ads", "mrc_with_boost", "mrc"]),
-        )
-        if selected is None:
-            selected = candidates[0]
-        return selected, "matrix", f"matrix_rank_{rank}"
-
-    if ordered:
-        return ordered[0], "matrix", "matrix_fallback"
-    return None, "matrix", "matrix_empty"
 
 
 def _missing_market_signals(ordered: Sequence[dict[str, Any]] | None) -> bool:
