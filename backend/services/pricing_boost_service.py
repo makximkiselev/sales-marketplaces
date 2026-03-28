@@ -1,11 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-import copy
-import hashlib
 import json
 import logging
-import re
 from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -13,6 +10,7 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from backend.routers._shared import YANDEX_BASE_URL, _find_yandex_shop_credentials, _ym_headers
+from backend.services.numeric_helpers import to_num_loose
 from backend.services.pricing_prices_service import (
     _profit_for_price,
     get_prices_context,
@@ -29,6 +27,7 @@ from backend.services.store_data_model import (
     get_sales_overview_order_rows,
     upsert_pricing_boost_results_bulk,
 )
+from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 
 logger = logging.getLogger("uvicorn.error")
 MSK = ZoneInfo("Europe/Moscow")
@@ -39,21 +38,17 @@ _BOOST_CACHE_MAX = 400
 
 
 def _cache_key(name: str, payload: dict) -> str:
-    raw = json.dumps({"name": name, "gen": _BOOST_CACHE_GEN, "payload": payload}, sort_keys=True, ensure_ascii=False, default=str)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
+    return make_cache_key(name, payload, _BOOST_CACHE_GEN)
 
 
 def _cache_get(name: str, payload: dict):
     key = _cache_key(name, payload)
-    got = _BOOST_CACHE.get(key)
-    return copy.deepcopy(got) if isinstance(got, dict) else None
+    return cache_get_copy(_BOOST_CACHE, key)
 
 
 def _cache_set(name: str, payload: dict, value: dict):
     key = _cache_key(name, payload)
-    if len(_BOOST_CACHE) >= _BOOST_CACHE_MAX:
-        _BOOST_CACHE.clear()
-    _BOOST_CACHE[key] = copy.deepcopy(value)
+    cache_set_copy(_BOOST_CACHE, key, value, _BOOST_CACHE_MAX)
 
 
 def invalidate_boost_cache():
@@ -63,20 +58,7 @@ def invalidate_boost_cache():
 
 
 def _to_num(v: Any) -> float | None:
-    if v in (None, ""):
-        return None
-    try:
-        return float(v)
-    except Exception:
-        pass
-    s = str(v).strip().replace("\xa0", "").replace(" ", "").replace(",", ".")
-    m = re.search(r"-?\d+(?:\.\d+)?", s)
-    if not m:
-        return None
-    try:
-        return float(m.group(0))
-    except Exception:
-        return None
+    return to_num_loose(v)
 
 
 def _extract_recommended_bid(item: dict) -> float | None:

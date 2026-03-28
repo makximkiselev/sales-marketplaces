@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import copy
 import datetime as dt
-import hashlib
 import json
 import logging
 from typing import Any
@@ -11,6 +9,7 @@ from typing import Any
 import httpx
 
 from backend.routers._shared import YANDEX_BASE_URL, _find_yandex_shop_credentials, _ym_headers
+from backend.services.numeric_helpers import to_num_loose
 from backend.services.pricing_prices_service import (
     _profit_for_price,
     get_prices_context,
@@ -36,6 +35,7 @@ from backend.services.store_data_model import (
     upsert_pricing_promo_offer_raw_bulk,
     upsert_pricing_promo_results_bulk,
 )
+from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -45,21 +45,17 @@ _PROMOS_CACHE_MAX = 400
 
 
 def _cache_key(name: str, payload: dict) -> str:
-    raw = json.dumps({"name": name, "gen": _PROMOS_CACHE_GEN, "payload": payload}, sort_keys=True, ensure_ascii=False, default=str)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
+    return make_cache_key(name, payload, _PROMOS_CACHE_GEN)
 
 
 def _cache_get(name: str, payload: dict):
     key = _cache_key(name, payload)
-    got = _PROMOS_CACHE.get(key)
-    return copy.deepcopy(got) if isinstance(got, dict) else None
+    return cache_get_copy(_PROMOS_CACHE, key)
 
 
 def _cache_set(name: str, payload: dict, value: dict):
     key = _cache_key(name, payload)
-    if len(_PROMOS_CACHE) >= _PROMOS_CACHE_MAX:
-        _PROMOS_CACHE.clear()
-    _PROMOS_CACHE[key] = copy.deepcopy(value)
+    cache_set_copy(_PROMOS_CACHE, key, value, _PROMOS_CACHE_MAX)
 
 
 def invalidate_promos_cache():
@@ -112,25 +108,7 @@ def _normalize_selected_promo_summary(
 
 
 def _to_num(v: Any) -> float | None:
-    if v in (None, ""):
-        return None
-    try:
-        return float(v)
-    except Exception:
-        pass
-    raw = str(v).strip().replace("\xa0", "").replace(" ", "").replace(",", ".")
-    filtered = []
-    dot_seen = False
-    for ch in raw:
-        if ch.isdigit() or (ch == "-" and not filtered):
-            filtered.append(ch)
-        elif ch == "." and not dot_seen:
-            filtered.append(ch)
-            dot_seen = True
-    try:
-        return float("".join(filtered))
-    except Exception:
-        return None
+    return to_num_loose(v)
 
 
 def _next_page_token(payload: dict) -> str:

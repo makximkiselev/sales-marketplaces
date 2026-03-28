@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import copy
-import hashlib
 import json
 import logging
 from datetime import date, datetime, timedelta
@@ -32,6 +30,7 @@ from backend.services.pricing_runtime_bridge import (
     refresh_sales_coinvest_data,
     target_met as _target_met,
 )
+from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 from backend.services.store_data_model import (
     _load_sales_overview_order_rows_combined,
     append_pricing_daily_plan_history_bulk,
@@ -65,21 +64,17 @@ logger = logging.getLogger("uvicorn.error")
 
 
 def _cache_key(name: str, payload: dict) -> str:
-    raw = json.dumps({"name": name, "gen": _STRATEGY_CACHE_GEN, "payload": payload}, sort_keys=True, ensure_ascii=False, default=str)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
+    return make_cache_key(name, payload, _STRATEGY_CACHE_GEN)
 
 
 def _cache_get(name: str, payload: dict):
     key = _cache_key(name, payload)
-    got = _STRATEGY_CACHE.get(key)
-    return copy.deepcopy(got) if isinstance(got, dict) else None
+    return cache_get_copy(_STRATEGY_CACHE, key)
 
 
 def _cache_set(name: str, payload: dict, value: dict):
     key = _cache_key(name, payload)
-    if len(_STRATEGY_CACHE) >= _STRATEGY_CACHE_MAX:
-        _STRATEGY_CACHE.clear()
-    _STRATEGY_CACHE[key] = copy.deepcopy(value)
+    cache_set_copy(_STRATEGY_CACHE, key, value, _STRATEGY_CACHE_MAX)
 
 
 def invalidate_strategy_cache():

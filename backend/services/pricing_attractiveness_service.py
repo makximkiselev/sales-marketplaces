@@ -2,12 +2,9 @@ from __future__ import annotations
 
 import asyncio
 
-import copy
 import datetime
-import hashlib
 import json
 import logging
-import re
 from typing import Any
 
 import httpx
@@ -19,6 +16,7 @@ from backend.routers._shared import (
     _fetch_ozon_product_info_map,
     _ym_headers,
 )
+from backend.services.numeric_helpers import to_num_loose
 from backend.services.pricing_prices_service import (
     _profit_for_price,
     get_prices_context,
@@ -36,6 +34,7 @@ from backend.services.store_data_model import (
     get_pricing_strategy_results_map,
     upsert_pricing_attractiveness_results_bulk,
 )
+from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 
 _ATTR_CACHE: dict[str, dict] = {}
 _ATTR_CACHE_GEN = 1
@@ -64,25 +63,22 @@ def _iteration_attr_payload(iteration_row: dict[str, Any] | None) -> dict[str, A
 
 
 def _cache_key(name: str, payload: dict) -> str:
-    raw = json.dumps({"name": name, "gen": _ATTR_CACHE_GEN, "payload": payload}, sort_keys=True, ensure_ascii=False, default=str)
-    return hashlib.sha1(raw.encode("utf-8")).hexdigest()
+    return make_cache_key(name, payload, _ATTR_CACHE_GEN)
 
 
 def _cache_get(name: str, payload: dict):
     key = _cache_key(name, payload)
-    got = _ATTR_CACHE.get(key)
+    got = cache_get_copy(_ATTR_CACHE, key)
     if isinstance(got, dict):
         logger.warning("[pricing_attractiveness] cache hit name=%s key=%s", name, key[:12])
     else:
         logger.warning("[pricing_attractiveness] cache miss name=%s key=%s", name, key[:12])
-    return copy.deepcopy(got) if isinstance(got, dict) else None
+    return got
 
 
 def _cache_set(name: str, payload: dict, value: dict):
     key = _cache_key(name, payload)
-    if len(_ATTR_CACHE) >= _ATTR_CACHE_MAX:
-        _ATTR_CACHE.clear()
-    _ATTR_CACHE[key] = copy.deepcopy(value)
+    cache_set_copy(_ATTR_CACHE, key, value, _ATTR_CACHE_MAX)
 
 
 def invalidate_attractiveness_cache():
@@ -92,20 +88,7 @@ def invalidate_attractiveness_cache():
 
 
 def _to_num(v: Any) -> float | None:
-    if v in (None, ""):
-        return None
-    try:
-        return float(v)
-    except Exception:
-        pass
-    s = str(v).strip().replace("\xa0", "").replace(" ", "").replace(",", ".")
-    m = re.search(r"-?\d+(?:\.\d+)?", s)
-    if not m:
-        return None
-    try:
-        return float(m.group(0))
-    except Exception:
-        return None
+    return to_num_loose(v)
 
 
 async def _get_ozon_sales_usd_rub_rate_for_date(calc_date: datetime.date) -> float | None:
