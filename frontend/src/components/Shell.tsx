@@ -110,7 +110,6 @@ export function Shell({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<AppToastDetail | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileGroupTitle, setMobileGroupTitle] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
   const currentGroupTitle = useMemo(() => {
     const match = groups.find((group) => groupItems(group).some((item) => isActive(pathname, item.href)));
     return match?.title ?? groups[0].title;
@@ -146,25 +145,6 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => {
       if (timer) clearTimeout(timer);
       window.removeEventListener(APP_TOAST_EVENT, handleToast as EventListener);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const media = typeof window.matchMedia === "function"
-      ? window.matchMedia("(max-width: 960px)")
-      : null;
-    const apply = () => {
-      const byWidth = window.innerWidth <= 960;
-      const byMedia = media?.matches ?? byWidth;
-      setIsMobile(Boolean(byWidth || byMedia));
-    };
-    apply();
-    window.addEventListener("resize", apply);
-    media?.addEventListener?.("change", apply);
-    return () => {
-      window.removeEventListener("resize", apply);
-      media?.removeEventListener?.("change", apply);
     };
   }, []);
 
@@ -270,20 +250,18 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="app">
       <main className="main">
         <header className="topbar">
-          {isMobile ? (
-            <div className="mobile-topbar">
-              <button type="button" className="btn mobile-menu-trigger" onClick={() => setMobileMenuOpen(true)}>
-                Меню
-              </button>
-              <div className="mobile-topbar-center">
-                <div className="mobile-topbar-title">{currentItem.label}</div>
-                <div className="mobile-topbar-subtitle">{currentGroupTitle}</div>
-              </div>
-              <Link to="/" className="mobile-topbar-home">
-                <div className="logo" />
-              </Link>
+          <div className="mobile-topbar">
+            <button type="button" className="btn mobile-menu-trigger" onClick={() => setMobileMenuOpen(true)}>
+              Меню
+            </button>
+            <div className="mobile-topbar-center">
+              <div className="mobile-topbar-title">{currentItem.label}</div>
+              <div className="mobile-topbar-subtitle">{currentGroupTitle}</div>
             </div>
-          ) : (
+            <Link to="/" className="mobile-topbar-home">
+              <div className="logo" />
+            </Link>
+          </div>
           <div className="topbar-main topbar-main-inline">
             <div className="brand-inline">
               <div className="logo" />
@@ -370,19 +348,16 @@ export function Shell({ children }: { children: ReactNode }) {
               </nav>
             </div>
           </div>
-          )}
         </header>
         {renderMobileMenu()}
         <div className="wrap">{children}</div>
-        {isMobile ? (
-          <nav className="mobile-bottom-nav">
-            {mobileTabs.map((item) => (
-              <Link key={item.href} to={item.href} className={`mobile-bottom-link${isActive(pathname, item.href) ? " active" : ""}`}>
-                <span>{item.label}</span>
-              </Link>
-            ))}
-          </nav>
-        ) : null}
+        <nav className="mobile-bottom-nav">
+          {mobileTabs.map((item) => (
+            <Link key={item.href} to={item.href} className={`mobile-bottom-link${isActive(pathname, item.href) ? " active" : ""}`}>
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
         {toast ? (
           <div className={`app-toast${toast.tone === "error" ? " error" : ""}`}>
             {toast.message}

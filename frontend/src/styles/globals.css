@@ -235,7 +235,7 @@ a {
 
 .mobile-topbar {
   width: 100%;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -403,7 +403,7 @@ a {
   right: 0;
   bottom: 0;
   z-index: 90;
-  display: grid;
+  display: none;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
@@ -928,6 +928,18 @@ td.source-col {
 }
 
 @media (max-width: 960px) {
+  .mobile-topbar {
+    display: flex;
+  }
+
+  .topbar-main {
+    display: none;
+  }
+
+  .mobile-bottom-nav {
+    display: grid;
+  }
+
   .topbar {
     padding: 10px 12px;
   }
