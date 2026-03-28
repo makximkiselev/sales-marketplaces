@@ -58,6 +58,8 @@ from backend.services.store_data_model import (
 _STRATEGY_CACHE: dict[str, dict] = {}
 _STRATEGY_CACHE_GEN = 1
 _STRATEGY_CACHE_MAX = 400
+_STRATEGY_SNAPSHOT_CACHE: dict[str, dict] = {}
+_STRATEGY_SNAPSHOT_CACHE_MAX = 24
 MSK = ZoneInfo("Europe/Moscow")
 STRATEGY_ITERATION_WAIT_SECONDS = 60
 _STRATEGY_TRACE_FILE = Path(__file__).resolve().parents[2] / "data" / "logs" / "pricing_strategy_trace.jsonl"
@@ -78,9 +80,32 @@ def _cache_set(name: str, payload: dict, value: dict):
     cache_set_copy(_STRATEGY_CACHE, key, value, _STRATEGY_CACHE_MAX)
 
 
+def _snapshot_payload_from_overview_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "scope": payload.get("scope"),
+        "platform": payload.get("platform"),
+        "store_id": payload.get("store_id"),
+        "tree_mode": payload.get("tree_mode"),
+        "tree_source_store_id": payload.get("tree_source_store_id"),
+        "category_path": payload.get("category_path"),
+        "search": payload.get("search"),
+    }
+
+
+def _snapshot_get(payload: dict[str, Any]) -> dict[str, Any] | None:
+    key = _cache_key("overview_full", payload)
+    return cache_get_copy(_STRATEGY_SNAPSHOT_CACHE, key)
+
+
+def _snapshot_set(payload: dict[str, Any], value: dict[str, Any]) -> None:
+    key = _cache_key("overview_full", payload)
+    cache_set_copy(_STRATEGY_SNAPSHOT_CACHE, key, value, _STRATEGY_SNAPSHOT_CACHE_MAX)
+
+
 def invalidate_strategy_cache():
     global _STRATEGY_CACHE_GEN
     _STRATEGY_CACHE.clear()
+    _STRATEGY_SNAPSHOT_CACHE.clear()
     _STRATEGY_CACHE_GEN += 1
 
 
@@ -180,6 +205,161 @@ def _normalize_strategy_plan_values(
                 if scaled_revenue > 0 and scaled_qty == 0:
                     scaled_qty = 1
                 qty_map[suid] = scaled_qty
+
+
+def _filter_strategy_rows_from_snapshot(
+    *,
+    rows: list[dict[str, Any]],
+    scope: str,
+    platform: str,
+    store_id: str,
+    strategy_filter: str,
+    sales_filter_norm: str,
+    stock_filter_norm: str,
+) -> list[dict[str, Any]]:
+    strategy_filter_norm = str(strategy_filter or "all").strip()
+    filtered_rows = rows
+    if strategy_filter_norm != "all" or sales_filter_norm != "all":
+        tmp: list[dict[str, Any]] = []
+        for row in filtered_rows:
+            decision_by_store = row.get("decision_by_store") if isinstance(row.get("decision_by_store"), dict) else {}
+            final_price_by_store = row.get("final_price_by_store") if isinstance(row.get("final_price_by_store"), dict) else {}
+            final_boost_by_store = row.get("final_boost_by_store") if isinstance(row.get("final_boost_by_store"), dict) else {}
+            final_profit_abs_by_store = row.get("final_profit_abs_by_store") if isinstance(row.get("final_profit_abs_by_store"), dict) else {}
+            final_profit_pct_by_store = row.get("final_profit_pct_by_store") if isinstance(row.get("final_profit_pct_by_store"), dict) else {}
+            hypothesis_by_store = row.get("hypothesis_by_store") if isinstance(row.get("hypothesis_by_store"), dict) else {}
+            hypothesis_started_at_by_store = row.get("hypothesis_started_at_by_store") if isinstance(row.get("hypothesis_started_at_by_store"), dict) else {}
+            hypothesis_expires_at_by_store = row.get("hypothesis_expires_at_by_store") if isinstance(row.get("hypothesis_expires_at_by_store"), dict) else {}
+            control_state_by_store = row.get("control_state_by_store") if isinstance(row.get("control_state_by_store"), dict) else {}
+            control_state_started_at_by_store = row.get("control_state_started_at_by_store") if isinstance(row.get("control_state_started_at_by_store"), dict) else {}
+            attractiveness_status_by_store = row.get("attractiveness_status_by_store") if isinstance(row.get("attractiveness_status_by_store"), dict) else {}
+            promo_participation_by_store = row.get("promo_participation_by_store") if isinstance(row.get("promo_participation_by_store"), dict) else {}
+            fact_sales_by_store = row.get("fact_sales_by_store") if isinstance(row.get("fact_sales_by_store"), dict) else {}
+            market_promo_status_by_store = row.get("market_promo_status_by_store") if isinstance(row.get("market_promo_status_by_store"), dict) else {}
+            market_promo_checked_at_by_store = row.get("market_promo_checked_at_by_store") if isinstance(row.get("market_promo_checked_at_by_store"), dict) else {}
+            market_promo_message_by_store = row.get("market_promo_message_by_store") if isinstance(row.get("market_promo_message_by_store"), dict) else {}
+            per_store: dict[str, dict[str, Any]] = {}
+            for suid, decision in decision_by_store.items():
+                per_store[suid] = {
+                    "decision_code": str((decision or {}).get("code") or "").strip(),
+                    "fact_sales": int(fact_sales_by_store.get(suid) or 0),
+                    "installed_price": _to_num(final_price_by_store.get(suid)),
+                    "installed_boost_pct": _to_num(final_boost_by_store.get(suid)),
+                    "installed_profit_abs": _to_num(final_profit_abs_by_store.get(suid)),
+                    "installed_profit_pct": _to_num(final_profit_pct_by_store.get(suid)),
+                    "decision_label": str((decision or {}).get("label") or "").strip(),
+                    "decision_tone": str((decision or {}).get("tone") or "").strip(),
+                    "hypothesis": str(hypothesis_by_store.get(suid) or "").strip(),
+                    "hypothesis_started_at": str(hypothesis_started_at_by_store.get(suid) or "").strip(),
+                    "hypothesis_expires_at": str(hypothesis_expires_at_by_store.get(suid) or "").strip(),
+                    "control_state": str(control_state_by_store.get(suid) or "").strip(),
+                    "control_state_started_at": str(control_state_started_at_by_store.get(suid) or "").strip(),
+                    "attractiveness_status": str(attractiveness_status_by_store.get(suid) or "").strip(),
+                    "promo_participates": bool(promo_participation_by_store.get(suid)),
+                    "market_promo_status": str(market_promo_status_by_store.get(suid) or "").strip(),
+                    "market_promo_checked_at": str(market_promo_checked_at_by_store.get(suid) or "").strip(),
+                    "market_promo_message": str(market_promo_message_by_store.get(suid) or "").strip(),
+                }
+            if _strategy_row_matches_filters(
+                per_store=per_store,
+                strategy_filter=strategy_filter_norm,
+                sales_filter_norm=sales_filter_norm,
+            ):
+                tmp.append(row)
+        filtered_rows = tmp
+
+    if stock_filter_norm in {"in_stock", "out_of_stock"}:
+        scope_norm = str(scope or "all").strip().lower()
+        platform_norm = str(platform or "").strip().lower()
+        store_norm = str(store_id or "").strip()
+        current_store_uid = f"{platform_norm}:{store_norm}" if scope_norm == "store" and platform_norm and store_norm else ""
+
+        def _has_stock(row_obj: dict[str, Any]) -> bool:
+            stock_map = row_obj.get("stock_by_store") if isinstance(row_obj.get("stock_by_store"), dict) else {}
+            values = [stock_map.get(current_store_uid)] if current_store_uid else list(stock_map.values())
+            return any((_to_num(v) or 0) > 0 for v in values)
+
+        filtered_rows = [
+            r for r in filtered_rows
+            if (_has_stock(r) if stock_filter_norm == "in_stock" else not _has_stock(r))
+        ]
+    return filtered_rows
+
+
+def _build_strategy_page_from_snapshot(
+    snapshot: dict[str, Any],
+    *,
+    scope: str,
+    platform: str,
+    store_id: str,
+    search: str,
+    category_path: str,
+    strategy_filter: str,
+    sales_filter_norm: str,
+    stock_filter_norm: str,
+    sort_key: str,
+    sort_dir: str,
+    page: int,
+    page_size: int,
+) -> dict[str, Any]:
+    out_rows = list(snapshot.get("rows") or [])
+    sales_plan_summary = snapshot.get("sales_plan_summary") if isinstance(snapshot.get("sales_plan_summary"), dict) else None
+    _normalize_strategy_plan_values(
+        out_rows=out_rows,
+        sales_plan_summary=sales_plan_summary,
+        search=search,
+        category_path=category_path,
+        strategy_filter=strategy_filter,
+        sales_filter_norm=sales_filter_norm,
+        stock_filter_norm=stock_filter_norm,
+    )
+    filtered_rows = _filter_strategy_rows_from_snapshot(
+        rows=out_rows,
+        scope=scope,
+        platform=platform,
+        store_id=store_id,
+        strategy_filter=strategy_filter,
+        sales_filter_norm=sales_filter_norm,
+        stock_filter_norm=stock_filter_norm,
+    )
+    allowed_sort_keys = {
+        "sku_plan_revenue",
+        "sku_plan_qty",
+        "sku_plan_profit_abs",
+        "sku_plan_profit_pct",
+        "fact_sales_revenue",
+        "fact_sales_qty",
+        "fact_profit_abs",
+        "fact_profit_pct",
+        "profit_completion_pct",
+    }
+    sort_key_norm = str(sort_key or "fact_sales_revenue").strip()
+    if sort_key_norm not in allowed_sort_keys:
+        sort_key_norm = "fact_sales_revenue"
+    sort_dir_norm = str(sort_dir or "desc").strip().lower()
+    reverse_sort = sort_dir_norm != "asc"
+    filtered_rows.sort(
+        key=lambda item: (
+            _strategy_sort_metric_value(item, sort_key_norm),
+            str(item.get("sku") or ""),
+        ),
+        reverse=reverse_sort,
+    )
+    page_size_n = max(1, min(int(page_size or 50), 200))
+    page_n = max(1, int(page or 1))
+    total_filtered = len(filtered_rows)
+    paged_rows = filtered_rows[(page_n - 1) * page_size_n:(page_n - 1) * page_size_n + page_size_n]
+    return {
+        "ok": True,
+        "scope": snapshot.get("scope"),
+        "rows": paged_rows,
+        "total_count": total_filtered,
+        "page": page_n,
+        "page_size": page_size_n,
+        "stores": list(snapshot.get("stores") or []),
+        "tree_source": snapshot.get("tree_source"),
+        "sales_plan_summary": sales_plan_summary,
+    }
 
 
 async def _load_strategy_base_rows(
@@ -3621,12 +3801,32 @@ async def get_strategy_overview(
         "page_size": page_size,
         "persist_plan_snapshot": bool(persist_plan_snapshot),
     }
+    stock_filter_norm = str(stock_filter or "all").strip().lower()
+    sales_filter_norm = str(sales_filter or "all").strip().lower()
+    if not persist_plan_snapshot:
+        snapshot_cached = _snapshot_get(_snapshot_payload_from_overview_payload(payload))
+        if snapshot_cached:
+            resp = _build_strategy_page_from_snapshot(
+                snapshot_cached,
+                scope=scope,
+                platform=platform,
+                store_id=store_id,
+                search=search,
+                category_path=category_path,
+                strategy_filter=strategy_filter,
+                sales_filter_norm=sales_filter_norm,
+                stock_filter_norm=stock_filter_norm,
+                sort_key=sort_key,
+                sort_dir=sort_dir,
+                page=page,
+                page_size=page_size,
+            )
+            _cache_set("overview", payload, resp)
+            return resp
     cached = _cache_get("overview", payload)
     if cached:
         return cached
 
-    stock_filter_norm = str(stock_filter or "all").strip().lower()
-    sales_filter_norm = str(sales_filter or "all").strip().lower()
     base, rows = await _load_strategy_base_rows(
         scope=scope,
         platform=platform,
@@ -3635,7 +3835,7 @@ async def get_strategy_overview(
         tree_source_store_id=tree_source_store_id,
         category_path=category_path,
         search=search,
-        stock_filter=stock_filter,
+        stock_filter="all",
         page_size=page_size,
     )
     stores = _filter_strategy_stores(
@@ -4038,13 +4238,6 @@ async def get_strategy_overview(
         if not per_store:
             continue
 
-        if not _strategy_row_matches_filters(
-            per_store=per_store,
-            strategy_filter=strategy_filter,
-            sales_filter_norm=sales_filter_norm,
-        ):
-            continue
-
         for suid, item in per_store.items():
             decision_by_store[suid] = {
                 "label": str(item.get("decision_label") or "").strip(),
@@ -4149,56 +4342,31 @@ async def get_strategy_overview(
             }
         )
 
-    _normalize_strategy_plan_values(
-        out_rows=out_rows,
-        sales_plan_summary=sales_plan_summary if isinstance(sales_plan_summary, dict) else None,
+    snapshot_resp = {
+        "ok": True,
+        "scope": base.get("scope"),
+        "rows": out_rows,
+        "stores": stores,
+        "tree_source": base.get("tree_source"),
+        "sales_plan_summary": sales_plan_summary,
+    }
+    if not persist_plan_snapshot:
+        _snapshot_set(_snapshot_payload_from_overview_payload(payload), snapshot_resp)
+    resp = _build_strategy_page_from_snapshot(
+        snapshot_resp,
+        scope=scope,
+        platform=platform,
+        store_id=store_id,
         search=search,
         category_path=category_path,
         strategy_filter=strategy_filter,
         sales_filter_norm=sales_filter_norm,
         stock_filter_norm=stock_filter_norm,
+        sort_key=sort_key,
+        sort_dir=sort_dir,
+        page=page,
+        page_size=page_size,
     )
-
-    allowed_sort_keys = {
-        "sku_plan_revenue",
-        "sku_plan_qty",
-        "sku_plan_profit_abs",
-        "sku_plan_profit_pct",
-        "fact_sales_revenue",
-        "fact_sales_qty",
-        "fact_profit_abs",
-        "fact_profit_pct",
-        "profit_completion_pct",
-    }
-    sort_key_norm = str(sort_key or "fact_sales_revenue").strip()
-    if sort_key_norm not in allowed_sort_keys:
-        sort_key_norm = "fact_sales_revenue"
-    sort_dir_norm = str(sort_dir or "desc").strip().lower()
-    reverse_sort = sort_dir_norm != "asc"
-    out_rows.sort(
-        key=lambda item: (
-            _strategy_sort_metric_value(item, sort_key_norm),
-            str(item.get("sku") or ""),
-        ),
-        reverse=reverse_sort,
-    )
-
-    page_size_n = max(1, min(int(page_size or 50), 200))
-    page_n = max(1, int(page or 1))
-    total_filtered = len(out_rows)
-    paged_rows = out_rows[(page_n - 1) * page_size_n:(page_n - 1) * page_size_n + page_size_n]
-
-    resp = {
-        "ok": True,
-        "scope": base.get("scope"),
-        "rows": paged_rows,
-        "total_count": total_filtered,
-        "page": page_n,
-        "page_size": page_size_n,
-        "stores": stores,
-        "tree_source": base.get("tree_source"),
-        "sales_plan_summary": sales_plan_summary,
-    }
     if persist_plan_snapshot and daily_plan_snapshots:
         append_pricing_daily_plan_history_bulk(rows=list(daily_plan_snapshots.values()))
     _cache_set("overview", payload, resp)
