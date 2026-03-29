@@ -32,7 +32,7 @@ import {
   uploadGoogleAccountKey as apiUploadGoogleAccountKey,
   verifyGsheets as apiVerifyGsheets,
 } from "./api";
-import { formatDateTime, formatRefreshLabel, getSortedOzonAccounts, getSortedYandexAccounts, sourceModeLabel } from "./controllerUtils";
+import { formatDateTime, formatRefreshLabel, getSortedOzonAccounts, getSortedYandexAccounts } from "./controllerUtils";
 import type { IntegrationsPayload, SourceItem } from "./types";
 
 export function useSourcesPageController() {
@@ -433,7 +433,6 @@ export function useSourcesPageController() {
     connectYandex: yandex.connectYandex,
     toggleCampaign: yandex.toggleCampaign,
     formatDateTime,
-    sourceModeLabel,
     formatRefreshLabel,
     checkGsheetSource: gsheets.checkGsheetSource,
     updateSourceFlow,

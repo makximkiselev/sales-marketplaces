@@ -17,27 +17,6 @@ export function getSortedOzonAccounts(accounts: NonNullable<IntegrationsPayload[
   return [...accounts].sort((a, b) => sortById(a.client_id, b.client_id));
 }
 
-export function extractLatestHealthTimestamp(srcItems: SourceItem[], intData: IntegrationsPayload): string | null {
-  const ts: string[] = [];
-  for (const s of srcItems) {
-    if (s.health_checked_at) ts.push(s.health_checked_at);
-  }
-  for (const acc of intData.yandex_market?.accounts || []) {
-    if (acc.health_checked_at) ts.push(acc.health_checked_at);
-    for (const shop of acc.shops || []) {
-      if (shop.health_checked_at) ts.push(shop.health_checked_at);
-    }
-  }
-  for (const acc of intData.ozon?.accounts || []) {
-    if (acc.health_checked_at) ts.push(acc.health_checked_at);
-  }
-  const latest = ts
-    .map((v) => ({ raw: v, ms: new Date(v).getTime() }))
-    .filter((x) => Number.isFinite(x.ms))
-    .sort((a, b) => b.ms - a.ms)[0];
-  return latest?.raw || null;
-}
-
 export function formatDateTime(value?: string | null): string {
   if (!value) return "Не проверялось";
   const dt = new Date(value);
@@ -49,15 +28,6 @@ export function formatDateTime(value?: string | null): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-export function sourceModeLabel(src: SourceItem): string {
-  const imp = Boolean(src.mode_import);
-  const exp = Boolean(src.mode_export);
-  if (imp && exp) return "Mix";
-  if (exp) return "Экспорт";
-  if (imp) return "Импорт";
-  return "-";
 }
 
 export function formatRefreshLabel(value?: string | null): string {
