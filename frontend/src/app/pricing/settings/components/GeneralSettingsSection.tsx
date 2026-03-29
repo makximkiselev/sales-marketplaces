@@ -53,7 +53,7 @@ export function GeneralSettingsSection({
               <div className="status">Загрузка категорий...</div>
             ) : (
               <>
-                <div className={styles.pricingTableWrap}>
+                <div className={`${styles.pricingTableWrap} ${styles.pricingDesktopTableWrap}`}>
                   <table className={styles.pricingTable}>
                     <thead>
                       <tr>

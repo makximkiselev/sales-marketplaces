@@ -775,6 +775,10 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.pricingDesktopTableWrap {
+  display: block;
+}
+
 .pricingMobileList {
   display: none;
 }
@@ -1050,7 +1054,7 @@
     justify-content: space-between;
   }
 
-  .pricingTableWrap {
+  .pricingDesktopTableWrap {
     display: none;
   }
 
