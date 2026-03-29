@@ -44,6 +44,25 @@ require_cmd npm
 require_cmd curl
 require_cmd systemctl
 
+require_file() {
+  local path="$1"
+  if [[ ! -f "$path" ]]; then
+    echo "Missing required file: $path" >&2
+    exit 1
+  fi
+}
+
+require_glob_match() {
+  local pattern="$1"
+  shopt -s nullglob
+  local matches=($pattern)
+  shopt -u nullglob
+  if (( ${#matches[@]} == 0 )); then
+    echo "Missing required build artifacts matching: $pattern" >&2
+    exit 1
+  fi
+}
+
 cd "$APP_ROOT"
 
 log "Pulling latest code"
@@ -68,7 +87,11 @@ else
 fi
 
 log "Building frontend"
+rm -rf "$APP_ROOT/frontend/dist"
 VITE_API_BASE="${VITE_API_BASE:-/api}" npm run build
+require_file "$APP_ROOT/frontend/dist/index.html"
+require_glob_match "$APP_ROOT/frontend/dist/assets/index-*.js"
+require_glob_match "$APP_ROOT/frontend/dist/assets/index-*.css"
 
 cd "$APP_ROOT"
 
