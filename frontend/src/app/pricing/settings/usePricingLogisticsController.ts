@@ -122,7 +122,6 @@ export function usePricingLogisticsController(params: {
           setLogisticsStoreSavedAt(String(data.settings?.updated_at || new Date().toISOString()));
           setLogisticsStoreError("");
           clearPricingSettingsCache();
-          showAppToast({ message: "Данные сохранены" });
         })
         .catch((e) => setLogisticsStoreError(e instanceof Error ? e.message : String(e)))
         .finally(() => setLogisticsStoreSaving(false));
@@ -200,7 +199,6 @@ export function usePricingLogisticsController(params: {
     try {
       await saveLogisticsProductSettings({ platform: activePlatform, store_id: activeStoreId, sku: row.sku, values: { [field]: rawValue } });
       clearPricingSettingsCache();
-      showAppToast({ message: "Данные сохранены" });
       const num = rawValue.trim() === "" ? null : Number(rawValue.replace(",", "."));
       setLogisticsRows((prev) => prev.map((r) => {
         if (r.sku !== row.sku) return r;

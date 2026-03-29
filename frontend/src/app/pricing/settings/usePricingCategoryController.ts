@@ -77,7 +77,6 @@ export function usePricingCategoryController(params: {
         values: { [field]: rawValue },
       });
       clearPricingSettingsCache();
-      showAppToast({ message: "Данные сохранены" });
       const num = rawValue.trim() === "" ? null : Number(rawValue.replace(",", "."));
       setCategoryRows((prev) => prev.map((r) => r.key === row.key ? { ...r, values: { ...r.values, [field]: Number.isNaN(num as number) ? null : (num as number | null) } } : r));
     } catch (e) {

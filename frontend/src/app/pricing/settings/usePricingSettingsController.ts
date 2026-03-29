@@ -224,7 +224,6 @@ export function usePricingSettingsController() {
       if (platform === activePlatform && storeId === activeStoreId) {
         await categories.loadPricingCategoryTree();
       }
-      showAppToast({ message: "Данные сохранены" });
     } catch (e) {
       setSalesPlanError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -263,7 +262,6 @@ export function usePricingSettingsController() {
       if (activePlatform && activeStoreId) {
         await categories.loadPricingCategoryTree();
       }
-      showAppToast({ message: "Данные сохранены" });
     } catch (e) {
       setSalesPlanError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -282,7 +280,6 @@ export function usePricingSettingsController() {
     setMonitoringError("");
     try {
       await savePricingMonitoringJob({ job_code: code, ...values });
-      showAppToast({ message: "Данные сохранены" });
       await loadMonitoringData();
     } catch (e) {
       setMonitoringError(e instanceof Error ? e.message : String(e));

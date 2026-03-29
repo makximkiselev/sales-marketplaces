@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { savePricingStoreSettings } from "./api";
 import { clearPricingSettingsCache } from "./cache";
 import type { CogsSource, StockSource } from "./types";
-import { showAppToast } from "../../../components/ui/toastBus";
 
 export function usePricingGeneralController(params: {
   activePlatform: string;
@@ -68,7 +67,6 @@ export function usePricingGeneralController(params: {
           setStoreSettingsSavedAt(String(data?.settings?.updated_at || new Date().toISOString()));
           setStoreSettingsError("");
           clearPricingSettingsCache();
-          showAppToast({ message: "Данные сохранены" });
         })
         .catch((e) => { setStoreSettingsError(e instanceof Error ? e.message : String(e)); })
         .finally(() => { setStoreSettingsSaving(false); });
