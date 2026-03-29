@@ -331,7 +331,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
 
                   <div className={styles.salesPlanFields}>
                     <div className={styles.salesPlanField}>
-                      <div className={styles.salesPlanFieldLabel}>Плановый оборот</div>
+                      <div className={styles.salesPlanFieldLabel}>Плановый оборот, {currencySign}</div>
                       <div className={styles.cellInputWrap}>
                         <input
                           className={`input ${styles.cellInput}`}
@@ -348,7 +348,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                     </div>
 
                     <div className={styles.salesPlanField}>
-                      <div className={styles.salesPlanFieldLabel}>Целевые рекламные расходы</div>
+                      <div className={styles.salesPlanFieldLabel}>Целевые рекламные расходы, %</div>
                       <div className={styles.cellInputWrap}>
                         <input
                           className={`input ${styles.cellInput}`}
@@ -356,12 +356,11 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                           inputMode="decimal"
                           onChange={(e) => patchDraft(row.store_uid, (prev) => ({ ...prev, target_drr_percent: e.target.value }))}
                         />
-                        <span className={styles.inlineSuffix}>%</span>
                       </div>
                     </div>
 
                     <div className={`${styles.salesPlanField} ${styles.salesPlanFieldCompact}`}>
-                      <div className={styles.salesPlanFieldLabel}>Целевое значение</div>
+                      <div className={styles.salesPlanFieldLabel}>Целевое значение, {currencySign}</div>
                       <div className={styles.cellInputWrap}>
                         <input
                           className={`input ${styles.cellInput}`}
@@ -373,7 +372,6 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                             setFocusedCell((prev) => (prev === rubCellKey ? "" : prev));
                           }}
                         />
-                        <span className={styles.inlineSuffix}>{currencySign}</span>
                       </div>
                     </div>
 
@@ -386,12 +384,11 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                           inputMode="decimal"
                           onChange={(e) => patchDraft(row.store_uid, (prev) => recalcByPercent(prev, e.target.value))}
                         />
-                        <span className={styles.inlineSuffix}>%</span>
                       </div>
                     </div>
 
                     <div className={`${styles.salesPlanField} ${styles.salesPlanFieldCompact}`}>
-                      <div className={styles.salesPlanFieldLabel}>Минимальная прибыль</div>
+                      <div className={styles.salesPlanFieldLabel}>Минимальная прибыль, %</div>
                       <div className={styles.cellInputWrap}>
                         <input
                           className={`input ${styles.cellInput}`}
@@ -399,7 +396,6 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                           inputMode="decimal"
                           onChange={(e) => patchDraft(row.store_uid, (prev) => ({ ...prev, minimum_profit_percent: e.target.value }))}
                         />
-                        <span className={styles.inlineSuffix}>%</span>
                       </div>
                     </div>
                   </div>
