@@ -17,6 +17,7 @@ type Props = {
   defaultFieldValue: (field: EditableFieldKey) => string;
   formatNum: (value: number | null | undefined) => string;
   queueSaveCell: (row: PricingCategoryRow, field: EditableFieldKey, rawValue: string) => void;
+  flushSaveCell: (row: PricingCategoryRow, field: EditableFieldKey, rawValue?: string) => void;
 };
 
 export function GeneralSettingsSection({
@@ -32,6 +33,7 @@ export function GeneralSettingsSection({
   defaultFieldValue,
   formatNum,
   queueSaveCell,
+  flushSaveCell,
 }: Props) {
   return (
     <SectionBlock>
@@ -72,6 +74,7 @@ export function GeneralSettingsSection({
                                     className={`input ${styles.cellInput}`}
                                     value={value}
                                     onChange={(e) => queueSaveCell(row, field, e.target.value)}
+                                    onBlur={(e) => flushSaveCell(row, field, e.target.value)}
                                     inputMode="decimal"
                                   />
                                   {cellSaving[cellKey] ? <span className={styles.cellSavingDot} /> : null}

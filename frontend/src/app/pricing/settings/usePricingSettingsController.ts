@@ -412,6 +412,7 @@ export function usePricingSettingsController() {
     defaultFieldValue: categories.defaultFieldValue,
     formatNum: categories.formatNum,
     queueSaveCell: categories.queueSaveCell,
+    flushSaveCell: categories.flushSaveCell,
     setLogisticsField: logistics.setLogisticsField,
     setLogisticsNumericField: logistics.setLogisticsNumericField,
     onLogisticsNumericBlur: logistics.onLogisticsNumericBlur,

@@ -82,6 +82,7 @@ export default function PricingSettingsPage() {
     defaultFieldValue,
     formatNum,
     queueSaveCell,
+    flushSaveCell,
     setLogisticsField,
     setLogisticsNumericField,
     onLogisticsNumericBlur,
@@ -249,6 +250,7 @@ export default function PricingSettingsPage() {
           defaultFieldValue={defaultFieldValue}
           formatNum={formatNum}
           queueSaveCell={queueSaveCell}
+          flushSaveCell={flushSaveCell}
         />
       ) : null}
 

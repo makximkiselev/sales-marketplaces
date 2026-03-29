@@ -87,6 +87,16 @@ export function usePricingCategoryController(params: {
     }
   }
 
+  function flushSaveCell(row: PricingCategoryRow, field: EditableFieldKey, rawValue?: string) {
+    const key = getCellKey(row.leafPath || row.key, field);
+    if (saveTimersRef.current[key]) {
+      clearTimeout(saveTimersRef.current[key]);
+      delete saveTimersRef.current[key];
+    }
+    const nextRawValue = rawValue ?? cellDrafts[key] ?? formatNum(row.values[field]);
+    void saveCellValue(row, field, nextRawValue ?? "");
+  }
+
   function queueSaveCell(row: PricingCategoryRow, field: EditableFieldKey, rawValue: string) {
     const key = getCellKey(row.leafPath || row.key, field);
     setCellDrafts((prev) => ({ ...prev, [key]: rawValue }));
@@ -172,6 +182,7 @@ export function usePricingCategoryController(params: {
     defaultFieldValue: defaultCategoryFieldValue,
     formatNum,
     queueSaveCell,
+    flushSaveCell,
     setItemsError,
   };
 }
