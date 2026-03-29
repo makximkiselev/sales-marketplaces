@@ -1,3 +1,4 @@
+import { useState } from "react";
 import styles from "./PricingSettingsPage.module.css";
 import { PageFrame } from "../../../components/page/PageKit";
 import { ControlTabs } from "../../../components/page/ControlKit";
@@ -12,6 +13,7 @@ import { SalesPlanSection } from "./components/SalesPlanSection";
 import { usePricingSettingsController } from "./usePricingSettingsController";
 
 export default function PricingSettingsPage() {
+  const [categorySubview, setCategorySubview] = useState<"rules" | "sources">("rules");
   const {
     loading,
     refreshing,
@@ -139,6 +141,10 @@ export default function PricingSettingsPage() {
       : salesPlanError
         ? `Ошибка: ${salesPlanError}`
         : "Редактирование вручную";
+  const categorySubviewItems = [
+    { id: "rules" as const, label: "Правила категорий" },
+    { id: "sources" as const, label: "Источники данных" },
+  ];
 
   return (
     <>
@@ -223,6 +229,16 @@ export default function PricingSettingsPage() {
                   ) : null}
                   {!isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span> : null}
                 </div>
+                {settingsTab === "categories" ? (
+                  <div className={styles.sectionSubviewTabs}>
+                    <ControlTabs
+                      className={styles.sectionSubviewTabsRow}
+                      items={categorySubviewItems}
+                      activeId={categorySubview}
+                      onChange={(id) => setCategorySubview(id)}
+                    />
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -253,7 +269,7 @@ export default function PricingSettingsPage() {
               </div>
             ) : null}
 
-            {settingsTab === "categories" ? (
+            {settingsTab === "categories" && categorySubview === "sources" ? (
               <div className={styles.controlsRow}>
                 <GeneralSettingsPanel
                   earningMode={earningMode}
@@ -265,6 +281,8 @@ export default function PricingSettingsPage() {
                   stockSource={stockSource}
                   activeStoreId={activeStoreId}
                   showTargets={false}
+                  showRelay={true}
+                  showSources={true}
                   setEarningMode={setEarningMode}
                   setEarningUnit={setEarningUnit}
                   setActiveTargetValue={setActiveTargetValue}
@@ -305,7 +323,7 @@ export default function PricingSettingsPage() {
               />
             ) : null}
 
-            {settingsTab === "categories" ? (
+            {settingsTab === "categories" && categorySubview === "rules" ? (
               <GeneralSettingsSection
                 loading={loading}
                 error={error}

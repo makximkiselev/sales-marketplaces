@@ -64,11 +64,72 @@
 }
 
 .controlsRow {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(132, 161, 214, 0.18);
+  margin-top: 4px;
   display: grid;
   gap: 14px;
+}
+
+.sectionSubviewTabs {
+  margin-top: 4px;
+}
+
+.sectionSubviewTabsRow {
+  gap: 18px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0 0 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.12);
+  border-radius: 0;
+  background: transparent;
+}
+
+.sectionSubviewTabsRow :global(.btn) {
+  height: 30px;
+  min-height: 0;
+  padding: 0 2px 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #8ea6c9;
+  font-size: 12px;
+  font-weight: 700;
+  position: relative;
+  transition:
+    color 0.16s ease,
+    opacity 0.16s ease;
+}
+
+.sectionSubviewTabsRow :global(.btn:hover) {
+  color: #e2edff;
+  background: transparent;
+}
+
+.sectionSubviewTabsRow :global(.btn)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #55c8ff, #9fe4ff);
+  opacity: 0;
+  transform: scaleX(0.32);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.sectionSubviewTabsRow :global(.btn)[data-active="true"] {
+  color: #f1f7ff;
+}
+
+.sectionSubviewTabsRow :global(.btn)[data-active="true"]::after {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .settingsTabsRow {
@@ -473,7 +534,6 @@
   display: grid;
   grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
   gap: 14px;
-  margin-bottom: 14px;
 }
 
 .categorySidebar,
@@ -637,6 +697,10 @@
 .categoryEditor {
   display: grid;
   gap: 16px;
+}
+
+.categoryEditorHead {
+  padding: 2px 2px 0;
 }
 
 .categoryEditorHead {
@@ -2008,6 +2072,7 @@
 
   .controlsRow {
     align-items: stretch;
+    margin-top: 0;
   }
 
   .stickyActionBar {
@@ -2106,6 +2171,10 @@
 
   .desktopSectionTabs {
     display: none;
+  }
+
+  .sectionSubviewTabsRow {
+    width: 100%;
   }
 
   .salesPlanCardHead {

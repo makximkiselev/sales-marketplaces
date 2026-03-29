@@ -11,6 +11,8 @@ type Props = {
   stockSource: StockSource | null;
   activeStoreId: string;
   showTargets?: boolean;
+  showRelay?: boolean;
+  showSources?: boolean;
   setEarningMode: React.Dispatch<React.SetStateAction<"profit" | "margin">>;
   setEarningUnit: React.Dispatch<React.SetStateAction<"rub" | "percent">>;
   setActiveTargetValue: (value: string) => void;
@@ -31,6 +33,8 @@ export function GeneralSettingsPanel({
   stockSource,
   activeStoreId,
   showTargets = true,
+  showRelay = !showTargets,
+  showSources = true,
   setEarningMode,
   setEarningUnit,
   setActiveTargetValue,
@@ -48,7 +52,7 @@ export function GeneralSettingsPanel({
 
   return (
     <div className={styles.globalSettingsGrid}>
-      {!showTargets ? (
+      {showRelay ? (
         <div className={styles.planRelayCard}>
           <div className={styles.planRelayHead}>
             <div className={styles.settingLabel}>Цели из плана продаж</div>
@@ -110,73 +114,77 @@ export function GeneralSettingsPanel({
         </div>
       ) : null}
 
-      <div className={`${styles.cogsSourceRow} ${earningMode !== "profit" ? styles.cogsSourceRowDisabled : ""}`}>
-        <span className={styles.settingLabel}>Источник себестоимости</span>
-        <div className={styles.cogsSourceDisplay}>
-          <span className={cogsSource ? styles.cogsSourceNameSet : styles.cogsSourceName}>
-            {cogsSource ? cogsSource.sourceName : "Не выбран"}
-          </span>
-          <button
-            type="button"
-            className={`btn inline ${styles.cogsSelectButton}`}
-            onClick={() => setCogsModalOpen(true)}
-            disabled={earningMode !== "profit" || !activeStoreId}
-          >
-            Выбрать
-          </button>
-          {cogsSource ? (
-            <button
-              type="button"
-              className={`btn inline ${styles.cogsClearButton}`}
-              onClick={() => setCogsSource(null)}
-              title="Сбросить источник"
-              disabled={earningMode !== "profit" || !activeStoreId}
-            >
-              ✕
-            </button>
-          ) : null}
-        </div>
-        {earningMode !== "profit" ? (
-          <div className={styles.cogsSourceMeta}>Доступно только в режиме «Прибыль».</div>
-        ) : cogsSource ? (
-          <div className={styles.cogsSourceMeta}>
-            SKU: <b>{cogsSource.skuColumn}</b> · Себестоимость: <b>{cogsSource.valueColumn}</b>
+      {showSources ? (
+        <>
+          <div className={`${styles.cogsSourceRow} ${earningMode !== "profit" ? styles.cogsSourceRowDisabled : ""}`}>
+            <span className={styles.settingLabel}>Источник себестоимости</span>
+            <div className={styles.cogsSourceDisplay}>
+              <span className={cogsSource ? styles.cogsSourceNameSet : styles.cogsSourceName}>
+                {cogsSource ? cogsSource.sourceName : "Не выбран"}
+              </span>
+              <button
+                type="button"
+                className={`btn inline ${styles.cogsSelectButton}`}
+                onClick={() => setCogsModalOpen(true)}
+                disabled={earningMode !== "profit" || !activeStoreId}
+              >
+                Выбрать
+              </button>
+              {cogsSource ? (
+                <button
+                  type="button"
+                  className={`btn inline ${styles.cogsClearButton}`}
+                  onClick={() => setCogsSource(null)}
+                  title="Сбросить источник"
+                  disabled={earningMode !== "profit" || !activeStoreId}
+                >
+                  ✕
+                </button>
+              ) : null}
+            </div>
+            {earningMode !== "profit" ? (
+              <div className={styles.cogsSourceMeta}>Доступно только в режиме «Прибыль».</div>
+            ) : cogsSource ? (
+              <div className={styles.cogsSourceMeta}>
+                SKU: <b>{cogsSource.skuColumn}</b> · Себестоимость: <b>{cogsSource.valueColumn}</b>
+              </div>
+            ) : null}
           </div>
-        ) : null}
-      </div>
 
-      <div className={styles.cogsSourceRow}>
-        <span className={styles.settingLabel}>Источник остатка</span>
-        <div className={styles.cogsSourceDisplay}>
-          <span className={stockSource ? styles.cogsSourceNameSet : styles.cogsSourceName}>
-            {stockSource ? stockSource.sourceName : "Не выбран"}
-          </span>
-          <button
-            type="button"
-            className={`btn inline ${styles.cogsSelectButton}`}
-            onClick={() => setStockModalOpen(true)}
-            disabled={!activeStoreId}
-          >
-            Выбрать
-          </button>
-          {stockSource ? (
-            <button
-              type="button"
-              className={`btn inline ${styles.cogsClearButton}`}
-              onClick={() => setStockSource(null)}
-              title="Сбросить источник"
-              disabled={!activeStoreId}
-            >
-              ✕
-            </button>
-          ) : null}
-        </div>
-        {stockSource ? (
-          <div className={styles.cogsSourceMeta}>
-            SKU: <b>{stockSource.skuColumn}</b> · Остаток: <b>{stockSource.valueColumn}</b>
+          <div className={styles.cogsSourceRow}>
+            <span className={styles.settingLabel}>Источник остатка</span>
+            <div className={styles.cogsSourceDisplay}>
+              <span className={stockSource ? styles.cogsSourceNameSet : styles.cogsSourceName}>
+                {stockSource ? stockSource.sourceName : "Не выбран"}
+              </span>
+              <button
+                type="button"
+                className={`btn inline ${styles.cogsSelectButton}`}
+                onClick={() => setStockModalOpen(true)}
+                disabled={!activeStoreId}
+              >
+                Выбрать
+              </button>
+              {stockSource ? (
+                <button
+                  type="button"
+                  className={`btn inline ${styles.cogsClearButton}`}
+                  onClick={() => setStockSource(null)}
+                  title="Сбросить источник"
+                  disabled={!activeStoreId}
+                >
+                  ✕
+                </button>
+              ) : null}
+            </div>
+            {stockSource ? (
+              <div className={styles.cogsSourceMeta}>
+                SKU: <b>{stockSource.skuColumn}</b> · Остаток: <b>{stockSource.valueColumn}</b>
+              </div>
+            ) : null}
           </div>
-        ) : null}
-      </div>
+        </>
+      ) : null}
 
       {showTargets ? (
         <>
