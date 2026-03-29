@@ -2,9 +2,9 @@
   max-width: 1320px;
   width: 100%;
   margin-inline: auto;
-  padding: 8px 18px 2px;
+  padding: 6px 18px 0;
   display: grid;
-  gap: 4px;
+  gap: 2px;
 }
 
 .headCardInnerCompact {
@@ -64,72 +64,9 @@
 }
 
 .controlsRow {
-  margin-top: 4px;
+  margin-top: 0;
   display: grid;
   gap: 14px;
-}
-
-.sectionSubviewTabs {
-  margin-top: 4px;
-}
-
-.sectionSubviewTabsRow {
-  gap: 18px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  width: fit-content;
-  max-width: 100%;
-  padding: 0 0 10px;
-  border: 0;
-  border-bottom: 1px solid rgba(132, 161, 214, 0.12);
-  border-radius: 0;
-  background: transparent;
-}
-
-.sectionSubviewTabsRow :global(.btn) {
-  height: 30px;
-  min-height: 0;
-  padding: 0 2px 2px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #8ea6c9;
-  font-size: 12px;
-  font-weight: 700;
-  position: relative;
-  transition:
-    color 0.16s ease,
-    opacity 0.16s ease;
-}
-
-.sectionSubviewTabsRow :global(.btn:hover) {
-  color: #e2edff;
-  background: transparent;
-}
-
-.sectionSubviewTabsRow :global(.btn)::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -10px;
-  height: 3px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #55c8ff, #9fe4ff);
-  opacity: 0;
-  transform: scaleX(0.32);
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
-}
-
-.sectionSubviewTabsRow :global(.btn)[data-active="true"] {
-  color: #f1f7ff;
-}
-
-.sectionSubviewTabsRow :global(.btn)[data-active="true"]::after {
-  opacity: 1;
-  transform: scaleX(1);
 }
 
 .settingsTabsRow {
@@ -156,10 +93,10 @@
 }
 
 .settingsShell {
-  margin-top: 2px;
+  margin-top: 0;
   display: grid;
-  grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
   align-items: start;
   max-width: 1320px;
   width: 100%;
@@ -170,61 +107,69 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-.desktopRail {
-  display: grid;
-  gap: 14px;
-  position: sticky;
-  top: 84px;
-}
-
 .desktopSectionTabs {
   display: block;
 }
 
 .desktopSectionTabsRow {
-  gap: 24px;
+  gap: 28px;
   flex-wrap: nowrap;
   overflow-x: auto;
   width: fit-content;
   max-width: 100%;
-  padding: 0 0 10px;
+  padding: 0 0 8px;
   border: 0;
-  border-bottom: 1px solid rgba(132, 161, 214, 0.14);
+  border-bottom: 1px solid rgba(132, 161, 214, 0.12);
   border-radius: 0;
   background: transparent;
 }
 
+.desktopStoreTabs {
+  display: block;
+}
+
+.storeTabsBar {
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 0;
+}
+
 .settingsTabsRow :global(.btn),
-.desktopSectionTabsRow :global(.btn) {
-  height: 32px;
+.desktopSectionTabsRow :global(.btn),
+.storeTabsBar :global(.btn) {
+  height: 34px;
   min-height: 0;
-  padding: 0 2px 2px;
-  border: 0;
-  border-radius: 0;
+  padding: 0 2px 8px;
+  border: 0 !important;
+  border-radius: 0 !important;
   background: transparent;
-  color: #96acc8;
+  color: #8ea5c4;
   font-size: 13px;
   font-weight: 700;
   position: relative;
   transition:
     color 0.16s ease,
-    opacity 0.16s ease;
+    opacity 0.16s ease,
+    background 0.18s ease;
 }
 
 .settingsTabsRow :global(.btn:hover),
-.desktopSectionTabsRow :global(.btn:hover) {
+.desktopSectionTabsRow :global(.btn:hover),
+.storeTabsBar :global(.btn:hover) {
   color: #dde9fb;
   background: transparent;
 }
 
 .settingsTabsRow :global(.btn)::after,
-.desktopSectionTabsRow :global(.btn)::after {
+.desktopSectionTabsRow :global(.btn)::after,
+.storeTabsBar :global(.btn)::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -10px;
-  height: 3px;
+  bottom: -8px;
+  height: 2px;
   border-radius: 999px;
   background: linear-gradient(90deg, #55c8ff, #9fe4ff);
   opacity: 0;
@@ -235,16 +180,37 @@
     transform 0.18s ease;
 }
 
-.settingsTabsRow :global(.btn)[data-active="true"],
-.desktopSectionTabsRow :global(.btn)[data-active="true"] {
-  color: #eef5ff;
+.settingsTabsRow :global(button[data-active="true"]),
+.desktopSectionTabsRow :global(button[data-active="true"]),
+.storeTabsBar :global(button[data-active="true"]) {
+  color: #eef5ff !important;
   background: transparent;
 }
 
-.settingsTabsRow :global(.btn)[data-active="true"]::after,
-.desktopSectionTabsRow :global(.btn)[data-active="true"]::after {
+.settingsTabsRow :global(button[data-active="true"])::after,
+.desktopSectionTabsRow :global(button[data-active="true"])::after,
+.storeTabsBar :global(button[data-active="true"])::after {
   opacity: 1;
   transform: scaleX(1);
+}
+
+.storeTabsBar :global(.btn) {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(132, 161, 214, 0.16) !important;
+  border-radius: 999px !important;
+  background: rgba(8, 15, 28, 0.58);
+  color: #9ab0cd;
+}
+
+.storeTabsBar :global(.btn)::after {
+  display: none;
+}
+
+.storeTabsBar :global(button[data-active="true"]) {
+  background: linear-gradient(180deg, rgba(35, 82, 121, 0.58), rgba(17, 33, 57, 0.98)) !important;
+  border-color: rgba(84, 203, 255, 0.34) !important;
+  box-shadow: inset 0 1px 0 rgba(159, 228, 255, 0.08);
 }
 
 .desktopRailCard {
@@ -405,7 +371,7 @@
 .settingsMain {
   min-width: 0;
   display: grid;
-  gap: 10px;
+  gap: 8px;
   padding-bottom: 88px;
 }
 
@@ -418,7 +384,7 @@
 .workspaceHero {
   padding: 0;
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .workspaceHeroCompact {
@@ -428,7 +394,7 @@
 
 .workspaceHeroMain {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .workspaceTitleRow {
@@ -480,6 +446,10 @@
   font-weight: 700;
 }
 
+.workspaceHeroChip :global(*) {
+  pointer-events: none;
+}
+
 .stickyActionBar {
   position: sticky;
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
@@ -496,6 +466,10 @@
   box-shadow:
     0 14px 32px rgba(3, 8, 18, 0.28),
     inset 0 1px 0 rgba(132, 161, 214, 0.08);
+}
+
+.stickyActionBarAlways {
+  visibility: visible;
 }
 
 .stickyActionMeta {

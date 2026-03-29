@@ -14,7 +14,7 @@ export function usePricingSettingsController() {
   const [platforms, setPlatforms] = useState<PlatformItem[]>([]);
   const [activePlatform, setActivePlatform] = useState("yandex_market");
   const [activeStoreId, setActiveStoreId] = useState("");
-  const [settingsTab, setSettingsTab] = useState<"sales_plan" | "categories" | "logistics" | "monitoring">("sales_plan");
+  const [settingsTab, setSettingsTab] = useState<"sales_plan" | "categories" | "sources" | "logistics" | "monitoring">("sales_plan");
   const [salesPlanRows, setSalesPlanRows] = useState<SalesPlanRowApi[]>([]);
   const [salesPlanLoading, setSalesPlanLoading] = useState(false);
   const [salesPlanError, setSalesPlanError] = useState("");
@@ -174,7 +174,7 @@ export function usePricingSettingsController() {
       await loadMonitoringData();
       await refreshPricingStoreData(activePlatform, activeStoreId);
       if (settingsTab === "logistics") await logistics.loadLogisticsData();
-      else if (settingsTab === "categories") await categories.loadPricingCategoryTree();
+      else if (settingsTab === "categories" || settingsTab === "sources") await categories.loadPricingCategoryTree();
     } catch (e) {
       categories.setItemsError(e instanceof Error ? e.message : String(e));
     } finally {

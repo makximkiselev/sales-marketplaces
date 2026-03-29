@@ -113,13 +113,13 @@ function isDraftChanged(row: SalesPlanRowApi, draft: PlanDraft) {
 export function SalesPlanSection({ loading, error, rows, savingMap, saveError, onSaveRows }: Props) {
   const [drafts, setDrafts] = useState<Record<string, PlanDraft>>({});
   const [focusedCell, setFocusedCell] = useState<string>("");
-  const [floatingNotice, setFloatingNotice] = useState<string>("");
-  const [showSaveFeedback, setShowSaveFeedback] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState<string>("");
 
   useEffect(() => {
     const next: Record<string, PlanDraft> = {};
     for (const row of rows) next[row.store_uid] = toDraft(row);
     setDrafts(next);
+    setSaveFeedback("");
   }, [rows]);
 
   const rowsById = useMemo(() => {
@@ -129,6 +129,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
   }, [rows]);
 
   function patchDraft(storeUid: string, updater: (prev: PlanDraft) => PlanDraft) {
+    setSaveFeedback("");
     setDrafts((prev) => {
       const current = prev[storeUid] || toDraft(rowsById.get(storeUid) as SalesPlanRowApi);
       return { ...prev, [storeUid]: updater(current) };
@@ -196,12 +197,6 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
   const hasChanges = changedStoreUids.length > 0;
   const savingAny = Object.values(savingMap).some(Boolean);
 
-  useEffect(() => {
-    if (!floatingNotice) return;
-    const timer = window.setTimeout(() => setFloatingNotice(""), 2600);
-    return () => window.clearTimeout(timer);
-  }, [floatingNotice]);
-
   async function commitAll() {
     const changedRows = rows.flatMap((row) => {
       const draft = drafts[row.store_uid] || toDraft(row);
@@ -223,8 +218,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
     });
     if (!changedRows.length) return;
     await onSaveRows(changedRows);
-    setShowSaveFeedback(true);
-    setFloatingNotice("Данные сохранены");
+    setSaveFeedback("Данные сохранены");
   }
 
   function stackedLabel(firstLine: string, secondLine: string) {
@@ -255,9 +249,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                 ? "Сохранение..."
                 : isDirty
                   ? "Есть изменения"
-                  : row.updated_at
-                    ? `Сохранено ${new Date(row.updated_at).toLocaleString("ru-RU")}`
-                    : "Нет изменений";
+                  : "Нет изменений";
               return (
                 <section key={row.store_uid} className={styles.salesPlanCard}>
                   <div className={styles.salesPlanCardHead}>
@@ -424,8 +416,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
             })}
             {!rows.length ? <div className="status">Нет доступных магазинов.</div> : null}
           </div>
-          {(hasChanges || savingAny || saveError || (showSaveFeedback && Boolean(floatingNotice))) ? (
-            <div className={styles.salesPlanFloatingBar}>
+          <div className={styles.salesPlanFloatingBar}>
               <div className={styles.salesPlanFloatingMeta}>
                 <div className={styles.salesPlanFloatingTitle}>
                   {saveError
@@ -434,13 +425,13 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                       ? "Сохраняем изменения..."
                       : hasChanges
                         ? "Есть изменения"
-                        : "Данные сохранены"}
+                        : saveFeedback || "Нет изменений"}
                 </div>
                 {saveError ? <div className={styles.salesPlanFloatingHint}>{saveError}</div> : null}
               </div>
               <div className={styles.salesPlanFloatingMeta}>
-                {(!hasChanges && !saveError && showSaveFeedback && floatingNotice) ? (
-                  <div className={styles.salesPlanFloatingHint}>{floatingNotice}</div>
+                {(!hasChanges && !saveError && saveFeedback) ? (
+                  <div className={styles.salesPlanFloatingHint}>{saveFeedback}</div>
                 ) : null}
                 {hasChanges ? (
                   <button
@@ -448,7 +439,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                     className="btn"
                     disabled={savingAny}
                     onClick={() => {
-                      setShowSaveFeedback(false);
+                      setSaveFeedback("");
                       void commitAll();
                     }}
                   >
@@ -457,7 +448,6 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                 ) : null}
               </div>
             </div>
-          ) : null}
         </>
       ) : null}
     </SectionBlock>

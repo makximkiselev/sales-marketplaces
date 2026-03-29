@@ -1,4 +1,3 @@
-import { useState } from "react";
 import styles from "./PricingSettingsPage.module.css";
 import { PageFrame } from "../../../components/page/PageKit";
 import { ControlTabs } from "../../../components/page/ControlKit";
@@ -13,7 +12,6 @@ import { SalesPlanSection } from "./components/SalesPlanSection";
 import { usePricingSettingsController } from "./usePricingSettingsController";
 
 export default function PricingSettingsPage() {
-  const [categorySubview, setCategorySubview] = useState<"rules" | "sources">("rules");
   const {
     loading,
     refreshing,
@@ -112,6 +110,12 @@ export default function PricingSettingsPage() {
       description: "Комиссии, реклама и правила расчёта по категориям.",
     },
     {
+      id: "sources" as const,
+      label: "Источники данных",
+      title: "Источники данных",
+      description: "Источники себестоимости и остатков для активного магазина.",
+    },
+    {
       id: "logistics" as const,
       label: "Логистические затраты",
       title: "Логистические затраты",
@@ -130,7 +134,7 @@ export default function PricingSettingsPage() {
         : currentSavedAt
           ? `Сохранено ${new Date(currentSavedAt).toLocaleString("ru-RU")}`
           : "Изменения ещё не зафиксированы"
-    : settingsTab === "categories"
+    : settingsTab === "categories" || settingsTab === "sources"
       ? storeSettingsSaving
         ? "Автосохранение..."
         : storeSettingsError
@@ -141,10 +145,6 @@ export default function PricingSettingsPage() {
       : salesPlanError
         ? `Ошибка: ${salesPlanError}`
         : "Редактирование вручную";
-  const categorySubviewItems = [
-    { id: "rules" as const, label: "Правила категорий" },
-    { id: "sources" as const, label: "Источники данных" },
-  ];
 
   return (
     <>
@@ -181,27 +181,6 @@ export default function PricingSettingsPage() {
         }
       >
         <div className={`${styles.settingsShell} ${isSalesPlanSection ? styles.settingsShellFull : ""}`}>
-          {!isSalesPlanSection ? (
-            <aside className={styles.desktopRail}>
-              <section className={styles.desktopRailCard}>
-                <div className={styles.desktopRailTitle}>Магазины</div>
-                <div className={styles.desktopStoreList}>
-                  {storeTabs.map((store) => (
-                    <button
-                      key={store.key}
-                      type="button"
-                      className={`${styles.desktopStoreButton} ${activeStoreTabKey === store.key ? styles.desktopStoreButtonActive : ""}`}
-                      onClick={() => setActiveStoreTabKey(store.key)}
-                    >
-                      <span className={styles.desktopStoreButtonTitle}>{store.storeName}</span>
-                      <span className={styles.desktopStoreButtonMeta}>{store.platformLabel}</span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            </aside>
-          ) : null}
-
           <div className={`${styles.settingsMain} ${isSalesPlanSection ? styles.settingsMainCompact : ""}`}>
             <div className={`${styles.workspaceHero} ${isSalesPlanSection ? styles.workspaceHeroCompact : ""}`}>
               <div className={styles.desktopSectionTabs}>
@@ -212,10 +191,23 @@ export default function PricingSettingsPage() {
                   onChange={(id) => setSettingsTab(id)}
                 />
               </div>
+              {!isSalesPlanSection ? (
+                <div className={styles.desktopStoreTabs}>
+                  <ControlTabs
+                    className={styles.storeTabsBar}
+                    items={storeTabs.map((store) => ({
+                      id: store.key,
+                      label: store.storeName,
+                      badge: store.platformLabel,
+                    }))}
+                    activeId={activeStoreTabKey}
+                    onChange={setActiveStoreTabKey}
+                  />
+                </div>
+              ) : null}
               <div className={styles.workspaceHeroMain}>
-                {!isSalesPlanSection ? <div className={styles.workspaceEyebrow}>{activeSection.title}</div> : null}
                 <div className={styles.workspaceTitleRow}>
-                  <h2 className={styles.workspaceTitle}>{isSalesPlanSection ? activeSection.title : (activeStore?.storeName || activeSection.title)}</h2>
+                  <h2 className={styles.workspaceTitle}>{activeSection.title}</h2>
                   {isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : null}
                 </div>
                 <p className={styles.workspaceSubtitle}>
@@ -223,20 +215,10 @@ export default function PricingSettingsPage() {
                     ? "Store-level цели, режимы прибыли и стратегия для всех магазинов в одном рабочем пространстве."
                     : activeSection.description}
                 </p>
-                <div className={styles.workspaceHeroChips}>
-                  {!isSalesPlanSection && activeStore?.platformLabel ? (
+                {!isSalesPlanSection && activeStore ? (
+                  <div className={styles.workspaceHeroChips}>
                     <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
-                  ) : null}
-                  {!isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span> : null}
-                </div>
-                {settingsTab === "categories" ? (
-                  <div className={styles.sectionSubviewTabs}>
-                    <ControlTabs
-                      className={styles.sectionSubviewTabsRow}
-                      items={categorySubviewItems}
-                      activeId={categorySubview}
-                      onChange={(id) => setCategorySubview(id)}
-                    />
+                    <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
                   </div>
                 ) : null}
               </div>
@@ -269,7 +251,7 @@ export default function PricingSettingsPage() {
               </div>
             ) : null}
 
-            {settingsTab === "categories" && categorySubview === "sources" ? (
+            {settingsTab === "sources" ? (
               <div className={styles.controlsRow}>
                 <GeneralSettingsPanel
                   earningMode={earningMode}
@@ -323,7 +305,7 @@ export default function PricingSettingsPage() {
               />
             ) : null}
 
-            {settingsTab === "categories" && categorySubview === "rules" ? (
+            {settingsTab === "categories" ? (
               <GeneralSettingsSection
                 loading={loading}
                 error={error}
