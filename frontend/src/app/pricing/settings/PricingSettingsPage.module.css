@@ -31,27 +31,6 @@
   justify-items: end;
 }
 
-.headerMetaRow {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.headerMetaChip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(132, 161, 214, 0.22);
-  background: rgba(11, 21, 39, 0.72);
-  color: #dbe8ff;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .headerControlStack {
   display: grid;
   gap: 10px;
@@ -85,29 +64,11 @@
 }
 
 .toolbarActions {
-  display: grid;
-  justify-items: end;
-  gap: 8px;
+  min-height: 0;
 }
 
 .recalculateButton {
   white-space: nowrap;
-}
-
-.headerActionRow {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.recalculateHint {
-  max-width: 420px;
-  font-size: 12px;
-  line-height: 1.3;
-  color: var(--text-soft);
-  text-align: right;
 }
 
 .settingsShell {
@@ -352,6 +313,50 @@
   color: #edf4ff;
   font-size: 14px;
   line-height: 1.35;
+}
+
+.stickyActionBar {
+  position: sticky;
+  bottom: 14px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(10, 18, 33, 0.94), rgba(8, 16, 30, 0.98));
+  box-shadow:
+    0 14px 32px rgba(3, 8, 18, 0.28),
+    inset 0 1px 0 rgba(132, 161, 214, 0.08);
+}
+
+.stickyActionMeta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stickyActionTitle {
+  color: #ebf3ff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.stickyActionHint {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.stickyActionButtons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .categoryEditorActions {
@@ -1464,10 +1469,6 @@
     justify-items: start;
   }
 
-  .headerMetaRow {
-    justify-content: flex-start;
-  }
-
   .mobileSectionTabs {
     display: block;
   }
@@ -1521,12 +1522,13 @@
     align-items: stretch;
   }
 
-  .toolbarActions {
-    width: 100%;
-    justify-items: stretch;
+  .stickyActionBar {
+    position: static;
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .headerActionRow {
+  .stickyActionButtons {
     justify-content: stretch;
   }
 

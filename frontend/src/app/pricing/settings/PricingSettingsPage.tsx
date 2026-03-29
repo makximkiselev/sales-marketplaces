@@ -149,11 +149,6 @@ export default function PricingSettingsPage() {
         className={styles.headCard}
         meta={
           <div className={styles.headerMetaStack}>
-            <div className={styles.headerMetaRow}>
-              <span className={styles.headerMetaChip}>{activeSection.title}</span>
-              {activeStore ? <span className={styles.headerMetaChip}>{activeStore.storeName}</span> : null}
-              {activeStoreId ? <span className={styles.headerMetaChip}>{moneySign}</span> : null}
-            </div>
             <div className={styles.storeSettingsMeta}>{currentSaveState}</div>
           </div>
         }
@@ -182,31 +177,7 @@ export default function PricingSettingsPage() {
           </div>
         }
         toolbarRight={
-          <div className={styles.toolbarActions}>
-            {activeStoreId ? (
-              <div className={styles.headerActionRow}>
-                <button
-                  type="button"
-                  className="btn ghost"
-                  disabled={refreshing}
-                  onClick={() => void refreshStoreDataFromPlatform()}
-                >
-                  {refreshing ? "Обновление..." : "Обновить данные"}
-                </button>
-                <button
-                  type="button"
-                  className={`btn ${styles.recalculateButton}`}
-                  disabled={Boolean(monitoringRunning.strategy_refresh)}
-                  onClick={() => void runMonitoringJob("strategy_refresh")}
-                >
-                  {monitoringRunning.strategy_refresh ? "Пересчет..." : "Пересчитать цены"}
-                </button>
-              </div>
-            ) : null}
-            <div className={styles.recalculateHint}>
-              Изменения в настройках сохраняются автоматически и не запускают пересчет.
-            </div>
-          </div>
+          <div className={styles.toolbarActions} />
         }
       >
         <div className={styles.settingsShell}>
@@ -268,6 +239,33 @@ export default function PricingSettingsPage() {
                 </div>
               </div>
             </div>
+
+            {activeStoreId ? (
+              <div className={styles.stickyActionBar}>
+                <div className={styles.stickyActionMeta}>
+                  <div className={styles.stickyActionTitle}>Изменения сохраняются автоматически</div>
+                  <div className={styles.stickyActionHint}>{currentSaveState}</div>
+                </div>
+                <div className={styles.stickyActionButtons}>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    disabled={refreshing}
+                    onClick={() => void refreshStoreDataFromPlatform()}
+                  >
+                    {refreshing ? "Обновление..." : "Обновить данные"}
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${styles.recalculateButton}`}
+                    disabled={Boolean(monitoringRunning.strategy_refresh)}
+                    onClick={() => void runMonitoringJob("strategy_refresh")}
+                  >
+                    {monitoringRunning.strategy_refresh ? "Пересчет..." : "Пересчитать цены"}
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
             {settingsTab === "categories" ? (
               <div className={styles.controlsRow}>
