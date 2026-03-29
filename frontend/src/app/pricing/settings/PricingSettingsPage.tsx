@@ -175,26 +175,9 @@ export default function PricingSettingsPage() {
           </div>
         }
       >
-        <div className={styles.settingsShell}>
-          <aside className={styles.desktopRail}>
-            <section className={styles.desktopRailCard}>
-              <div className={styles.desktopRailTitle}>Разделы</div>
-              <div className={styles.desktopRailNav}>
-                {sectionItems.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`${styles.sectionNavButton} ${settingsTab === item.id ? styles.sectionNavButtonActive : ""}`}
-                    onClick={() => setSettingsTab(item.id)}
-                  >
-                    <span className={styles.sectionNavLabel}>{item.label}</span>
-                    <span className={styles.sectionNavHint}>{item.description}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            {!isSalesPlanSection ? (
+        <div className={`${styles.settingsShell} ${isSalesPlanSection ? styles.settingsShellFull : ""}`}>
+          {!isSalesPlanSection ? (
+            <aside className={styles.desktopRail}>
               <section className={styles.desktopRailCard}>
                 <div className={styles.desktopRailTitle}>Магазины</div>
                 <div className={styles.desktopStoreList}>
@@ -211,10 +194,18 @@ export default function PricingSettingsPage() {
                   ))}
                 </div>
               </section>
-            ) : null}
-          </aside>
+            </aside>
+          ) : null}
 
           <div className={styles.settingsMain}>
+            <div className={styles.desktopSectionTabs}>
+              <ControlTabs
+                className={styles.desktopSectionTabsRow}
+                items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
+                activeId={settingsTab}
+                onChange={(id) => setSettingsTab(id)}
+              />
+            </div>
             <div className={styles.workspaceHero}>
               <div className={styles.workspaceHeroMain}>
                 {!isSalesPlanSection ? <div className={styles.workspaceEyebrow}>{activeSection.title}</div> : null}

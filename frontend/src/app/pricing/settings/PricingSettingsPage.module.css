@@ -65,11 +65,48 @@
   margin-inline: auto;
 }
 
+.settingsShellFull {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .desktopRail {
   display: grid;
   gap: 14px;
   position: sticky;
   top: 84px;
+}
+
+.desktopSectionTabs {
+  display: block;
+}
+
+.desktopSectionTabsRow {
+  gap: 24px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 0 0 12px;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.14);
+}
+
+.desktopSectionTabsRow :global(.btn) {
+  height: auto;
+  min-height: 0;
+  padding: 0 0 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #8fa5c4;
+  box-shadow: none;
+}
+
+.desktopSectionTabsRow :global(.btn:hover) {
+  color: #deebff;
+  background: transparent;
+}
+
+.desktopSectionTabsRow :global(.btn).tabBtnActive {
+  color: #eef5ff;
+  border-bottom: 2px solid rgba(135, 209, 255, 0.9);
 }
 
 .desktopRailCard {
@@ -1965,7 +2002,10 @@
     gap: 12px;
   }
 
-  .salesPlanToolbar,
+  .desktopSectionTabs {
+    display: none;
+  }
+
   .salesPlanCardHead {
     flex-direction: column;
     align-items: stretch;
@@ -1983,6 +2023,10 @@
 }
 
 @media (min-width: 961px) {
+  .mobileSectionTabs {
+    display: none;
+  }
+
   .settingsTabsRow {
     display: none;
   }
