@@ -7,6 +7,8 @@ BACKEND_SERVICE="${BACKEND_SERVICE:-sales-marketplaces-backend}"
 NGINX_SERVICE="${NGINX_SERVICE:-nginx}"
 BACKEND_HEALTH_URL="${BACKEND_HEALTH_URL:-http://127.0.0.1:18000/api/health}"
 PUBLIC_HEALTH_URL="${PUBLIC_HEALTH_URL:-https://sales.id-smart.ru/api/health}"
+FRONTEND_DIST_DIR="${FRONTEND_DIST_DIR:-$APP_ROOT/frontend/dist}"
+FRONTEND_DIST_BUILD_DIR="${FRONTEND_DIST_BUILD_DIR:-$APP_ROOT/frontend/dist-build}"
 
 log() {
   printf '\n[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
@@ -41,6 +43,7 @@ require_cmd() {
 require_cmd git
 require_cmd python3
 require_cmd npm
+require_cmd npx
 require_cmd curl
 require_cmd systemctl
 
@@ -87,11 +90,14 @@ else
 fi
 
 log "Building frontend"
-rm -rf "$APP_ROOT/frontend/dist"
-VITE_API_BASE="${VITE_API_BASE:-/api}" npm run build
-require_file "$APP_ROOT/frontend/dist/index.html"
-require_glob_match "$APP_ROOT/frontend/dist/assets/index-*.js"
-require_glob_match "$APP_ROOT/frontend/dist/assets/index-*.css"
+rm -rf "$FRONTEND_DIST_BUILD_DIR"
+npx tsc -b
+VITE_API_BASE="${VITE_API_BASE:-/api}" npx vite build --outDir "$FRONTEND_DIST_BUILD_DIR"
+require_file "$FRONTEND_DIST_BUILD_DIR/index.html"
+require_glob_match "$FRONTEND_DIST_BUILD_DIR/assets/index-*.js"
+require_glob_match "$FRONTEND_DIST_BUILD_DIR/assets/index-*.css"
+rm -rf "$FRONTEND_DIST_DIR"
+mv "$FRONTEND_DIST_BUILD_DIR" "$FRONTEND_DIST_DIR"
 
 cd "$APP_ROOT"
 
