@@ -35,6 +35,7 @@ export default function PricingSettingsPage() {
     salesPlanLoading,
     salesPlanError,
     salesPlanSaving,
+    monitoringRunning,
     categoryRows,
     cellDrafts,
     cellSaving,
@@ -76,6 +77,7 @@ export default function PricingSettingsPage() {
     setLogisticsCellDrafts,
     setActiveTargetValue,
     saveSalesPlanRows,
+    runMonitoringJob,
     getCellKey,
     defaultFieldValue,
     formatNum,
@@ -126,18 +128,30 @@ export default function PricingSettingsPage() {
           />
         }
         toolbarRight={
-          settingsTab !== "sales_plan" ? (
-            <ControlTabs
-              className={styles.storeTabsRow}
-              items={storeTabs.map((store) => ({
-                id: store.key,
-                label: store.storeName,
-                badge: store.platformLabel,
-              }))}
-              activeId={activeStoreTabKey}
-              onChange={setActiveStoreTabKey}
-            />
-          ) : null
+          <div className={styles.toolbarActions}>
+            {activeStoreId ? (
+              <button
+                type="button"
+                className={`btn ${styles.recalculateButton}`}
+                disabled={Boolean(monitoringRunning.strategy_refresh)}
+                onClick={() => void runMonitoringJob("strategy_refresh")}
+              >
+                {monitoringRunning.strategy_refresh ? "Пересчет..." : "Пересчитать цены"}
+              </button>
+            ) : null}
+            {settingsTab !== "sales_plan" ? (
+              <ControlTabs
+                className={styles.storeTabsRow}
+                items={storeTabs.map((store) => ({
+                  id: store.key,
+                  label: store.storeName,
+                  badge: store.platformLabel,
+                }))}
+                activeId={activeStoreTabKey}
+                onChange={setActiveStoreTabKey}
+              />
+            ) : null}
+          </div>
         }
       >
         {settingsTab === "categories" ? (

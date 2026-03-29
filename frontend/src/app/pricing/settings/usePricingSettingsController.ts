@@ -224,9 +224,7 @@ export function usePricingSettingsController() {
       if (platform === activePlatform && storeId === activeStoreId) {
         await categories.loadPricingCategoryTree();
       }
-      await runPricingMonitoringJob("strategy_refresh");
-      await loadMonitoringData();
-      showAppToast({ message: "Данные сохранены, обновление стратегии запущено" });
+      showAppToast({ message: "Данные сохранены" });
     } catch (e) {
       setSalesPlanError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -265,9 +263,7 @@ export function usePricingSettingsController() {
       if (activePlatform && activeStoreId) {
         await categories.loadPricingCategoryTree();
       }
-      await runPricingMonitoringJob("strategy_refresh");
-      await loadMonitoringData();
-      showAppToast({ message: "Данные сохранены, обновление стратегии запущено" });
+      showAppToast({ message: "Данные сохранены" });
     } catch (e) {
       setSalesPlanError(e instanceof Error ? e.message : String(e));
     } finally {

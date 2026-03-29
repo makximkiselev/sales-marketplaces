@@ -43,6 +43,18 @@
   flex-wrap: wrap;
 }
 
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.recalculateButton {
+  white-space: nowrap;
+}
+
 .globalSettingsGrid {
   display: grid;
   grid-template-columns: 0.95fr 1.1fr 1.1fr 1fr 0.8fr;
