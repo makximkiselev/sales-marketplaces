@@ -17,6 +17,8 @@ import type { EditableFieldKey } from "./types";
 export default function PricingSettingsPage() {
   const [bulkField, setBulkField] = useState<EditableFieldKey>("commission_percent");
   const [bulkFillOpen, setBulkFillOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const {
     loading,
     refreshing,
@@ -275,6 +277,8 @@ export default function PricingSettingsPage() {
                 formatNum={formatNum}
                 queueSaveCell={queueSaveCell}
                 flushSaveCell={flushSaveCell}
+                mobileCatalogOpen={mobileCatalogOpen}
+                onCloseMobileCatalog={() => setMobileCatalogOpen(false)}
               />
             ) : null}
 
@@ -315,13 +319,29 @@ export default function PricingSettingsPage() {
                   <div className={styles.stickyActionHint}>{currentSaveState}</div>
                 </div>
                 <div className={styles.stickyActionButtons}>
+                  <button
+                    type="button"
+                    className={`btn ghost ${styles.mobileOnlyAction}`}
+                    onClick={() => setMobileMenuOpen(true)}
+                  >
+                    Меню
+                  </button>
                   {settingsTab === "categories" ? (
                     <button
                       type="button"
-                      className="btn ghost"
+                      className={`btn ghost ${styles.categoryBulkAction}`}
                       onClick={() => setBulkFillOpen(true)}
                     >
                       Заполнить всем
+                    </button>
+                  ) : null}
+                  {settingsTab === "categories" ? (
+                    <button
+                      type="button"
+                      className={`btn ghost ${styles.mobileOnlyAction}`}
+                      onClick={() => setMobileCatalogOpen(true)}
+                    >
+                      Каталог
                     </button>
                   ) : null}
                   <button
@@ -374,6 +394,57 @@ export default function PricingSettingsPage() {
             setBulkFillOpen(false);
           }}
         />
+      ) : null}
+
+      {mobileMenuOpen ? (
+        <div className={styles.mobileSheetBackdrop} onClick={() => setMobileMenuOpen(false)}>
+          <div className={styles.mobileSheet} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.mobileSheetHead}>
+              <div className={styles.mobileSheetTitle}>Меню страницы</div>
+              <button type="button" className="btn ghost" onClick={() => setMobileMenuOpen(false)}>
+                Закрыть
+              </button>
+            </div>
+            <div className={styles.mobileSheetSection}>
+              <div className={styles.mobileSheetLabel}>Разделы</div>
+              <div className={styles.mobileSheetTabs}>
+                {sectionItems.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`${styles.mobileSheetTab} ${settingsTab === item.id ? styles.mobileSheetTabActive : ""}`}
+                    onClick={() => {
+                      setSettingsTab(item.id);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {!isSalesPlanSection ? (
+              <div className={styles.mobileSheetSection}>
+                <div className={styles.mobileSheetLabel}>Магазины</div>
+                <div className={styles.mobileSheetTabs}>
+                  {storeTabs.map((store) => (
+                    <button
+                      key={store.key}
+                      type="button"
+                      className={`${styles.mobileSheetTab} ${activeStoreTabKey === store.key ? styles.mobileSheetTabActive : ""}`}
+                      onClick={() => {
+                        setActiveStoreTabKey(store.key);
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      {store.storeName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
       ) : null}
 
       <LogisticsImportModal

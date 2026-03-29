@@ -507,6 +507,88 @@
   flex-wrap: wrap;
 }
 
+.mobileOnlyAction {
+  display: none;
+}
+
+.categoryBulkAction {
+  order: 1;
+}
+
+.mobileSheetBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(2, 6, 16, 0.58);
+  backdrop-filter: blur(10px);
+  display: none;
+}
+
+.mobileSheet {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(12, 22, 39, 0.96), rgba(8, 16, 30, 0.98));
+  box-shadow: 0 24px 48px rgba(3, 8, 18, 0.42);
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+  max-height: min(72vh, 720px);
+  overflow: auto;
+}
+
+.mobileSheetHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobileSheetTitle {
+  color: #eef5ff;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.mobileSheetSection {
+  display: grid;
+  gap: 10px;
+}
+
+.mobileSheetLabel {
+  color: var(--text-soft);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mobileSheetTabs {
+  display: grid;
+  gap: 8px;
+}
+
+.mobileSheetTab {
+  min-height: 42px;
+  border-radius: 14px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  background: rgba(9, 17, 31, 0.62);
+  color: #d8e6fb;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  padding: 0 14px;
+}
+
+.mobileSheetTabActive {
+  border-color: rgba(84, 203, 255, 0.34);
+  background: linear-gradient(180deg, rgba(35, 82, 121, 0.56), rgba(17, 33, 57, 0.96));
+  color: #eef5ff;
+}
+
 .categoryEditorActions {
   display: flex;
   justify-content: flex-end;
@@ -537,6 +619,12 @@
   display: grid;
   gap: 12px;
   align-content: start;
+}
+
+.categorySidebarMobile {
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .categorySidebarHead {
@@ -2148,19 +2236,20 @@
   }
 
   .pricingMobileList {
-    display: grid;
-    gap: 12px;
+    display: none;
   }
 
   .desktopSectionTabs,
   .desktopStoreTabs {
-    display: block;
+    display: none;
   }
 
-  .desktopSectionTabsRow,
-  .storeTabsBar {
-    width: 100%;
-    max-width: 100%;
+  .mobileOnlyAction {
+    display: inline-flex;
+  }
+
+  .mobileSheetBackdrop {
+    display: block;
   }
 
   .salesPlanCardHead {
@@ -2184,6 +2273,14 @@
 
   .salesPlanCardTitle {
     font-size: 16px;
+  }
+
+  .categorySidebar {
+    display: none;
+  }
+
+  .categoryEditor {
+    min-width: 0;
   }
 }
 

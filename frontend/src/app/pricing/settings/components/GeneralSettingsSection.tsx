@@ -86,6 +86,8 @@ type Props = {
   formatNum: (value: number | null | undefined) => string;
   queueSaveCell: (row: PricingCategoryRow, field: EditableFieldKey, rawValue: string) => void;
   flushSaveCell: (row: PricingCategoryRow, field: EditableFieldKey, rawValue?: string) => void;
+  mobileCatalogOpen?: boolean;
+  onCloseMobileCatalog?: () => void;
 };
 
 export function GeneralSettingsSection({
@@ -102,6 +104,8 @@ export function GeneralSettingsSection({
   formatNum,
   queueSaveCell,
   flushSaveCell,
+  mobileCatalogOpen = false,
+  onCloseMobileCatalog,
 }: Props) {
   const [selectedKey, setSelectedKey] = useState("");
   const [expandedPaths, setExpandedPaths] = useState<string[]>([]);
@@ -192,6 +196,7 @@ export function GeneralSettingsSection({
               onClick={() => {
                 if (selectableRow) {
                   setSelectedKey(selectableRow.key);
+                  onCloseMobileCatalog?.();
                 } else if (node.children.length) {
                   toggleNode(node.id);
                 }
@@ -218,6 +223,30 @@ export function GeneralSettingsSection({
     });
   }
 
+  function renderSidebarContent() {
+    return (
+      <>
+        <div className={styles.categorySidebarHead}>
+          <div>
+            <div className={styles.categorySidebarTitle}>Каталог категорий</div>
+            <div className={styles.categorySidebarMeta}>Выбери нужную ветку и редактируй только её параметры.</div>
+          </div>
+        </div>
+        <div className={styles.categorySidebarSearch}>
+          <input
+            className={`input ${styles.categorySidebarSearchInput}`}
+            value={treeQuery}
+            onChange={(e) => setTreeQuery(e.target.value)}
+            placeholder="Поиск по категории или ветке"
+          />
+        </div>
+        <div className={styles.categorySidebarList}>
+          {renderTree(filterTree(categoryTree))}
+        </div>
+      </>
+    );
+  }
+
   return (
     <SectionBlock>
         {loading ? <div className="status">Загрузка контекста...</div> : null}
@@ -232,23 +261,7 @@ export function GeneralSettingsSection({
                 {selectedRow ? (
                   <div className={styles.categoryWorkspace}>
                     <aside className={styles.categorySidebar}>
-                      <div className={styles.categorySidebarHead}>
-                        <div>
-                          <div className={styles.categorySidebarTitle}>Каталог категорий</div>
-                          <div className={styles.categorySidebarMeta}>Раскрывай только нужную ветку, а не весь список сразу.</div>
-                        </div>
-                      </div>
-                      <div className={styles.categorySidebarSearch}>
-                        <input
-                          className={`input ${styles.categorySidebarSearchInput}`}
-                          value={treeQuery}
-                          onChange={(e) => setTreeQuery(e.target.value)}
-                          placeholder="Поиск по категории или ветке"
-                        />
-                      </div>
-                      <div className={styles.categorySidebarList}>
-                        {renderTree(filterTree(categoryTree))}
-                      </div>
+                      {renderSidebarContent()}
                     </aside>
 
                     <div className={styles.categoryEditor}>
@@ -295,6 +308,21 @@ export function GeneralSettingsSection({
                           );
                         })}
                       </div>
+                    </div>
+                  </div>
+                ) : null}
+                {mobileCatalogOpen ? (
+                  <div className={styles.mobileSheetBackdrop} onClick={() => onCloseMobileCatalog?.()}>
+                    <div className={styles.mobileSheet} onClick={(e) => e.stopPropagation()}>
+                      <div className={styles.mobileSheetHead}>
+                        <div className={styles.mobileSheetTitle}>Каталог</div>
+                        <button type="button" className="btn ghost" onClick={() => onCloseMobileCatalog?.()}>
+                          Закрыть
+                        </button>
+                      </div>
+                      <aside className={`${styles.categorySidebar} ${styles.categorySidebarMobile}`}>
+                        {renderSidebarContent()}
+                      </aside>
                     </div>
                   </div>
                 ) : null}
