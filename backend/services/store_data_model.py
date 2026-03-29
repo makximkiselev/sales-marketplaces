@@ -4324,6 +4324,19 @@ def get_pricing_price_results_map(*, store_uids: list[str], skus: list[str]) -> 
     return out
 
 
+def clear_pricing_price_results_for_store(*, store_uid: str) -> None:
+    init_store_data_model()
+    suid = str(store_uid or "").strip()
+    if not suid:
+        return
+    with _connect() as conn:
+        conn.execute(
+            f"DELETE FROM pricing_price_results WHERE store_uid = {'%s' if is_postgres_backend() else '?'}",
+            (suid,),
+        )
+        conn.commit()
+
+
 def clear_pricing_boost_results_for_store(*, store_uid: str) -> None:
     init_store_data_model()
     suid = str(store_uid or "").strip()
@@ -5068,6 +5081,19 @@ def get_pricing_attractiveness_results_map(*, store_uids: list[str], skus: list[
             suid = str(row["store_uid"])
             out.setdefault(suid, {})[str(row["sku"])] = item
     return out
+
+
+def clear_pricing_attractiveness_results_for_store(*, store_uid: str) -> None:
+    init_store_data_model()
+    suid = str(store_uid or "").strip()
+    if not suid:
+        return
+    with _connect() as conn:
+        conn.execute(
+            f"DELETE FROM pricing_attractiveness_results WHERE store_uid = {'%s' if is_postgres_backend() else '?'}",
+            (suid,),
+        )
+        conn.commit()
 
 
 def clear_pricing_promo_results_for_store(*, store_uid: str) -> None:
