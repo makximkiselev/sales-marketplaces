@@ -67,6 +67,22 @@ LOGISTICS_IMPORT_HEADERS = [
 ]
 
 
+def _invalidate_pricing_read_caches() -> None:
+    from backend.routers.catalog import invalidate_catalog_cache
+    from backend.services.pricing_attractiveness_service import invalidate_attractiveness_cache
+    from backend.services.pricing_boost_service import invalidate_boost_cache
+    from backend.services.pricing_prices_service import invalidate_prices_cache
+    from backend.services.pricing_promos_service import invalidate_promos_cache
+    from backend.services.pricing_strategy_service import invalidate_strategy_cache
+
+    invalidate_catalog_cache()
+    invalidate_prices_cache()
+    invalidate_boost_cache()
+    invalidate_attractiveness_cache()
+    invalidate_promos_cache()
+    invalidate_strategy_cache()
+
+
 @router.get("/api/pricing/settings/monitoring")
 async def pricing_settings_monitoring():
     try:
@@ -713,6 +729,7 @@ async def pricing_settings_save_category_setting(payload: dict):
             leaf_path=leaf_path,
             values=values,
         )
+        _invalidate_pricing_read_caches()
     except Exception as e:
         return JSONResponse({"ok": False, "message": f"Не удалось сохранить значение: {e}"}, status_code=500)
 
@@ -737,6 +754,7 @@ async def pricing_settings_save_store_settings(payload: dict):
             store_name=str(payload.get("store_name") or "").strip(),
         )
         settings = upsert_pricing_store_settings(store_uid=store_uid, values=values)
+        _invalidate_pricing_read_caches()
     except Exception as e:
         return JSONResponse({"ok": False, "message": f"Не удалось сохранить настройки магазина: {e}"}, status_code=500)
     return {"ok": True, "store_uid": store_uid, "settings": settings}
@@ -958,6 +976,7 @@ async def pricing_settings_save_logistics_store_settings(payload: dict):
             store_name=str(payload.get("store_name") or "").strip(),
         )
         settings = upsert_pricing_logistics_store_settings(store_uid=store_uid, values=values)
+        _invalidate_pricing_read_caches()
     except Exception as e:
         return JSONResponse({"ok": False, "message": f"Не удалось сохранить логистику магазина: {e}"}, status_code=500)
     return {"ok": True, "store_uid": store_uid, "settings": settings}
@@ -988,6 +1007,7 @@ async def pricing_settings_save_logistics_product_settings(payload: dict):
             store_uid=store_uid,
             rows=[{"sku": sku, **filtered}],
         )
+        _invalidate_pricing_read_caches()
     except Exception as e:
         return JSONResponse({"ok": False, "message": f"Не удалось сохранить параметры логистики SKU: {e}"}, status_code=500)
     return {"ok": True, "store_uid": store_uid, "sku": sku}
@@ -1174,6 +1194,7 @@ async def pricing_settings_apply_defaults(payload: dict):
             target_profit_percent=payload.get("target_profit_percent"),
             ads_percent=payload.get("ads_percent"),
         )
+        _invalidate_pricing_read_caches()
     except Exception as e:
         return JSONResponse({"ok": False, "message": f"Не удалось применить значения по умолчанию: {e}"}, status_code=500)
     return {"ok": True, "dataset_key": dataset_key, "updated_rows": updated}

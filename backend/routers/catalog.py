@@ -122,6 +122,10 @@ def _cache_invalidate_all():
     _CATALOG_CACHE_GEN += 1
 
 
+def invalidate_catalog_cache() -> None:
+    _cache_invalidate_all()
+
+
 async def _get_cbr_usd_rub_rate_for_date(calc_date: datetime.date) -> float | None:
     key = calc_date.isoformat()
     if key in _FX_USD_RUB_MEM:
