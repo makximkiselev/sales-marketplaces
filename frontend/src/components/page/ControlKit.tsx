@@ -38,6 +38,8 @@ export function ControlTabs<T extends string>({
           key={item.id}
           type="button"
           className={`btn inline ${styles.tabBtn} ${activeId === item.id ? styles.tabBtnActive : ""}`.trim()}
+          data-active={activeId === item.id ? "true" : "false"}
+          aria-current={activeId === item.id ? "page" : undefined}
           onClick={() => onChange(item.id)}
         >
           <span>{item.label}</span>
