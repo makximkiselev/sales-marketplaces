@@ -130,14 +130,19 @@ export default function PricingSettingsPage() {
         toolbarRight={
           <div className={styles.toolbarActions}>
             {activeStoreId ? (
-              <button
-                type="button"
-                className={`btn ${styles.recalculateButton}`}
-                disabled={Boolean(monitoringRunning.strategy_refresh)}
-                onClick={() => void runMonitoringJob("strategy_refresh")}
-              >
-                {monitoringRunning.strategy_refresh ? "Пересчет..." : "Пересчитать цены"}
-              </button>
+              <div className={styles.recalculateGroup}>
+                <button
+                  type="button"
+                  className={`btn ${styles.recalculateButton}`}
+                  disabled={Boolean(monitoringRunning.strategy_refresh)}
+                  onClick={() => void runMonitoringJob("strategy_refresh")}
+                >
+                  {monitoringRunning.strategy_refresh ? "Пересчет..." : "Пересчитать цены"}
+                </button>
+                <div className={styles.recalculateHint}>
+                  Изменения в настройках сохраняются автоматически и не запускают пересчет.
+                </div>
+              </div>
             ) : null}
             {settingsTab !== "sales_plan" ? (
               <ControlTabs
