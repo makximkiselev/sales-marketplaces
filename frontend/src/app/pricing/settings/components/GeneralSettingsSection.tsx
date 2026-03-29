@@ -52,70 +52,114 @@ export function GeneralSettingsSection({
             {itemsLoading ? (
               <div className="status">Загрузка категорий...</div>
             ) : (
-              <div className={styles.pricingTableWrap}>
-                <table className={styles.pricingTable}>
-                  <thead>
-                    <tr>
-                      {tableColumns.map((col) => (
-                        <th key={col.id}>
-                          <div className={styles.tableHeaderCell}>
-                            <span>{col.label}</span>
-                            {col.field === "commission_percent" ? (
-                              <button
-                                type="button"
-                                className={styles.columnActionButton}
-                                onClick={() => setBulkField("commission_percent")}
-                              >
-                                Заполнить всем
-                              </button>
-                            ) : null}
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {categoryRows.map((row) => (
-                      <tr key={row.key}>
-                        {tableColumns.map((col) => {
-                          if (col.id === "category") return <td key={col.id} className={styles.colText}>{row.category || "-"}</td>;
-                          if (col.id.startsWith("subcategory_")) {
-                            const idx = col.subIndex ?? 0;
-                            return <td key={col.id} className={styles.colText}>{row.subcategoryLevels[idx] || "-"}</td>;
-                          }
-                          const field = col.field;
-                          if (col.kind === "input" && field) {
-                            const cellKey = getCellKey(row.leafPath || row.key, field);
-                            const baseVal = row.values[field];
-                            const fallbackVal = baseVal == null ? defaultFieldValue(field) : "";
-                            const value = cellDrafts[cellKey] ?? (baseVal == null ? fallbackVal : formatNum(baseVal));
-                            return (
-                              <td key={col.id}>
-                                <div className={styles.cellInputWrap}>
-                                  <input
-                                    className={`input ${styles.cellInput}`}
-                                    value={value}
-                                    onChange={(e) => queueSaveCell(row, field, e.target.value)}
-                                    onBlur={(e) => flushSaveCell(row, field, e.target.value)}
-                                    inputMode="decimal"
-                                  />
-                                  {cellSaving[cellKey] ? <span className={styles.cellSavingDot} /> : null}
-                                </div>
-                              </td>
-                            );
-                          }
-                          return <td key={col.id}><span className={styles.placeholderDash}>-</span></td>;
-                        })}
-                      </tr>
-                    ))}
-                    {!categoryRows.length ? (
+              <>
+                <div className={styles.pricingTableWrap}>
+                  <table className={styles.pricingTable}>
+                    <thead>
                       <tr>
-                        <td colSpan={tableColumns.length}>Нет загруженных категорий для выбранного магазина.</td>
+                        {tableColumns.map((col) => (
+                          <th key={col.id}>
+                            <div className={styles.tableHeaderCell}>
+                              <span>{col.label}</span>
+                              {col.field === "commission_percent" ? (
+                                <button
+                                  type="button"
+                                  className={styles.columnActionButton}
+                                  onClick={() => setBulkField("commission_percent")}
+                                >
+                                  Заполнить всем
+                                </button>
+                              ) : null}
+                            </div>
+                          </th>
+                        ))}
                       </tr>
-                    ) : null}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {categoryRows.map((row) => (
+                        <tr key={row.key}>
+                          {tableColumns.map((col) => {
+                            if (col.id === "category") return <td key={col.id} className={styles.colText}>{row.category || "-"}</td>;
+                            if (col.id.startsWith("subcategory_")) {
+                              const idx = col.subIndex ?? 0;
+                              return <td key={col.id} className={styles.colText}>{row.subcategoryLevels[idx] || "-"}</td>;
+                            }
+                            const field = col.field;
+                            if (col.kind === "input" && field) {
+                              const cellKey = getCellKey(row.leafPath || row.key, field);
+                              const baseVal = row.values[field];
+                              const fallbackVal = baseVal == null ? defaultFieldValue(field) : "";
+                              const value = cellDrafts[cellKey] ?? (baseVal == null ? fallbackVal : formatNum(baseVal));
+                              return (
+                                <td key={col.id}>
+                                  <div className={styles.cellInputWrap}>
+                                    <input
+                                      className={`input ${styles.cellInput}`}
+                                      value={value}
+                                      onChange={(e) => queueSaveCell(row, field, e.target.value)}
+                                      onBlur={(e) => flushSaveCell(row, field, e.target.value)}
+                                      inputMode="decimal"
+                                    />
+                                    {cellSaving[cellKey] ? <span className={styles.cellSavingDot} /> : null}
+                                  </div>
+                                </td>
+                              );
+                            }
+                            return <td key={col.id}><span className={styles.placeholderDash}>-</span></td>;
+                          })}
+                        </tr>
+                      ))}
+                      {!categoryRows.length ? (
+                        <tr>
+                          <td colSpan={tableColumns.length}>Нет загруженных категорий для выбранного магазина.</td>
+                        </tr>
+                      ) : null}
+                    </tbody>
+                  </table>
+                </div>
+                <div className={styles.pricingMobileList}>
+                  {categoryRows.map((row) => (
+                    <article key={row.key} className={styles.pricingMobileCard}>
+                      <div className={styles.pricingMobileCardHead}>
+                        <div className={styles.pricingMobileCardTitle}>{row.category || "-"}</div>
+                        {row.subcategoryLevels.length ? (
+                          <div className={styles.pricingMobileCardPath}>
+                            {row.subcategoryLevels.join(" / ")}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className={styles.pricingMobileFields}>
+                        {tableColumns.map((col) => {
+                          if (col.kind !== "input" || !col.field) return null;
+                          const field = col.field;
+                          const cellKey = getCellKey(row.leafPath || row.key, field);
+                          const baseVal = row.values[field];
+                          const fallbackVal = baseVal == null ? defaultFieldValue(field) : "";
+                          const value = cellDrafts[cellKey] ?? (baseVal == null ? fallbackVal : formatNum(baseVal));
+                          return (
+                            <label key={col.id} className={styles.pricingMobileField}>
+                              <span className={styles.pricingMobileFieldLabel}>{col.label}</span>
+                              <div className={styles.cellInputWrap}>
+                                <input
+                                  className={`input ${styles.cellInput}`}
+                                  value={value}
+                                  onChange={(e) => queueSaveCell(row, field, e.target.value)}
+                                  onBlur={(e) => flushSaveCell(row, field, e.target.value)}
+                                  inputMode="decimal"
+                                />
+                                {cellSaving[cellKey] ? <span className={styles.cellSavingDot} /> : null}
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </article>
+                  ))}
+                  {!categoryRows.length ? (
+                    <div className={styles.emptyState}>Нет загруженных категорий для выбранного магазина.</div>
+                  ) : null}
+                </div>
+              </>
             )}
           </>
         ) : null}

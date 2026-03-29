@@ -775,6 +775,53 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.pricingMobileList {
+  display: none;
+}
+
+.pricingMobileCard {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  border-radius: 14px;
+  background: rgba(10, 18, 34, 0.58);
+}
+
+.pricingMobileCardHead {
+  display: grid;
+  gap: 4px;
+}
+
+.pricingMobileCardTitle {
+  color: #e6efff;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pricingMobileCardPath {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.pricingMobileFields {
+  display: grid;
+  gap: 10px;
+}
+
+.pricingMobileField {
+  display: grid;
+  gap: 6px;
+}
+
+.pricingMobileFieldLabel {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
 .logisticsListControls {
   display: flex;
   align-items: center;
@@ -1001,6 +1048,15 @@
 
   .logisticsPageSizeBox {
     justify-content: space-between;
+  }
+
+  .pricingTableWrap {
+    display: none;
+  }
+
+  .pricingMobileList {
+    display: grid;
+    gap: 12px;
   }
 }
 
