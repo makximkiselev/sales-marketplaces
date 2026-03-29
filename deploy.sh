@@ -15,7 +15,7 @@ log() {
 wait_for_url() {
   local url="$1"
   local label="$2"
-  local attempts="${3:-20}"
+  local attempts="${3:-60}"
   local delay="${4:-2}"
   local i
 

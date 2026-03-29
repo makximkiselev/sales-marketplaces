@@ -97,10 +97,10 @@ export function Shell({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileGroupTitle, setMobileGroupTitle] = useState<string | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
+  const [pullReady, setPullReady] = useState(false);
   const [pullRefreshing, setPullRefreshing] = useState(false);
   const pullStartYRef = useRef<number | null>(null);
   const pullActiveRef = useRef(false);
-  const pullTriggeredRef = useRef(false);
   const currentGroupTitle = useMemo(() => {
     const match = groups.find((group) => groupItems(group).some((item) => isActive(pathname, item.href)));
     return match?.title ?? groups[0].title;
@@ -122,10 +122,10 @@ export function Shell({ children }: { children: ReactNode }) {
     setMobileMenuOpen(false);
     setMobileGroupTitle(null);
     setPullDistance(0);
+    setPullReady(false);
     setPullRefreshing(false);
     pullStartYRef.current = null;
     pullActiveRef.current = false;
-    pullTriggeredRef.current = false;
   }, [pathname]);
 
   useEffect(() => {
@@ -173,7 +173,7 @@ export function Shell({ children }: { children: ReactNode }) {
     if (!canPullRefresh()) return;
     pullStartYRef.current = clientY;
     pullActiveRef.current = true;
-    pullTriggeredRef.current = false;
+    setPullReady(false);
   }
 
   function handlePullMove(clientY: number) {
@@ -181,7 +181,7 @@ export function Shell({ children }: { children: ReactNode }) {
     const delta = clientY - pullStartYRef.current;
     if (delta <= 0) {
       setPullDistance(0);
-      pullTriggeredRef.current = false;
+      setPullReady(false);
       return;
     }
     const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
@@ -189,20 +189,20 @@ export function Shell({ children }: { children: ReactNode }) {
       pullActiveRef.current = false;
       pullStartYRef.current = null;
       setPullDistance(0);
-      pullTriggeredRef.current = false;
+      setPullReady(false);
       return;
     }
     const nextDistance = Math.min(PULL_REFRESH_MAX, delta * 0.45);
     setPullDistance(nextDistance);
-    pullTriggeredRef.current = nextDistance >= PULL_REFRESH_TRIGGER;
+    setPullReady(nextDistance >= PULL_REFRESH_TRIGGER);
   }
 
   function handlePullEnd() {
     if (!pullActiveRef.current) return;
     pullActiveRef.current = false;
     pullStartYRef.current = null;
-    if (pullTriggeredRef.current) {
-      pullTriggeredRef.current = false;
+    if (pullReady) {
+      setPullReady(false);
       setPullRefreshing(true);
       setPullDistance(PULL_REFRESH_TRIGGER);
       window.setTimeout(() => {
@@ -210,9 +210,38 @@ export function Shell({ children }: { children: ReactNode }) {
       }, 120);
       return;
     }
-    pullTriggeredRef.current = false;
+    setPullReady(false);
     setPullDistance(0);
   }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    function onTouchStart(event: TouchEvent) {
+      if (event.touches.length !== 1) return;
+      handlePullStart(event.touches[0].clientY);
+    }
+
+    function onTouchMove(event: TouchEvent) {
+      if (event.touches.length !== 1) return;
+      handlePullMove(event.touches[0].clientY);
+    }
+
+    function onTouchEnd() {
+      handlePullEnd();
+    }
+
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [mobileMenuOpen, pullReady, pullRefreshing]);
 
   function renderMobileMenu() {
     if (!mobileMenuOpen) return null;
@@ -421,26 +450,14 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
         {renderMobileMenu()}
-        <div
-          className={`pull-refresh-shell${pullDistance > 0 || pullRefreshing ? " active" : ""}`}
-          onTouchStart={(event) => {
-            if (event.touches.length !== 1) return;
-            handlePullStart(event.touches[0].clientY);
-          }}
-          onTouchMove={(event) => {
-            if (event.touches.length !== 1) return;
-            handlePullMove(event.touches[0].clientY);
-          }}
-          onTouchEnd={handlePullEnd}
-          onTouchCancel={handlePullEnd}
-        >
+        <div className={`pull-refresh-shell${pullDistance > 0 || pullRefreshing ? " active" : ""}`}>
           <div
-            className={`pull-refresh-indicator${pullTriggeredRef.current ? " ready" : ""}${pullRefreshing ? " loading" : ""}`}
+            className={`pull-refresh-indicator${pullReady ? " ready" : ""}${pullRefreshing ? " loading" : ""}`}
             style={{ height: `${pullDistance}px` }}
             aria-hidden="true"
           >
             <div className="pull-refresh-spinner" />
-            <span>{pullRefreshing ? "Обновляем..." : pullTriggeredRef.current ? "Отпустите, чтобы обновить" : "Потяните вниз для обновления"}</span>
+            <span>{pullRefreshing ? "Обновляем..." : pullReady ? "Отпустите, чтобы обновить" : "Потяните вниз для обновления"}</span>
           </div>
           <div className="wrap">{children}</div>
         </div>
