@@ -194,7 +194,10 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
     return next;
   }
 
-  const hasChanges = rows.some((row) => isDraftChanged(row, drafts[row.store_uid] || toDraft(row)));
+  const changedStoreUids = rows
+    .filter((row) => isDraftChanged(row, drafts[row.store_uid] || toDraft(row)))
+    .map((row) => row.store_uid);
+  const hasChanges = changedStoreUids.length > 0;
   const savingAny = Object.values(savingMap).some(Boolean);
 
   async function commitAll() {
@@ -227,172 +230,195 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
       {!loading && !error ? (
         <>
           {saveError ? <div className="status error">{saveError}</div> : null}
-          <div className={styles.sectionActions}>
-            <button
-              type="button"
-              className="btn"
-              disabled={savingAny || !hasChanges}
-              onClick={() => void commitAll()}
-            >
-              {savingAny ? "Сохранение..." : "Сохранить"}
-            </button>
+          <div className={styles.salesPlanToolbar}>
+            <div className={styles.salesPlanToolbarText}>
+              <div className={styles.salesPlanToolbarTitle}>Store-level цели и режимы расчёта</div>
+              <div className={styles.salesPlanToolbarHint}>
+                {hasChanges
+                  ? `Изменено магазинов: ${changedStoreUids.length}. Эти значения используются дальше в pricing и strategy.`
+                  : "Изменений нет. Любая карточка ниже управляет расчётами соответствующего магазина."}
+              </div>
+            </div>
+            <div className={styles.salesPlanToolbarActions}>
+              <button
+                type="button"
+                className="btn"
+                disabled={savingAny || !hasChanges}
+                onClick={() => void commitAll()}
+              >
+                {savingAny ? "Сохранение..." : "Сохранить изменения"}
+              </button>
+            </div>
           </div>
-          <div className={styles.pricingTableWrap}>
-            <table className={`${styles.pricingTable} ${styles.salesPlanTable}`}>
-              <thead>
-                <tr>
-                  <th>Площадка</th>
-                  <th>Наименование магазина</th>
-                  <th>Режим стратегии</th>
-                  <th>Целевой показатель</th>
-                  <th>Плановый оборот</th>
-                  <th>Целевые рекламные расходы</th>
-                  <th>Целевое значение, руб / $</th>
-                  <th>Целевое значение, %</th>
-                  <th>Минимальная прибыль, %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => {
-                  const draft = drafts[row.store_uid] || toDraft(row);
-                  const currencySign = fmtCurrencySign(row.currency_code);
-                  const rubValue = draft.earning_mode === "margin" ? draft.target_margin_rub : draft.target_profit_rub;
-                  const pctValue = draft.earning_mode === "margin" ? draft.target_margin_percent : draft.target_profit_percent;
-                  const revenueCellKey = `${row.store_uid}:planned_revenue`;
-                  const rubCellKey = `${row.store_uid}:${draft.earning_mode}:rub`;
-                  return (
-                    <tr key={row.store_uid}>
-                      <td className={styles.colText}>{row.platform_label}</td>
-                      <td className={styles.colText}>
+          <div className={styles.salesPlanGrid}>
+            {rows.map((row) => {
+              const draft = drafts[row.store_uid] || toDraft(row);
+              const currencySign = fmtCurrencySign(row.currency_code);
+              const rubValue = draft.earning_mode === "margin" ? draft.target_margin_rub : draft.target_profit_rub;
+              const pctValue = draft.earning_mode === "margin" ? draft.target_margin_percent : draft.target_profit_percent;
+              const revenueCellKey = `${row.store_uid}:planned_revenue`;
+              const rubCellKey = `${row.store_uid}:${draft.earning_mode}:rub`;
+              const isDirty = changedStoreUids.includes(row.store_uid);
+              const cardState = savingMap[row.store_uid]
+                ? "Сохранение..."
+                : isDirty
+                  ? "Есть несохранённые изменения"
+                  : row.updated_at
+                    ? `Сохранено ${new Date(row.updated_at).toLocaleString("ru-RU")}`
+                    : "Без сохранённых изменений";
+              return (
+                <section key={row.store_uid} className={styles.salesPlanCard}>
+                  <div className={styles.salesPlanCardHead}>
+                    <div className={styles.salesPlanCardTitleBlock}>
+                      <div className={styles.salesPlanCardEyebrow}>{row.platform_label}</div>
+                      <h3 className={styles.salesPlanCardTitle}>
                         {row.store_name}
                         {row.store_id ? ` (${row.store_id})` : ""}
-                      </td>
-                      <td>
-                        <div className={styles.segmentedSwitch} role="tablist" aria-label={`Режим стратегии ${row.store_name}`}>
-                          <button
-                            type="button"
-                            className={`${styles.segmentedSwitchButton} ${draft.strategy_mode === "mix" ? styles.segmentedSwitchButtonActive : ""}`}
-                            aria-pressed={draft.strategy_mode === "mix"}
-                            onClick={() => patchDraft(row.store_uid, (prev) => ({ ...prev, strategy_mode: "mix" }))}
-                          >
-                            Микс
-                          </button>
-                          <button
-                            type="button"
-                            className={`${styles.segmentedSwitchButton} ${draft.strategy_mode === "mrc" ? styles.segmentedSwitchButtonActive : ""}`}
-                            aria-pressed={draft.strategy_mode === "mrc"}
-                            onClick={() => patchDraft(row.store_uid, (prev) => ({ ...prev, strategy_mode: "mrc" }))}
-                          >
-                            МРЦ
-                          </button>
-                        </div>
-                      </td>
-                      <td>
-                        <div className={styles.modeToggleWrap}>
-                          <span className={styles.modeToggleText}>Прибыль</span>
-                          <button
-                            type="button"
-                            className={`toggle sm ${styles.selectorToggle} ${draft.earning_mode === "margin" ? "on" : ""}`}
-                            role="switch"
-                            aria-checked={draft.earning_mode === "margin"}
-                            onClick={() => {
-                              patchDraft(row.store_uid, (prev) => {
-                                const nextMode = prev.earning_mode === "profit" ? "margin" : "profit";
-                                const nextDraft: PlanDraft =
-                                  nextMode === "margin"
-                                    ? {
-                                        ...prev,
-                                        earning_mode: "margin",
-                                        target_margin_rub: prev.target_margin_rub || prev.target_profit_rub,
-                                        target_margin_percent: prev.target_margin_percent || prev.target_profit_percent,
-                                      }
-                                    : {
-                                        ...prev,
-                                        earning_mode: "profit",
-                                        target_profit_rub: prev.target_profit_rub || prev.target_margin_rub,
-                                        target_profit_percent: prev.target_profit_percent || prev.target_margin_percent,
-                                      };
-                                return nextDraft;
-                              });
-                            }}
-                          >
-                            <span className="toggle-track"><span className="toggle-thumb" /></span>
-                          </button>
-                          <span className={styles.modeToggleText}>Маржа</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className={styles.cellInputWrap}>
-                          <input
-                            className={`input ${styles.cellInput}`}
-                            value={focusedCell === revenueCellKey ? draft.planned_revenue : formatGrouped(draft.planned_revenue)}
-                            inputMode="numeric"
-                            onChange={(e) => patchDraft(row.store_uid, (prev) => recalcByRevenue(prev, e.target.value))}
-                            onFocus={() => setFocusedCell(revenueCellKey)}
-                            onBlur={() => {
-                              setFocusedCell((prev) => (prev === revenueCellKey ? "" : prev));
-                            }}
-                          />
-                          {savingMap[row.store_uid] ? <span className={styles.cellSavingDot} /> : null}
-                        </div>
-                      </td>
-                      <td>
-                        <div className={styles.cellInputWrap}>
-                          <input
-                            className={`input ${styles.cellInput}`}
-                            value={draft.target_drr_percent}
-                            inputMode="decimal"
-                            onChange={(e) => patchDraft(row.store_uid, (prev) => ({ ...prev, target_drr_percent: e.target.value }))}
-                          />
-                        </div>
-                      </td>
-                      <td>
-                        <div className={styles.cellInputWrap}>
-                          <input
-                            className={`input ${styles.cellInput}`}
-                            value={focusedCell === rubCellKey ? rubValue : formatGrouped(rubValue)}
-                            inputMode="decimal"
-                            onChange={(e) => patchDraft(row.store_uid, (prev) => recalcByRub(prev, e.target.value))}
-                            onFocus={() => setFocusedCell(rubCellKey)}
-                            onBlur={() => {
-                              setFocusedCell((prev) => (prev === rubCellKey ? "" : prev));
-                            }}
-                          />
-                          <span className={styles.inlineSuffix}>{currencySign}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className={styles.cellInputWrap}>
-                          <input
-                            className={`input ${styles.cellInput}`}
-                            value={pctValue}
-                            inputMode="decimal"
-                            onChange={(e) => patchDraft(row.store_uid, (prev) => recalcByPercent(prev, e.target.value))}
-                          />
-                          <span className={styles.inlineSuffix}>%</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className={styles.cellInputWrap}>
-                          <input
-                            className={`input ${styles.cellInput}`}
-                            value={draft.minimum_profit_percent}
-                            inputMode="decimal"
-                            onChange={(e) => patchDraft(row.store_uid, (prev) => ({ ...prev, minimum_profit_percent: e.target.value }))}
-                          />
-                          <span className={styles.inlineSuffix}>%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {!rows.length ? (
-                  <tr>
-                    <td colSpan={9}>Нет доступных магазинов.</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+                      </h3>
+                    </div>
+                    <div className={`${styles.salesPlanCardState} ${isDirty ? styles.salesPlanCardStateDirty : ""}`}>
+                      {cardState}
+                    </div>
+                  </div>
+
+                  <div className={styles.salesPlanModeGrid}>
+                    <div className={styles.salesPlanModeCard}>
+                      <div className={styles.salesPlanModeLabel}>Режим стратегии</div>
+                      <div className={styles.segmentedSwitch} role="tablist" aria-label={`Режим стратегии ${row.store_name}`}>
+                        <button
+                          type="button"
+                          className={`${styles.segmentedSwitchButton} ${draft.strategy_mode === "mix" ? styles.segmentedSwitchButtonActive : ""}`}
+                          aria-pressed={draft.strategy_mode === "mix"}
+                          onClick={() => patchDraft(row.store_uid, (prev) => ({ ...prev, strategy_mode: "mix" }))}
+                        >
+                          Микс
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.segmentedSwitchButton} ${draft.strategy_mode === "mrc" ? styles.segmentedSwitchButtonActive : ""}`}
+                          aria-pressed={draft.strategy_mode === "mrc"}
+                          onClick={() => patchDraft(row.store_uid, (prev) => ({ ...prev, strategy_mode: "mrc" }))}
+                        >
+                          МРЦ
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className={styles.salesPlanModeCard}>
+                      <div className={styles.salesPlanModeLabel}>Целевой показатель</div>
+                      <div className={styles.modeToggleWrap}>
+                        <span className={styles.modeToggleText}>Прибыль</span>
+                        <button
+                          type="button"
+                          className={`toggle sm ${styles.selectorToggle} ${draft.earning_mode === "margin" ? "on" : ""}`}
+                          role="switch"
+                          aria-checked={draft.earning_mode === "margin"}
+                          onClick={() => {
+                            patchDraft(row.store_uid, (prev) => {
+                              const nextMode = prev.earning_mode === "profit" ? "margin" : "profit";
+                              const nextDraft: PlanDraft =
+                                nextMode === "margin"
+                                  ? {
+                                      ...prev,
+                                      earning_mode: "margin",
+                                      target_margin_rub: prev.target_margin_rub || prev.target_profit_rub,
+                                      target_margin_percent: prev.target_margin_percent || prev.target_profit_percent,
+                                    }
+                                  : {
+                                      ...prev,
+                                      earning_mode: "profit",
+                                      target_profit_rub: prev.target_profit_rub || prev.target_margin_rub,
+                                      target_profit_percent: prev.target_profit_percent || prev.target_margin_percent,
+                                    };
+                              return nextDraft;
+                            });
+                          }}
+                        >
+                          <span className="toggle-track"><span className="toggle-thumb" /></span>
+                        </button>
+                        <span className={styles.modeToggleText}>Маржа</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.salesPlanFields}>
+                    <div className={styles.salesPlanField}>
+                      <div className={styles.salesPlanFieldLabel}>Плановый оборот</div>
+                      <div className={styles.cellInputWrap}>
+                        <input
+                          className={`input ${styles.cellInput}`}
+                          value={focusedCell === revenueCellKey ? draft.planned_revenue : formatGrouped(draft.planned_revenue)}
+                          inputMode="numeric"
+                          onChange={(e) => patchDraft(row.store_uid, (prev) => recalcByRevenue(prev, e.target.value))}
+                          onFocus={() => setFocusedCell(revenueCellKey)}
+                          onBlur={() => {
+                            setFocusedCell((prev) => (prev === revenueCellKey ? "" : prev));
+                          }}
+                        />
+                        {savingMap[row.store_uid] ? <span className={styles.cellSavingDot} /> : null}
+                      </div>
+                    </div>
+
+                    <div className={styles.salesPlanField}>
+                      <div className={styles.salesPlanFieldLabel}>Целевые рекламные расходы</div>
+                      <div className={styles.cellInputWrap}>
+                        <input
+                          className={`input ${styles.cellInput}`}
+                          value={draft.target_drr_percent}
+                          inputMode="decimal"
+                          onChange={(e) => patchDraft(row.store_uid, (prev) => ({ ...prev, target_drr_percent: e.target.value }))}
+                        />
+                        <span className={styles.inlineSuffix}>%</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.salesPlanField}>
+                      <div className={styles.salesPlanFieldLabel}>Целевое значение</div>
+                      <div className={styles.cellInputWrap}>
+                        <input
+                          className={`input ${styles.cellInput}`}
+                          value={focusedCell === rubCellKey ? rubValue : formatGrouped(rubValue)}
+                          inputMode="decimal"
+                          onChange={(e) => patchDraft(row.store_uid, (prev) => recalcByRub(prev, e.target.value))}
+                          onFocus={() => setFocusedCell(rubCellKey)}
+                          onBlur={() => {
+                            setFocusedCell((prev) => (prev === rubCellKey ? "" : prev));
+                          }}
+                        />
+                        <span className={styles.inlineSuffix}>{currencySign}</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.salesPlanField}>
+                      <div className={styles.salesPlanFieldLabel}>Целевое значение, %</div>
+                      <div className={styles.cellInputWrap}>
+                        <input
+                          className={`input ${styles.cellInput}`}
+                          value={pctValue}
+                          inputMode="decimal"
+                          onChange={(e) => patchDraft(row.store_uid, (prev) => recalcByPercent(prev, e.target.value))}
+                        />
+                        <span className={styles.inlineSuffix}>%</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.salesPlanField}>
+                      <div className={styles.salesPlanFieldLabel}>Минимальная прибыль</div>
+                      <div className={styles.cellInputWrap}>
+                        <input
+                          className={`input ${styles.cellInput}`}
+                          value={draft.minimum_profit_percent}
+                          inputMode="decimal"
+                          onChange={(e) => patchDraft(row.store_uid, (prev) => ({ ...prev, minimum_profit_percent: e.target.value }))}
+                        />
+                        <span className={styles.inlineSuffix}>%</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              );
+            })}
+            {!rows.length ? <div className="status">Нет доступных магазинов.</div> : null}
           </div>
         </>
       ) : null}
