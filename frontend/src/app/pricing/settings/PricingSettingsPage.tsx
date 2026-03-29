@@ -140,16 +140,6 @@ export default function PricingSettingsPage() {
       : salesPlanError
         ? `Ошибка: ${salesPlanError}`
         : "Редактирование вручную";
-  const sectionFactPrimary = settingsTab === "categories"
-    ? cogsSource?.sourceName || "Источник себестоимости не выбран"
-    : settingsTab === "logistics"
-      ? `Позиций в таблице: ${logisticsTotal}`
-      : `Строк плана: ${salesPlanRows.length}`;
-  const sectionFactSecondary = settingsTab === "categories"
-    ? stockSource?.sourceName || "Источник остатков не выбран"
-    : settingsTab === "logistics"
-      ? `Валюта магазина: ${moneySign}`
-      : `${storeTabs.length} магазинов в контуре`;
 
   return (
     <>
@@ -177,7 +167,7 @@ export default function PricingSettingsPage() {
                 onChange={(id) => setSettingsTab(id)}
               />
             </div>
-            {settingsTab !== "sales_plan" ? (
+            <div className={styles.mobileStoreTabs}>
               <ControlTabs
                 className={styles.storeTabsRow}
                 items={storeTabs.map((store) => ({
@@ -188,7 +178,7 @@ export default function PricingSettingsPage() {
                 activeId={activeStoreTabKey}
                 onChange={setActiveStoreTabKey}
               />
-            ) : null}
+            </div>
           </div>
         }
         toolbarRight={
@@ -239,64 +229,45 @@ export default function PricingSettingsPage() {
             </section>
 
             <section className={styles.desktopRailCard}>
-              <div className={styles.desktopRailTitle}>Контекст</div>
-              <div className={styles.contextFactList}>
-                <div className={styles.contextFact}>
-                  <span className={styles.contextFactLabel}>Магазин</span>
-                  <span className={styles.contextFactValue}>{activeStore?.storeName || "Все магазины"}</span>
-                </div>
-                <div className={styles.contextFact}>
-                  <span className={styles.contextFactLabel}>Платформа</span>
-                  <span className={styles.contextFactValue}>{activeStore?.platformLabel || "Общий контур"}</span>
-                </div>
-                <div className={styles.contextFact}>
-                  <span className={styles.contextFactLabel}>Статус</span>
-                  <span className={styles.contextFactValue}>{currentSaveState}</span>
-                </div>
-              </div>
-            </section>
-
-            <section className={styles.desktopRailCard}>
-              <div className={styles.desktopRailTitle}>Фокус раздела</div>
-              <div className={styles.sectionSummaryTitle}>{activeSection.title}</div>
-              <div className={styles.sectionSummaryText}>{activeSection.description}</div>
-              <div className={styles.contextFactList}>
-                <div className={styles.contextFact}>
-                  <span className={styles.contextFactLabel}>Ключевой параметр</span>
-                  <span className={styles.contextFactValue}>{sectionFactPrimary}</span>
-                </div>
-                <div className={styles.contextFact}>
-                  <span className={styles.contextFactLabel}>Дополнительно</span>
-                  <span className={styles.contextFactValue}>{sectionFactSecondary}</span>
-                </div>
+              <div className={styles.desktopRailTitle}>Магазины</div>
+              <div className={styles.desktopStoreList}>
+                {storeTabs.map((store) => (
+                  <button
+                    key={store.key}
+                    type="button"
+                    className={`${styles.desktopStoreButton} ${activeStoreTabKey === store.key ? styles.desktopStoreButtonActive : ""}`}
+                    onClick={() => setActiveStoreTabKey(store.key)}
+                  >
+                    <span className={styles.desktopStoreButtonTitle}>{store.storeName}</span>
+                    <span className={styles.desktopStoreButtonMeta}>{store.platformLabel}</span>
+                  </button>
+                ))}
               </div>
             </section>
           </aside>
 
           <div className={styles.settingsMain}>
-            {(settingsTab === "categories" || settingsTab === "logistics") ? (
-              <div className={styles.workspaceHero}>
-                <div className={styles.workspaceHeroMain}>
-                  <div className={styles.workspaceEyebrow}>Рабочее пространство</div>
-                  <h2 className={styles.workspaceTitle}>{activeSection.title}</h2>
-                  <p className={styles.workspaceSubtitle}>{activeSection.description}</p>
+            <div className={styles.workspaceHero}>
+              <div className={styles.workspaceHeroMain}>
+                <div className={styles.workspaceEyebrow}>{activeStore?.platformLabel || "Рабочее пространство"}</div>
+                <h2 className={styles.workspaceTitle}>{activeStore?.storeName || activeSection.title}</h2>
+                <p className={styles.workspaceSubtitle}>{activeSection.description}</p>
+              </div>
+              <div className={styles.workspaceMetaGrid}>
+                <div className={styles.workspaceMetaCard}>
+                  <span className={styles.workspaceMetaLabel}>Раздел</span>
+                  <strong className={styles.workspaceMetaValue}>{activeSection.title}</strong>
                 </div>
-                <div className={styles.workspaceMetaGrid}>
-                  <div className={styles.workspaceMetaCard}>
-                    <span className={styles.workspaceMetaLabel}>Магазин</span>
-                    <strong className={styles.workspaceMetaValue}>{activeStore?.storeName || "Не выбран"}</strong>
-                  </div>
-                  <div className={styles.workspaceMetaCard}>
-                    <span className={styles.workspaceMetaLabel}>Валюта</span>
-                    <strong className={styles.workspaceMetaValue}>{moneySign}</strong>
-                  </div>
-                  <div className={styles.workspaceMetaCard}>
-                    <span className={styles.workspaceMetaLabel}>Автосохранение</span>
-                    <strong className={styles.workspaceMetaValue}>{currentSaveState}</strong>
-                  </div>
+                <div className={styles.workspaceMetaCard}>
+                  <span className={styles.workspaceMetaLabel}>Валюта</span>
+                  <strong className={styles.workspaceMetaValue}>{moneySign}</strong>
+                </div>
+                <div className={styles.workspaceMetaCard}>
+                  <span className={styles.workspaceMetaLabel}>Состояние</span>
+                  <strong className={styles.workspaceMetaValue}>{currentSaveState}</strong>
                 </div>
               </div>
-            ) : null}
+            </div>
 
             {settingsTab === "categories" ? (
               <div className={styles.controlsRow}>

@@ -138,6 +138,16 @@ export function GeneralSettingsSection({
                   </div>
                 ) : null}
 
+                <div className={styles.categoryEditorActions}>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={() => setBulkField("commission_percent")}
+                  >
+                    Заполнить комиссию всем
+                  </button>
+                </div>
+
                 <div className={`${styles.pricingTableWrap} ${styles.pricingDesktopTableWrap}`}>
                   <table className={styles.pricingTable}>
                     <thead>
@@ -146,15 +156,6 @@ export function GeneralSettingsSection({
                           <th key={col.id}>
                             <div className={styles.tableHeaderCell}>
                               <span>{col.label}</span>
-                              {col.field === "commission_percent" ? (
-                                <button
-                                  type="button"
-                                  className={styles.columnActionButton}
-                                  onClick={() => setBulkField("commission_percent")}
-                                >
-                                  Заполнить всем
-                                </button>
-                              ) : null}
                             </div>
                           </th>
                         ))}

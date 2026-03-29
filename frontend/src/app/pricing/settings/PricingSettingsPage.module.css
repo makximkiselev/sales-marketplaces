@@ -62,6 +62,10 @@
   display: none;
 }
 
+.mobileStoreTabs {
+  display: none;
+}
+
 .controlsRow {
   margin-top: 14px;
   padding-top: 12px;
@@ -143,6 +147,54 @@
 .desktopRailNav {
   display: grid;
   gap: 10px;
+}
+
+.desktopStoreList {
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.desktopStoreButton {
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 14px;
+  background: rgba(7, 14, 27, 0.42);
+  color: inherit;
+  text-align: left;
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.desktopStoreButton:hover {
+  border-color: rgba(76, 201, 240, 0.32);
+  background: rgba(12, 24, 44, 0.78);
+  transform: translateY(-1px);
+}
+
+.desktopStoreButtonActive {
+  border-color: rgba(76, 201, 240, 0.4);
+  background:
+    linear-gradient(180deg, rgba(28, 66, 98, 0.42), rgba(16, 30, 53, 0.88));
+}
+
+.desktopStoreButtonTitle {
+  color: #edf4ff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.desktopStoreButtonMeta {
+  color: var(--text-soft);
+  font-size: 12px;
 }
 
 .sectionNavButton {
@@ -300,6 +352,12 @@
   color: #edf4ff;
   font-size: 14px;
   line-height: 1.35;
+}
+
+.categoryEditorActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
 }
 
 .categoryWorkspace {
@@ -1414,6 +1472,10 @@
     display: block;
   }
 
+  .mobileStoreTabs {
+    display: block;
+  }
+
   .settingsShell {
     grid-template-columns: 1fr;
     gap: 14px;
@@ -1545,6 +1607,14 @@
 
 @media (min-width: 961px) {
   .settingsTabsRow {
+    display: none;
+  }
+
+  .storeTabsRow {
+    display: none;
+  }
+
+  .pricingDesktopTableWrap {
     display: none;
   }
 }
