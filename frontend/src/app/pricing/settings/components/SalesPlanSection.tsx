@@ -257,7 +257,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                   ? "Есть несохранённые изменения"
                   : row.updated_at
                     ? `Сохранено ${new Date(row.updated_at).toLocaleString("ru-RU")}`
-                    : "Без сохранённых изменений";
+                    : "Нет изменений";
               return (
                 <section key={row.store_uid} className={styles.salesPlanCard}>
                   <div className={styles.salesPlanCardHead}>
