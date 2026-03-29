@@ -157,6 +157,7 @@ export function savePricingStoreSettings(payload: {
 export function applyPricingCategoryDefaults(payload: {
   platform: string;
   store_id: string;
+  commission_percent?: string;
   target_margin_percent: string;
   target_margin_rub: string;
   target_profit_rub: string;

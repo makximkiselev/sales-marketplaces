@@ -69,6 +69,44 @@
   text-align: right;
 }
 
+.tableHeaderCell {
+  display: grid;
+  gap: 6px;
+}
+
+.columnActionButton {
+  width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #7fd8ff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+}
+
+.columnActionButton:hover {
+  color: #b5ecff;
+}
+
+.bulkFillModalBody {
+  display: grid;
+  gap: 14px;
+}
+
+.bulkFillModalText {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.bulkFillField {
+  display: grid;
+  gap: 8px;
+}
+
 .globalSettingsGrid {
   display: grid;
   grid-template-columns: 0.95fr 1.1fr 1.1fr 1fr 0.8fr;

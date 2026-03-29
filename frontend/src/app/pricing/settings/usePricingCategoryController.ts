@@ -87,6 +87,31 @@ export function usePricingCategoryController(params: {
     }
   }
 
+  async function applyColumnValue(field: EditableFieldKey, rawValue: string) {
+    await applyPricingCategoryDefaults({
+      platform: activePlatform,
+      store_id: activeStoreId,
+      commission_percent: field === "commission_percent" ? rawValue : undefined,
+      target_margin_percent: "",
+      target_margin_rub: "",
+      target_profit_rub: "",
+      target_profit_percent: "",
+      ads_percent: "",
+    });
+    clearPricingSettingsCache();
+    const nextValue = rawValue.trim() === "" ? null : Number(rawValue.replace(",", "."));
+    setCategoryRows((prev) =>
+      prev.map((row) => ({
+        ...row,
+        values: {
+          ...row.values,
+          [field]: Number.isNaN(nextValue as number) ? null : (nextValue as number | null),
+        },
+      })),
+    );
+    showAppToast({ message: "Столбец заполнен" });
+  }
+
   function flushSaveCell(row: PricingCategoryRow, field: EditableFieldKey, rawValue?: string) {
     const key = getCellKey(row.leafPath || row.key, field);
     if (saveTimersRef.current[key]) {
@@ -183,6 +208,7 @@ export function usePricingCategoryController(params: {
     formatNum,
     queueSaveCell,
     flushSaveCell,
+    applyColumnValue,
     setItemsError,
   };
 }

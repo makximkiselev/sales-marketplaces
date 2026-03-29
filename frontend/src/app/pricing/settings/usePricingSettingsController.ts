@@ -413,6 +413,7 @@ export function usePricingSettingsController() {
     formatNum: categories.formatNum,
     queueSaveCell: categories.queueSaveCell,
     flushSaveCell: categories.flushSaveCell,
+    applyColumnValue: categories.applyColumnValue,
     setLogisticsField: logistics.setLogisticsField,
     setLogisticsNumericField: logistics.setLogisticsNumericField,
     onLogisticsNumericBlur: logistics.onLogisticsNumericBlur,

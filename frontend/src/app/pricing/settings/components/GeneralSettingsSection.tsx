@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { SectionBlock } from "../../../../components/page/SectionKit";
 import styles from "../PricingSettingsPage.module.css";
 import type { EditableFieldKey, PricingCategoryRow, PricingTableColumn } from "../types";
+import { BulkFillColumnModal } from "./BulkFillColumnModal";
 
 type Props = {
   loading: boolean;
@@ -18,6 +20,7 @@ type Props = {
   formatNum: (value: number | null | undefined) => string;
   queueSaveCell: (row: PricingCategoryRow, field: EditableFieldKey, rawValue: string) => void;
   flushSaveCell: (row: PricingCategoryRow, field: EditableFieldKey, rawValue?: string) => void;
+  applyColumnValue: (field: EditableFieldKey, rawValue: string) => Promise<void> | void;
 };
 
 export function GeneralSettingsSection({
@@ -34,7 +37,11 @@ export function GeneralSettingsSection({
   formatNum,
   queueSaveCell,
   flushSaveCell,
+  applyColumnValue,
 }: Props) {
+  const [bulkField, setBulkField] = useState<EditableFieldKey | null>(null);
+  const bulkColumn = bulkField ? tableColumns.find((col) => col.field === bulkField) ?? null : null;
+
   return (
     <SectionBlock>
         {loading ? <div className="status">Загрузка контекста...</div> : null}
@@ -49,7 +56,22 @@ export function GeneralSettingsSection({
                 <table className={styles.pricingTable}>
                   <thead>
                     <tr>
-                      {tableColumns.map((col) => <th key={col.id}>{col.label}</th>)}
+                      {tableColumns.map((col) => (
+                        <th key={col.id}>
+                          <div className={styles.tableHeaderCell}>
+                            <span>{col.label}</span>
+                            {col.field === "commission_percent" ? (
+                              <button
+                                type="button"
+                                className={styles.columnActionButton}
+                                onClick={() => setBulkField("commission_percent")}
+                              >
+                                Заполнить всем
+                              </button>
+                            ) : null}
+                          </div>
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -96,6 +118,17 @@ export function GeneralSettingsSection({
               </div>
             )}
           </>
+        ) : null}
+        {bulkField && bulkColumn?.field ? (
+          <BulkFillColumnModal
+            field={bulkColumn.field}
+            label={bulkColumn.label}
+            onClose={() => setBulkField(null)}
+            onConfirm={async (value) => {
+              await applyColumnValue(bulkColumn.field!, value);
+              setBulkField(null);
+            }}
+          />
         ) : null}
     </SectionBlock>
   );

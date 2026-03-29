@@ -7506,6 +7506,7 @@ def bulk_apply_pricing_defaults(
     *,
     dataset_key: str,
     store_uid: str,
+    commission_percent: Any | None = None,
     target_margin_percent: Any | None = None,
     target_margin_rub: Any | None = None,
     target_profit_rub: Any | None = None,
@@ -7526,12 +7527,20 @@ def bulk_apply_pricing_defaults(
         except Exception:
             return None
 
+    commission_val = _num(commission_percent)
     margin_val = _num(target_margin_percent)
     margin_rub_val = _num(target_margin_rub)
     profit_val = _num(target_profit_rub)
     profit_percent_val = _num(target_profit_percent)
     ads_val = _num(ads_percent)
-    if margin_val is None and margin_rub_val is None and profit_val is None and profit_percent_val is None and ads_val is None:
+    if (
+        commission_val is None
+        and margin_val is None
+        and margin_rub_val is None
+        and profit_val is None
+        and profit_percent_val is None
+        and ads_val is None
+    ):
         return 0
 
     now = _now_iso()
@@ -7547,6 +7556,9 @@ def bulk_apply_pricing_defaults(
                 continue
             cols = []
             vals = []
+            if commission_val is not None:
+                cols.append("commission_percent")
+                vals.append(commission_val)
             if margin_val is not None:
                 cols.append("target_margin_percent")
                 vals.append(margin_val)

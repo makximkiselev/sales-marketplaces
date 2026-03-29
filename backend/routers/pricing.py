@@ -1208,12 +1208,14 @@ async def pricing_settings_apply_defaults(payload: dict):
         updated = bulk_apply_pricing_defaults(
             dataset_key=dataset_key,
             store_uid=store_uid,
+            commission_percent=payload.get("commission_percent"),
             target_margin_percent=payload.get("target_margin_percent"),
             target_margin_rub=payload.get("target_margin_rub"),
             target_profit_rub=payload.get("target_profit_rub"),
             target_profit_percent=payload.get("target_profit_percent"),
             ads_percent=payload.get("ads_percent"),
         )
+        _invalidate_pricing_materialized_results_for_store(store_uid=store_uid)
         _invalidate_pricing_read_caches()
     except Exception as e:
         return JSONResponse({"ok": False, "message": f"Не удалось применить значения по умолчанию: {e}"}, status_code=500)
