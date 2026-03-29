@@ -286,3 +286,113 @@
   top: 0;
   background: rgba(9, 18, 34, 0.98);
 }
+
+.mobileOverviewShell {
+  display: grid;
+  gap: 14px;
+}
+
+.mobileOverviewTabs {
+  gap: 12px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  width: 100%;
+  padding: 0 0 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(157, 182, 230, 0.14);
+  border-radius: 0;
+  background: transparent;
+  scrollbar-width: none;
+}
+
+.mobileOverviewTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mobileOverviewTabs :global(.btn) {
+  height: 34px;
+  min-height: 0;
+  padding: 0 2px 8px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent;
+  color: #8ea5c4;
+  font-size: 13px;
+  font-weight: 700;
+  position: relative;
+  white-space: nowrap;
+}
+
+.mobileOverviewTabs :global(.btn)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #55c8ff, #9fe4ff);
+  opacity: 0;
+  transform: scaleX(0.35);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.mobileOverviewTabs :global(button[data-active="true"]) {
+  color: #eef5ff !important;
+}
+
+.mobileOverviewTabs :global(button[data-active="true"])::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.mobileOverviewCards {
+  display: grid;
+  gap: 12px;
+}
+
+.mobileOverviewCard {
+  border: 1px solid rgba(157, 182, 230, 0.16);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(10, 18, 34, 0.88);
+  display: grid;
+  gap: 10px;
+}
+
+.mobileOverviewCardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mobileOverviewCardTitle {
+  color: #e9f0ff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.mobileOverviewCardMeta,
+.mobileOverviewCardSub {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.mobileOverviewMetrics {
+  display: grid;
+  gap: 8px;
+}
+
+.mobileOverviewMetric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #dfe8ff;
+  font-size: 13px;
+}

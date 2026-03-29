@@ -1,7 +1,8 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { PageFrame, PageSectionTitle } from "../../../components/page/PageKit";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../../lib/api";
 import styles from "./SalesOverviewPage.module.css";
+import { SalesOverviewDesktop } from "./SalesOverviewDesktop";
+import { SalesOverviewMobile } from "./SalesOverviewMobile";
 
 type StoreCtx = {
   store_uid: string;
@@ -291,6 +292,7 @@ function SummaryCard({ label, value, detail }: { label: string; value: string; d
 }
 
 export default function SalesOverviewPage() {
+  const [isMobile, setIsMobile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [context, setContext] = useState<ContextResp | null>(null);
@@ -401,6 +403,15 @@ export default function SalesOverviewPage() {
   const totalCount = Number(orders?.total_count || 0);
   const totalPages = pageSize < 1 ? 1 : Math.max(1, Math.ceil(totalCount / pageSize));
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 960px)");
+    const sync = () => setIsMobile(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
   const summaryCards = useMemo(() => {
     if (tab === "tracking") {
       return [
@@ -441,458 +452,61 @@ export default function SalesOverviewPage() {
     ];
   }, [activeStoreCurrencyCode, activeTrackingCurrencyCode, categoryRetrospective?.total_count, categoryRows, dateMode, grain, orders, problemOrders, skuRetrospective?.total_count, skuRows, tab, tracking]);
 
-  return (
-    <PageFrame
-      className={styles.pageFrame}
-      innerClassName={styles.pageFrameInner}
-      title="Обзор продаж"
-      subtitle="Единый слой 'по заказам': история загружается один раз, текущий месяц пополняется инкрементально, а в течение дня заказы донасыщаются оперативной экономикой."
-      toolbarLeft={(
-        <div className={styles.toolbar}>
-          <select className={`input ${styles.dateInput}`} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-            {stores.map((store) => (
-              <option key={store.store_uid} value={store.store_id}>{store.label}</option>
-            ))}
-          </select>
-          <div className={styles.segmented}>
-            <button className={`btn inline ${tab === "orders" ? styles.segmentedActive : ""}`} onClick={() => setTab("orders")}>По заказам</button>
-            <button className={`btn inline ${tab === "problems" ? styles.segmentedActive : ""}`} onClick={() => setTab("problems")}>Проблемные</button>
-            <button className={`btn inline ${tab === "tracking" ? styles.segmentedActive : ""}`} onClick={() => setTab("tracking")}>Трекинг</button>
-            <button className={`btn inline ${tab === "sku" ? styles.segmentedActive : ""}`} onClick={() => setTab("sku")}>Товары</button>
-            <button className={`btn inline ${tab === "category" ? styles.segmentedActive : ""}`} onClick={() => setTab("category")}>Категории</button>
-          </div>
-        </div>
-      )}
-      toolbarRight={(
-        tab === "tracking" || tab === "sku" || tab === "category" ? (
-          <div className={styles.toolbar}>
-          <select className={`input ${styles.dateInput}`} value={dateMode} onChange={(e) => setDateMode(e.target.value as DateMode)}>
-            <option value="created">По дате заказа</option>
-            <option value="delivery">По дате доставки</option>
-          </select>
-          {tab === "sku" || tab === "category" ? (
-            <select className={`input ${styles.dateInput}`} value={grain} onChange={(e) => setGrain(e.target.value as RetrospectiveGrain)}>
-              <option value="month">По месяцам</option>
-              <option value="day">По дням</option>
-            </select>
-          ) : null}
-          </div>
-        ) : (
-          <div className={styles.toolbar}>
-            <select
-              className={`input ${styles.dateInput}`}
-              value={period}
-              onChange={(e) => {
-                setPage(1);
-                setPeriod(e.target.value as OrdersPeriod);
-              }}
-            >
-              {ORDERS_PERIOD_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-            <select
-              className={`input ${styles.dateInput}`}
-              value={itemStatus}
-              onChange={(e) => {
-                setPage(1);
-                setItemStatus(e.target.value);
-              }}
-            >
-              <option value="">Все статусы</option>
-              {availableStatuses.map((status) => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
-          </div>
-        )
-      )}
-    >
-      <div className={styles.summaryGrid}>
-        {summaryCards.map((card) => (
-          <SummaryCard key={card.label} label={card.label} value={card.value} detail={card.detail} />
-        ))}
-      </div>
+  const vm = {
+    stylesRef: styles,
+    loading,
+    error,
+    stores,
+    trackingStores,
+    availableStatuses,
+    activeStore,
+    activeTrackingStore,
+    activeStoreCurrencyCode,
+    activeTrackingCurrencyCode,
+    trackingYears,
+    orderRows,
+    problemRows,
+    flowRows,
+    skuRows,
+    categoryRows,
+    totalCount,
+    totalPages,
+    summaryCards,
+    tab,
+    setTab,
+    storeId,
+    setStoreId,
+    dateMode,
+    setDateMode,
+    period,
+    setPeriod,
+    itemStatus,
+    setItemStatus,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    grain,
+    setGrain,
+    trackingStoreId,
+    setTrackingStoreId,
+    expandedMonthKey,
+    setExpandedMonthKey,
+    tracking,
+    orders,
+    problemOrders,
+    skuRetrospective,
+    categoryRetrospective,
+    formatMoney,
+    formatPercent,
+    formatNumber,
+    formatDateTime,
+    formatDate,
+    formatDelta,
+    percentOfBase,
+    statusTone,
+    ORDERS_PERIOD_OPTIONS,
+  };
 
-      {!loading && !error && flowRows.length > 0 ? (
-        <div className={styles.summaryGrid}>
-          {flowRows.map((flow) => (
-            <SummaryCard
-              key={flow.code}
-              label={flow.label}
-              value={flow.date_from && flow.date_to ? `${formatDate(flow.date_from)} - ${formatDate(flow.date_to)}` : "—"}
-              detail={flow.loaded_at ? `${flow.description || ""} Обновлено: ${formatDateTime(flow.loaded_at)}`.trim() : flow.description}
-            />
-          ))}
-        </div>
-      ) : null}
-
-      {tab === "tracking" ? (
-        <div className={styles.toolbar}>
-          <div className={styles.segmented}>
-            {trackingStores.map((store) => (
-              <button
-                key={store.store_uid}
-                className={`btn inline ${trackingStoreId === store.store_id ? styles.segmentedActive : ""}`}
-                onClick={() => setTrackingStoreId(store.store_id)}
-              >
-                {store.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
-      {tab === "tracking"
-        ? (activeTrackingStore ? <div className={styles.pageInfo}>Магазин: {activeTrackingStore.label}</div> : null)
-        : (activeStore ? <div className={styles.pageInfo}>Магазин: {activeStore.label}</div> : null)}
-      {loading ? <div className={styles.empty}>Загрузка...</div> : null}
-      {error ? <div className={styles.errorBox}>{error}</div> : null}
-
-      {!loading && !error && tab === "orders" ? (
-        <section>
-          <PageSectionTitle title="Заказы" meta={`Всего: ${totalCount}`} />
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Дата</th>
-                  <th>Заказ</th>
-                  <th>SKU</th>
-                  <th className={styles.nameCell}>Наименование</th>
-                  <th>Статус</th>
-                  <th>Продажа</th>
-                  <th>С соинвестом</th>
-                  <th>Цена стратегии</th>
-                  <th>Отклонение</th>
-                  <th>Реклама</th>
-                  <th>Себестоимость</th>
-                  <th>Комиссия</th>
-                  <th>Эквайринг</th>
-                  <th>Логистика</th>
-                  <th>Налог</th>
-                  <th>Расходы</th>
-                  <th>Прибыль</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orderRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={17} className={styles.empty}>Нет заказов для выбранных параметров</td>
-                  </tr>
-                ) : orderRows.map((row) => {
-                  const totalCosts =
-                    Number(row.commission || 0) +
-                    Number(row.acquiring || 0) +
-                    Number(row.delivery || 0) +
-                    Number(row.tax || 0) +
-                    Number(row.ads || 0);
-                  return (
-                    <tr key={`${row.order_id || ""}-${row.sku || ""}`}>
-                      <td>{formatDateTime(row.order_created_at)}</td>
-                      <td>{row.order_id || "—"}</td>
-                      <td>{row.sku || "—"}</td>
-                      <td className={styles.nameCell}>{row.item_name || "—"}</td>
-                      <td>
-                        <span className={`${styles.statusBadge} ${styles[`tone_${statusTone(row.item_status)}`]}`}>{row.item_status || "—"}</span>
-                      </td>
-                      <td>{formatMoney(row.sale_price, activeStoreCurrencyCode)}</td>
-                      <td>{formatMoney(row.sale_price_with_coinvest, activeStoreCurrencyCode)}</td>
-                      <td>
-                        <div>{formatMoney(row.strategy_installed_price, activeStoreCurrencyCode)}</div>
-                        <div className={styles.subtleText}>{formatDateTime(row.strategy_snapshot_at)}</div>
-                      </td>
-                      <td>{formatDelta(row.sale_price, row.strategy_installed_price, activeStoreCurrencyCode)}</td>
-                      <td>
-                        <div>{formatMoney(row.ads, activeStoreCurrencyCode)}</div>
-                        <div className={styles.subtleText}>
-                          План: {formatPercent(row.strategy_boost_bid_percent)} / Факт: {formatPercent(row.strategy_market_boost_bid_percent)}
-                        </div>
-                      </td>
-                      <td>{formatMoney(row.cogs_price, activeStoreCurrencyCode)}</td>
-                      <td>
-                        <div>{formatMoney(row.commission, activeStoreCurrencyCode)}</div>
-                        <div className={styles.subtleText}>{percentOfBase(row.commission, row.sale_price)}</div>
-                      </td>
-                      <td>
-                        <div>{formatMoney(row.acquiring, activeStoreCurrencyCode)}</div>
-                        <div className={styles.subtleText}>{percentOfBase(row.acquiring, row.sale_price)}</div>
-                      </td>
-                      <td>{formatMoney(row.delivery, activeStoreCurrencyCode)}</td>
-                      <td>
-                        <div>{formatMoney(row.tax, activeStoreCurrencyCode)}</div>
-                        <div className={styles.subtleText}>{percentOfBase(row.tax, row.sale_price)}</div>
-                      </td>
-                      <td>{formatMoney(totalCosts, activeStoreCurrencyCode)}</td>
-                      <td>
-                        <div>{formatMoney(row.profit, activeStoreCurrencyCode)}</div>
-                        <div className={styles.subtleText}>{percentOfBase(row.profit, row.sale_price)}</div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className={styles.toolbar}>
-            <div className={styles.pager}>
-              <button className="btn inline" disabled={page <= 1} onClick={() => setPage((prev) => Math.max(1, prev - 1))}>Назад</button>
-              <span className={styles.pageInfo}>{page} / {totalPages}</span>
-              <button className="btn inline" disabled={page >= totalPages} onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}>Дальше</button>
-            </div>
-            <label className={styles.pageSize}>
-              На странице
-              <select
-                className={`input ${styles.dateInput}`}
-                value={pageSize}
-                onChange={(e) => {
-                  setPage(1);
-                  setPageSize(Number(e.target.value) || 50);
-                }}
-              >
-                {[25, 50, 100, 200].map((value) => (
-                  <option key={value} value={value}>{value}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </section>
-      ) : null}
-
-      {!loading && !error && tab === "problems" ? (
-        <section>
-          <PageSectionTitle title="Проблемные заказы" meta={`Всего: ${formatNumber(problemOrders?.total_count)}`} />
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Дата</th>
-                  <th>Доставка</th>
-                  <th>Заказ</th>
-                  <th>SKU</th>
-                  <th className={styles.nameCell}>Наименование</th>
-                  <th>Статус</th>
-                  <th>Продажа</th>
-                  <th>Себестоимость</th>
-                  <th>Причина</th>
-                </tr>
-              </thead>
-              <tbody>
-                {problemRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className={styles.empty}>Нет проблемных заказов</td>
-                  </tr>
-                ) : problemRows.map((row) => (
-                  <tr key={`${row.order_id || ""}-${row.sku || ""}`}>
-                    <td>{formatDateTime(row.order_created_at)}</td>
-                    <td>{formatDate(row.delivery_date)}</td>
-                    <td>{row.order_id || "—"}</td>
-                    <td>{row.sku || "—"}</td>
-                    <td className={styles.nameCell}>{row.item_name || "—"}</td>
-                    <td><span className={`${styles.statusBadge} ${styles.tone_warn}`}>{row.item_status || "—"}</span></td>
-                    <td>{formatMoney(row.sale_price, activeStoreCurrencyCode)}</td>
-                    <td>{formatMoney(row.cogs_price, activeStoreCurrencyCode)}</td>
-                    <td className={styles.nameCell}>Доставлен, но нет себестоимости. Заказ исключён из чистой аналитики.</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
-
-      {!loading && !error && tab === "tracking" ? (
-        <section>
-          <PageSectionTitle title="Трекинг" meta={tracking?.loaded_at ? `Обновлено: ${formatDateTime(tracking.loaded_at)}` : ""} />
-          {trackingYears.length === 0 ? (
-            <div className={styles.empty}>Нет данных для трекинга</div>
-          ) : trackingYears.map((year) => (
-            <div key={year.year} className={styles.trackingYearSection}>
-              <div className={styles.trackingYearTitle}>{year.year}</div>
-              <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th className={styles.nameCell}>Период</th>
-                      <th>Оборот</th>
-                      <th>Прибыль</th>
-                      <th>Маржинальность</th>
-                      <th>Соинвест</th>
-                      <th>Возвраты</th>
-                      <th>Реклама</th>
-                      <th>Ошибки</th>
-                      <th>Доставка</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {year.months.map((month) => {
-                      const open = expandedMonthKey === month.month_key;
-                      return (
-                        <Fragment key={month.month_key}>
-                          <tr
-                            className={`${styles.trackingMonthRow} ${open ? styles.trackingMonthRowActive : ""}`}
-                            onClick={() => setExpandedMonthKey((prev) => prev === month.month_key ? "" : month.month_key)}
-                          >
-                            <td className={styles.trackingMonthCell}>
-                              <span className={styles.trackingChevron}>{open ? "▾" : "▸"}</span>
-                              {month.month_label}
-                            </td>
-                            <td>
-                              <div>{formatMoney(month.revenue, activeTrackingCurrencyCode)}</div>
-                              {month.revenue_plan_amount != null ? <div className={styles.trackingPlanText}>План: {formatMoney(month.revenue_plan_amount, activeTrackingCurrencyCode)}</div> : null}
-                            </td>
-                            <td>
-                              <div>{formatMoney(month.profit_amount, activeTrackingCurrencyCode)}</div>
-                              {month.profit_plan_amount != null ? <div className={styles.trackingPlanText}>План: {formatMoney(month.profit_plan_amount, activeTrackingCurrencyCode)}</div> : null}
-                            </td>
-                            <td>{formatPercent(month.profit_pct)}</td>
-                            <td>{formatPercent(month.revenue && month.coinvest_amount ? (month.coinvest_amount / month.revenue) * 100 : 0)}</td>
-                            <td>{formatPercent(month.returns_pct)}</td>
-                            <td>{formatMoney(month.ads_amount, activeTrackingCurrencyCode)}</td>
-                            <td>{formatMoney(month.operational_errors, activeTrackingCurrencyCode)}</td>
-                            <td>{formatNumber(month.delivery_time_days)}</td>
-                          </tr>
-                          <tr className={styles.trackingDaysHostRow}>
-                            <td colSpan={9} className={styles.trackingDaysHostCell}>
-                              <div className={`${styles.trackingDaysWrap} ${open ? styles.trackingDaysWrapOpen : ""}`}>
-                                <table className={`${styles.table} ${styles.trackingDaysTable}`}>
-                                  <thead>
-                                    <tr>
-                                      <th className={styles.nameCell}>День</th>
-                                      <th>Оборот</th>
-                                      <th>Прибыль</th>
-                                      <th>Маржинальность</th>
-                                      <th>Соинвест</th>
-                                      <th>Возвраты</th>
-                                      <th>Реклама</th>
-                                      <th>Ошибки</th>
-                                      <th>Доставка</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {(month.days || []).map((day) => (
-                                      <tr key={`${month.month_key}-${day.date}`}>
-                                        <td className={styles.nameCell}>{formatDate(day.date)}</td>
-                                        <td>
-                                          <div>{formatMoney(day.revenue, activeTrackingCurrencyCode)}</div>
-                                          {day.revenue_plan_amount != null ? <div className={styles.trackingPlanText}>План: {formatMoney(day.revenue_plan_amount, activeTrackingCurrencyCode)}</div> : null}
-                                        </td>
-                                        <td>
-                                          <div>{formatMoney(day.profit_amount, activeTrackingCurrencyCode)}</div>
-                                          {day.profit_plan_amount != null ? <div className={styles.trackingPlanText}>План: {formatMoney(day.profit_plan_amount, activeTrackingCurrencyCode)}</div> : null}
-                                        </td>
-                                        <td>{formatPercent(day.profit_pct)}</td>
-                                        <td>{formatPercent(day.revenue && day.coinvest_amount ? (day.coinvest_amount / day.revenue) * 100 : 0)}</td>
-                                        <td>{formatPercent(day.returns_pct)}</td>
-                                        <td>{formatMoney(day.ads_amount, activeTrackingCurrencyCode)}</td>
-                                        <td>{formatMoney(day.operational_errors, activeTrackingCurrencyCode)}</td>
-                                        <td>{formatNumber(day.delivery_time_days)}</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </td>
-                          </tr>
-                        </Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
-        </section>
-      ) : null}
-
-      {!loading && !error && tab === "sku" ? (
-        <section>
-          <PageSectionTitle title="Товары во времени" meta={`Рядов: ${formatNumber(skuRetrospective?.total_count)}`} />
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.nameCell}>SKU / товар</th>
-                  <th>Категория</th>
-                  <th>Оборот</th>
-                  <th>Прибыль</th>
-                  <th>Маржинальность</th>
-                  <th>Соинвест</th>
-                  <th>Возвраты</th>
-                  <th>Периоды</th>
-                </tr>
-              </thead>
-              <tbody>
-                {skuRows.length === 0 ? (
-                  <tr><td colSpan={8} className={styles.empty}>Нет данных по товарам</td></tr>
-                ) : skuRows.map((row) => (
-                  <tr key={row.key}>
-                    <td className={styles.nameCell}>
-                      <div>{row.sku || "—"}</div>
-                      <div className={styles.subtleText}>{row.item_name || row.label || "—"}</div>
-                    </td>
-                    <td className={styles.nameCell}>{row.category_path || "—"}</td>
-                    <td>{formatMoney(row.revenue, activeStoreCurrencyCode)}</td>
-                    <td>{formatMoney(row.profit_amount, activeStoreCurrencyCode)}</td>
-                    <td>{formatPercent(row.profit_pct)}</td>
-                    <td>{formatMoney(row.coinvest_amount, activeStoreCurrencyCode)}</td>
-                    <td>{formatPercent(row.returns_pct)}</td>
-                    <td className={styles.nameCell}>
-                      {(row.periods || []).slice(0, 4).map((period) => (
-                        <div key={`${row.key}-${period.period_key}`} className={styles.subtleText}>
-                          {period.period_label}: {formatMoney(period.revenue, activeStoreCurrencyCode)} / {formatMoney(period.profit_amount, activeStoreCurrencyCode)}
-                        </div>
-                      ))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
-
-      {!loading && !error && tab === "category" ? (
-        <section>
-          <PageSectionTitle title="Категории во времени" meta={`Рядов: ${formatNumber(categoryRetrospective?.total_count)}`} />
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th className={styles.nameCell}>Категория</th>
-                  <th>Оборот</th>
-                  <th>Прибыль</th>
-                  <th>Маржинальность</th>
-                  <th>Соинвест</th>
-                  <th>Возвраты</th>
-                  <th>Периоды</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categoryRows.length === 0 ? (
-                  <tr><td colSpan={7} className={styles.empty}>Нет данных по категориям</td></tr>
-                ) : categoryRows.map((row) => (
-                  <tr key={row.key}>
-                    <td className={styles.nameCell}>{row.label || row.category_path || "—"}</td>
-                    <td>{formatMoney(row.revenue, activeStoreCurrencyCode)}</td>
-                    <td>{formatMoney(row.profit_amount, activeStoreCurrencyCode)}</td>
-                    <td>{formatPercent(row.profit_pct)}</td>
-                    <td>{formatMoney(row.coinvest_amount, activeStoreCurrencyCode)}</td>
-                    <td>{formatPercent(row.returns_pct)}</td>
-                    <td className={styles.nameCell}>
-                      {(row.periods || []).slice(0, 4).map((period) => (
-                        <div key={`${row.key}-${period.period_key}`} className={styles.subtleText}>
-                          {period.period_label}: {formatMoney(period.revenue, activeStoreCurrencyCode)} / {formatMoney(period.profit_amount, activeStoreCurrencyCode)}
-                        </div>
-                      ))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
-    </PageFrame>
-  );
+  return isMobile ? <SalesOverviewMobile vm={vm} /> : <SalesOverviewDesktop vm={vm} />;
 }
