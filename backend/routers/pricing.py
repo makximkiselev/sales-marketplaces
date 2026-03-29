@@ -520,7 +520,7 @@ async def pricing_settings_market_items(platform: str, store_id: str):
         return JSONResponse({"ok": False, "message": f"Не удалось загрузить маппинг товаров Я.Маркета: {e}"}, status_code=502)
 
     enriched_rows: list[dict] = []
-    for row in raw_rows:
+    for row in rows:
         sku = str(row.get("sku") or "").strip()
         mapped = mappings_by_sku.get(sku) or {}
         merged = dict(row)
