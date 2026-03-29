@@ -260,8 +260,8 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                     <div className={styles.salesPlanCardTitleBlock}>
                       <div className={styles.salesPlanCardEyebrow}>{row.platform_label}</div>
                       <h3 className={styles.salesPlanCardTitle}>
-                        {row.store_name}
-                        {row.store_id ? ` (${row.store_id})` : ""}
+                        <span>{row.store_name}</span>
+                        {row.store_id ? <span className={styles.salesPlanCardId}>{row.store_id}</span> : null}
                       </h3>
                     </div>
                     <div className={`${styles.salesPlanCardState} ${isDirty ? styles.salesPlanCardStateDirty : ""}`}>
@@ -360,7 +360,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                       </div>
                     </div>
 
-                    <div className={styles.salesPlanField}>
+                    <div className={`${styles.salesPlanField} ${styles.salesPlanFieldCompact}`}>
                       <div className={styles.salesPlanFieldLabel}>Целевое значение</div>
                       <div className={styles.cellInputWrap}>
                         <input
@@ -377,7 +377,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                       </div>
                     </div>
 
-                    <div className={styles.salesPlanField}>
+                    <div className={`${styles.salesPlanField} ${styles.salesPlanFieldCompact}`}>
                       <div className={styles.salesPlanFieldLabel}>Целевое значение, %</div>
                       <div className={styles.cellInputWrap}>
                         <input
@@ -390,7 +390,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                       </div>
                     </div>
 
-                    <div className={styles.salesPlanField}>
+                    <div className={`${styles.salesPlanField} ${styles.salesPlanFieldCompact}`}>
                       <div className={styles.salesPlanFieldLabel}>Минимальная прибыль</div>
                       <div className={styles.cellInputWrap}>
                         <input

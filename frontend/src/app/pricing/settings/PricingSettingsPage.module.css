@@ -60,7 +60,7 @@
   grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
-  max-width: 1580px;
+  max-width: 1480px;
   width: 100%;
   margin-inline: auto;
 }
@@ -1032,6 +1032,15 @@
   color: #eef5ff;
   font-size: 17px;
   line-height: 1.12;
+  display: grid;
+  gap: 2px;
+}
+
+.salesPlanCardId {
+  color: #94a9c8;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 .salesPlanCardState {
@@ -1081,7 +1090,7 @@
 
 .salesPlanFields {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
 
@@ -1092,6 +1101,10 @@
   background: rgba(7, 14, 27, 0.34);
   display: grid;
   gap: 8px;
+}
+
+.salesPlanFieldCompact {
+  min-width: 0;
 }
 
 .salesPlanFloatingBar {
