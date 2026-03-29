@@ -268,17 +268,24 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                         {row.store_id ? ` (${row.store_id})` : ""}
                       </td>
                       <td>
-                        <select
-                          className={styles.matrixSelect}
-                          value={draft.strategy_mode}
-                          onChange={(e) => {
-                            const nextMode = e.target.value === "mrc" ? "mrc" : "mix";
-                            patchDraft(row.store_uid, (prev) => ({ ...prev, strategy_mode: nextMode }));
-                          }}
-                        >
-                          <option value="mix">Микс</option>
-                          <option value="mrc">МРЦ</option>
-                        </select>
+                        <div className={styles.segmentedSwitch} role="tablist" aria-label={`Режим стратегии ${row.store_name}`}>
+                          <button
+                            type="button"
+                            className={`${styles.segmentedSwitchButton} ${draft.strategy_mode === "mix" ? styles.segmentedSwitchButtonActive : ""}`}
+                            aria-pressed={draft.strategy_mode === "mix"}
+                            onClick={() => patchDraft(row.store_uid, (prev) => ({ ...prev, strategy_mode: "mix" }))}
+                          >
+                            Микс
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.segmentedSwitchButton} ${draft.strategy_mode === "mrc" ? styles.segmentedSwitchButtonActive : ""}`}
+                            aria-pressed={draft.strategy_mode === "mrc"}
+                            onClick={() => patchDraft(row.store_uid, (prev) => ({ ...prev, strategy_mode: "mrc" }))}
+                          >
+                            МРЦ
+                          </button>
+                        </div>
                       </td>
                       <td>
                         <div className={styles.modeToggleWrap}>

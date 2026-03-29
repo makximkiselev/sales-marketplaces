@@ -121,6 +121,7 @@ export default function PricingSettingsPage() {
   const activeSection = sectionItems.find((item) => item.id === settingsTab) ?? sectionItems[0];
   const activeStore = storeTabs.find((store) => store.key === activeStoreTabKey) ?? null;
   const isSalesPlanSection = settingsTab === "sales_plan";
+  const showWorkspaceHero = !isSalesPlanSection;
   const currentSavedAt = settingsTab === "logistics" ? logisticsStoreSavedAt : storeSettingsSavedAt;
   const currentSaveState = settingsTab === "logistics"
     ? logisticsStoreSaving
@@ -215,22 +216,30 @@ export default function PricingSettingsPage() {
           </aside>
 
           <div className={styles.settingsMain}>
-            <div className={styles.workspaceHero}>
-              <div className={styles.workspaceHeroMain}>
-                <div className={styles.workspaceEyebrow}>{activeSection.title}</div>
-                <h2 className={styles.workspaceTitle}>{isSalesPlanSection ? activeSection.title : (activeStore?.storeName || activeSection.title)}</h2>
-                <p className={styles.workspaceSubtitle}>{activeSection.description}</p>
-                <div className={styles.workspaceHeroChips}>
-                  {!isSalesPlanSection && activeStore?.platformLabel ? (
-                    <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
-                  ) : null}
-                  {!isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span> : null}
-                  {isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : null}
+            {showWorkspaceHero ? (
+              <div className={styles.workspaceHero}>
+                <div className={styles.workspaceHeroMain}>
+                  <div className={styles.workspaceEyebrow}>{activeSection.title}</div>
+                  <h2 className={styles.workspaceTitle}>{activeStore?.storeName || activeSection.title}</h2>
+                  <p className={styles.workspaceSubtitle}>{activeSection.description}</p>
+                  <div className={styles.workspaceHeroChips}>
+                    {activeStore?.platformLabel ? (
+                      <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
+                    ) : null}
+                    <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className={styles.salesPlanIntro}>
+                <div className={styles.salesPlanIntroTitle}>План продаж по всем магазинам</div>
+                <div className={styles.salesPlanIntroText}>
+                  Здесь задаются store-level цели и режим расчёта, которые дальше используются в ценообразовании и стратегии.
+                </div>
+              </div>
+            )}
 
-            {activeStoreId ? (
+            {activeStoreId && !isSalesPlanSection ? (
               <div className={styles.stickyActionBar}>
                 <div className={styles.stickyActionMeta}>
                   <div className={styles.stickyActionTitle}>Изменения сохраняются автоматически</div>
