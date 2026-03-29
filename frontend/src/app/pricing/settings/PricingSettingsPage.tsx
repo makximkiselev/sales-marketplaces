@@ -217,8 +217,11 @@ export default function PricingSettingsPage() {
           <div className={styles.settingsMain}>
             <div className={styles.workspaceHero}>
               <div className={styles.workspaceHeroMain}>
-                <div className={styles.workspaceEyebrow}>{activeSection.title}</div>
-                <h2 className={styles.workspaceTitle}>{isSalesPlanSection ? activeSection.title : (activeStore?.storeName || activeSection.title)}</h2>
+                {!isSalesPlanSection ? <div className={styles.workspaceEyebrow}>{activeSection.title}</div> : null}
+                <div className={styles.workspaceTitleRow}>
+                  <h2 className={styles.workspaceTitle}>{isSalesPlanSection ? activeSection.title : (activeStore?.storeName || activeSection.title)}</h2>
+                  {isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : null}
+                </div>
                 <p className={styles.workspaceSubtitle}>
                   {isSalesPlanSection
                     ? "Store-level цели, режимы прибыли и стратегия для всех магазинов в одном рабочем пространстве."
@@ -229,7 +232,6 @@ export default function PricingSettingsPage() {
                     <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
                   ) : null}
                   {!isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span> : null}
-                  {isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : null}
                 </div>
               </div>
             </div>
