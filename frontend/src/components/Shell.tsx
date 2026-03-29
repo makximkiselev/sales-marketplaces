@@ -6,22 +6,15 @@ import { APP_TOAST_EVENT, type AppToastDetail } from "./ui/toastBus";
 
 type NavItem = { href: string; label: string };
 type NavSection = { title: string; items: NavItem[] };
-type NavGroup = { title: string; items?: NavItem[]; sections?: NavSection[] };
+type NavGroup = { title: string; shortLabel: string; items?: NavItem[]; sections?: NavSection[] };
 
 const groups: NavGroup[] = [
-  {
-    title: "Сводка",
-    items: [{ href: "/", label: "Дашборд" }],
-  },
+  { title: "Сводка", shortLabel: "Сводка", items: [{ href: "/", label: "Дашборд" }] },
   {
     title: "Каталог",
+    shortLabel: "Каталог",
     sections: [
-      {
-        title: "Товары",
-        items: [
-          { href: "/catalog", label: "Список товаров" },
-        ],
-      },
+      { title: "Товары", items: [{ href: "/catalog", label: "Список товаров" }] },
       {
         title: "Статистика",
         items: [
@@ -33,6 +26,7 @@ const groups: NavGroup[] = [
   },
   {
     title: "Ценообразование",
+    shortLabel: "Цены",
     items: [
       { href: "/pricing/decision", label: "Стратегия ценообразования" },
       { href: "/pricing/prices", label: "Цены" },
@@ -45,11 +39,9 @@ const groups: NavGroup[] = [
   },
   {
     title: "Продажи",
+    shortLabel: "Продажи",
     sections: [
-      {
-        title: "Наши данные",
-        items: [{ href: "/sales/overview", label: "Обзор продаж" }],
-      },
+      { title: "Наши данные", items: [{ href: "/sales/overview", label: "Обзор продаж" }] },
       {
         title: "Данные площадки",
         items: [
@@ -62,6 +54,7 @@ const groups: NavGroup[] = [
   },
   {
     title: "Настройки",
+    shortLabel: "Настройки",
     items: [
       { href: "/settings/sources", label: "Источники" },
       { href: "/settings/pricing", label: "Настройки ценообразования" },
@@ -78,44 +71,45 @@ const PULL_REFRESH_MAX = 84;
 const PULL_REFRESH_TRIGGER = 64;
 
 function isActive(pathname: string, href: string): boolean {
-  if (href === "/") {
-    return pathname === "/";
-  }
+  if (href === "/") return pathname === "/";
   const allHrefs = groups.flatMap((group) => groupItems(group).map((item) => item.href));
-  const hasDeeper = allHrefs.some((h) => h !== href && h.startsWith(`${href}/`));
-  if (hasDeeper) {
-    return pathname === href;
-  }
+  const hasDeeper = allHrefs.some((candidate) => candidate !== href && candidate.startsWith(`${href}/`));
+  if (hasDeeper) return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function flattenCurrentGroupSections(group: NavGroup) {
+  if (group.sections) {
+    return group.sections;
+  }
+  return [
+    {
+      title: group.title,
+      items: groupItems(group),
+    },
+  ];
 }
 
 export function Shell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
-  const [openMenuTitle, setOpenMenuTitle] = useState<string | null>(null);
-  const [suppressHoverTitle, setSuppressHoverTitle] = useState<string | null>(null);
   const [toast, setToast] = useState<AppToastDetail | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileGroupTitle, setMobileGroupTitle] = useState<string | null>(null);
   const [mobileRouteLoading, setMobileRouteLoading] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [pullReady, setPullReady] = useState(false);
   const [pullRefreshing, setPullRefreshing] = useState(false);
   const pullStartYRef = useRef<number | null>(null);
   const pullActiveRef = useRef(false);
-  const currentGroupTitle = useMemo(() => {
-    const match = groups.find((group) => groupItems(group).some((item) => isActive(pathname, item.href)));
-    return match?.title ?? groups[0].title;
-  }, [pathname]);
-  const currentItem = useMemo(() => {
-    for (const group of groups) {
-      for (const item of groupItems(group)) {
-        if (isActive(pathname, item.href)) {
-          return item;
-        }
-      }
-    }
-    return groupItems(groups[0])[0] ?? { href: "/", label: "Дашборд" };
-  }, [pathname]);
+
+  const currentGroup = useMemo(
+    () => groups.find((group) => groupItems(group).some((item) => isActive(pathname, item.href))) ?? groups[0],
+    [pathname],
+  );
+  const currentItem = useMemo(
+    () => groupItems(currentGroup).find((item) => isActive(pathname, item.href)) ?? groupItems(currentGroup)[0],
+    [currentGroup, pathname],
+  );
+  const currentSections = useMemo(() => flattenCurrentGroupSections(currentGroup), [currentGroup]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -126,10 +120,7 @@ export function Shell({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    setOpenMenuTitle(null);
-    setSuppressHoverTitle(null);
     setMobileMenuOpen(false);
-    setMobileGroupTitle(null);
     setPullDistance(0);
     setPullReady(false);
     setPullRefreshing(false);
@@ -161,15 +152,6 @@ export function Shell({ children }: { children: ReactNode }) {
       document.body.style.overflow = prev;
     };
   }, [mobileMenuOpen]);
-
-  function closeMenuAfterClick(groupTitle: string) {
-    setOpenMenuTitle(null);
-    setSuppressHoverTitle(groupTitle);
-    if (typeof document !== "undefined") {
-      const el = document.activeElement as HTMLElement | null;
-      el?.blur?.();
-    }
-  }
 
   function canPullRefresh() {
     if (mobileMenuOpen || pullRefreshing || typeof window === "undefined") return false;
@@ -214,9 +196,7 @@ export function Shell({ children }: { children: ReactNode }) {
       setPullReady(false);
       setPullRefreshing(true);
       setPullDistance(PULL_REFRESH_TRIGGER);
-      window.setTimeout(() => {
-        window.location.reload();
-      }, 120);
+      window.setTimeout(() => window.location.reload(), 120);
       return;
     }
     setPullReady(false);
@@ -225,21 +205,17 @@ export function Shell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
     function onTouchStart(event: TouchEvent) {
       if (event.touches.length !== 1) return;
       handlePullStart(event.touches[0].clientY);
     }
-
     function onTouchMove(event: TouchEvent) {
       if (event.touches.length !== 1) return;
       handlePullMove(event.touches[0].clientY);
     }
-
     function onTouchEnd() {
       handlePullEnd();
     }
-
     window.addEventListener("touchstart", onTouchStart, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true });
@@ -255,93 +231,43 @@ export function Shell({ children }: { children: ReactNode }) {
   function renderMobileMenu() {
     if (!mobileMenuOpen) return null;
     return (
-      <div className="mobile-nav-overlay" onClick={() => setMobileMenuOpen(false)}>
-        <aside className="mobile-nav-drawer" onClick={(e) => e.stopPropagation()}>
-          <div className="mobile-nav-head">
-            <div className="mobile-nav-brand">
+      <div className="app-drawer-overlay" onClick={() => setMobileMenuOpen(false)}>
+        <aside className="app-drawer" onClick={(e) => e.stopPropagation()}>
+          <div className="app-drawer-head">
+            <div className="app-shell-brand">
               <div className="logo" />
-              <div>
-                <div className="mobile-nav-title">Аналитика данных</div>
-                <div className="mobile-nav-subtitle">{currentItem.label}</div>
+              <div className="app-shell-brand-copy">
+                <div className="app-shell-brand-title">Аналитика данных</div>
+                <div className="app-shell-brand-subtitle">{currentItem?.label ?? currentGroup.title}</div>
               </div>
             </div>
             <button type="button" className="btn icon-only" onClick={() => setMobileMenuOpen(false)} aria-label="Закрыть меню">
               ×
             </button>
           </div>
-          <div className="mobile-nav-body">
-            {groups.map((group) => {
-              const items = groupItems(group);
-              const selected = currentGroupTitle === group.title;
-              const expanded = mobileGroupTitle === group.title;
-              const directHref = items[0]?.href || "/";
-              const isSingleLink = group.title === "Сводка";
-              const sectionItems = group.sections
-                ? group.sections
-                    .map((section) => ({
-                      ...section,
-                      items: section.items.filter((item) => !isActive(pathname, item.href)),
-                    }))
-                    .filter((section) => section.items.length > 0)
-                : null;
-              const standaloneItems = group.sections
-                ? null
-                : items.filter((item) => !isActive(pathname, item.href));
-              if (isSingleLink) {
-                if (selected) {
-                  return null;
-                }
-                return (
-                  <Link key={group.title} to={directHref} className={`mobile-nav-direct${selected ? " active" : ""}`} onClick={() => setMobileMenuOpen(false)}>
-                    {group.title}
-                  </Link>
-                );
-              }
-              return (
-                <section key={group.title} className={`mobile-nav-group${expanded ? " expanded" : ""}`}>
-                  <button
-                    type="button"
-                    className={`mobile-nav-group-toggle${selected ? " active" : ""}`}
-                    onClick={() => setMobileGroupTitle((prev) => (prev === group.title ? null : group.title))}
-                  >
-                    <span>{group.title}</span>
-                    <span className="mobile-nav-chevron">{expanded ? "−" : "+"}</span>
-                  </button>
-                  {expanded ? (
-                    <div className="mobile-nav-links">
-                      {group.sections
-                        ? sectionItems?.map((section) => (
-                            <div key={section.title} className="mobile-nav-section">
-                              <div className="mobile-nav-section-title">{section.title}</div>
-                              {section.items.map((item) => (
-                                <Link
-                                  key={item.href}
-                                  to={item.href}
-                                  className={`mobile-nav-link${isActive(pathname, item.href) ? " active" : ""}`}
-                                  onClick={() => setMobileMenuOpen(false)}
-                                >
-                                  {item.label}
-                                </Link>
-                              ))}
-                            </div>
-                          ))
-                        : standaloneItems?.map((item) => (
-                            <Link
-                              key={item.href}
-                              to={item.href}
-                              className={`mobile-nav-link${isActive(pathname, item.href) ? " active" : ""}`}
-                              onClick={() => setMobileMenuOpen(false)}
-                            >
-                              {item.label}
-                            </Link>
-                          ))}
-                      {group.sections && !sectionItems?.length ? <div className="mobile-nav-empty">Все страницы этого раздела скрыты</div> : null}
-                      {!group.sections && !standaloneItems?.length ? <div className="mobile-nav-empty">Текущая страница уже открыта</div> : null}
+          <div className="app-drawer-body">
+            {groups.map((group) => (
+              <section key={group.title} className="app-drawer-group">
+                <div className="app-drawer-group-title">{group.title}</div>
+                <div className="app-drawer-links">
+                  {flattenCurrentGroupSections(group).map((section) => (
+                    <div key={section.title} className="app-drawer-section">
+                      {group.sections ? <div className="app-drawer-section-title">{section.title}</div> : null}
+                      {section.items.map((item) => (
+                        <Link
+                          key={item.href}
+                          to={item.href}
+                          className={`app-drawer-link${isActive(pathname, item.href) ? " active" : ""}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
                     </div>
-                  ) : null}
-                </section>
-              );
-            })}
+                  ))}
+                </div>
+              </section>
+            ))}
           </div>
         </aside>
       </div>
@@ -349,136 +275,89 @@ export function Shell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="app">
-      <main className="main">
-        <header className="topbar">
-          <div className="mobile-topbar">
-            <button
-              type="button"
-              className="btn mobile-menu-trigger"
-              onClick={() => {
-                setMobileGroupTitle(currentGroupTitle);
-                setMobileMenuOpen(true);
-              }}
-            >
+    <div className="app-shell">
+      <header className="app-shell-header">
+        <div className="app-shell-header-inner">
+          <div className="app-shell-mobilebar">
+            <button type="button" className="btn mobile-menu-trigger" onClick={() => setMobileMenuOpen(true)}>
               Меню
             </button>
-            <div className="mobile-topbar-center">
-              <div className="mobile-topbar-title">{currentItem.label}</div>
-              <div className="mobile-topbar-subtitle">{currentGroupTitle}</div>
+            <div className="app-shell-mobile-title">
+              <div className="app-shell-mobile-label">{currentGroup.title}</div>
+              <div className="app-shell-mobile-page">{currentItem?.label ?? currentGroup.title}</div>
             </div>
-            <Link to="/" className="mobile-topbar-home">
+            <Link to="/" className="app-shell-mobile-home" aria-label="На главную">
               <div className="logo" />
             </Link>
           </div>
-          <div className="topbar-main topbar-main-inline">
-            <div className="brand-inline">
+
+          <div className="app-shell-desktopbar">
+            <Link to="/" className="app-shell-brand">
               <div className="logo" />
-              <div className="name">Аналитика данных</div>
-            </div>
-            <div className="mega-menu">
-              <nav className="primary-nav">
-                {groups.map((group) => {
-                  const selected = currentGroupTitle === group.title;
-                  const isSingleLink = group.title === "Сводка";
-                  const directHref = groupItems(group)[0]?.href || "/";
+              <div className="app-shell-brand-copy">
+                <div className="app-shell-brand-title">Аналитика данных</div>
+                <div className="app-shell-brand-subtitle">Pricing, catalog, sales, settings</div>
+              </div>
+            </Link>
 
-                  if (isSingleLink) {
-                    return (
-                      <Link
-                        key={group.title}
-                        to={directHref}
-                        className={`primary-nav-link primary-nav-link-direct${selected ? " active" : ""}`}
-                      >
-                        <span>{group.title}</span>
-                      </Link>
-                    );
-                  }
-
-                  const isOpen = openMenuTitle === group.title;
-                  return (
-                    <div
-                      key={group.title}
-                      className={`primary-nav-item${isOpen ? " open" : ""}`}
-                      onMouseEnter={() => {
-                        if (suppressHoverTitle === group.title) return;
-                        setOpenMenuTitle(group.title);
-                      }}
-                      onMouseLeave={() => {
-                        setOpenMenuTitle((prev) => (prev === group.title ? null : prev));
-                        setSuppressHoverTitle((prev) => (prev === group.title ? null : prev));
-                      }}
-                    >
-                      <button type="button" className={`primary-nav-link${selected ? " active" : ""}`}>
-                        <span>{group.title}</span>
-                      </button>
-
-                      <div className={`mega-panel ${group.sections ? "mega-panel-sections" : "mega-panel-list"}`}>
-                        {group.sections ? (
-                          group.sections.map((section) => (
-                            <div key={section.title} className="mega-panel-section">
-                              <div className="mega-panel-section-title">{section.title}</div>
-                              <div className="mega-panel-section-items">
-                                {section.items.map((item) => {
-                                  const active = isActive(pathname, item.href);
-                                  return (
-                                    <Link
-                                      key={item.href}
-                                      to={item.href}
-                                      className={`mega-panel-link${active ? " active" : ""}`}
-                                      onClick={() => closeMenuAfterClick(group.title)}
-                                    >
-                                      {item.label}
-                                    </Link>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          groupItems(group).map((item) => {
-                            const active = isActive(pathname, item.href);
-                            return (
-                              <Link
-                                key={item.href}
-                                to={item.href}
-                                className={`mega-panel-link${active ? " active" : ""}`}
-                                onClick={() => closeMenuAfterClick(group.title)}
-                              >
-                                {item.label}
-                              </Link>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </nav>
-            </div>
+            <nav className="app-shell-primary-nav" aria-label="Основные разделы">
+              {groups.map((group) => {
+                const directHref = groupItems(group)[0]?.href || "/";
+                const active = currentGroup.title === group.title;
+                return (
+                  <Link key={group.title} to={directHref} className={`app-shell-primary-link${active ? " active" : ""}`}>
+                    {group.title}
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
-        </header>
-        {renderMobileMenu()}
-        <div className={`pull-refresh-shell${pullDistance > 0 || pullRefreshing ? " active" : ""}`}>
-          <div
-            className={`pull-refresh-indicator${pullReady ? " ready" : ""}${pullRefreshing ? " loading" : ""}`}
-            style={{ height: `${pullDistance}px` }}
-            aria-hidden="true"
-          >
-            <div className="pull-refresh-spinner" />
-            <span>{pullRefreshing ? "Обновляем..." : pullReady ? "Отпустите, чтобы обновить" : "Потяните вниз для обновления"}</span>
-          </div>
-          <div className="wrap">{children}</div>
         </div>
-        {toast ? (
-          <div className={`app-toast${toast.tone === "error" ? " error" : ""}`}>
-            {toast.message}
-          </div>
-        ) : null}
-        <div className={`mobile-route-progress${mobileRouteLoading ? " active" : ""}`} aria-hidden="true">
-          <div className="mobile-route-progress-bar" />
+      </header>
+
+      <div className="app-shell-subnav-wrap">
+        <div className="app-shell-subnav">
+          {currentSections.flatMap((section) =>
+            section.items.map((item) => (
+              <Link key={item.href} to={item.href} className={`app-shell-subnav-link${isActive(pathname, item.href) ? " active" : ""}`}>
+                {item.label}
+              </Link>
+            )),
+          )}
         </div>
-      </main>
+      </div>
+
+      {renderMobileMenu()}
+
+      <div className={`pull-refresh-shell${pullDistance > 0 || pullRefreshing ? " active" : ""}`}>
+        <div
+          className={`pull-refresh-indicator${pullReady ? " ready" : ""}${pullRefreshing ? " loading" : ""}`}
+          style={{ height: `${pullDistance}px` }}
+          aria-hidden="true"
+        >
+          <div className="pull-refresh-spinner" />
+          <span>{pullRefreshing ? "Обновляем..." : pullReady ? "Отпустите, чтобы обновить" : "Потяните вниз для обновления"}</span>
+        </div>
+        <main className="wrap">{children}</main>
+      </div>
+
+      {toast ? <div className={`app-toast${toast.tone === "error" ? " error" : ""}`}>{toast.message}</div> : null}
+
+      <div className={`mobile-route-progress${mobileRouteLoading ? " active" : ""}`} aria-hidden="true">
+        <div className="mobile-route-progress-bar" />
+      </div>
+
+      <nav className="app-shell-bottom-nav" aria-label="Нижняя навигация">
+        {groups.map((group) => {
+          const directHref = groupItems(group)[0]?.href || "/";
+          const active = currentGroup.title === group.title;
+          return (
+            <Link key={group.title} to={directHref} className={`app-shell-bottom-link${active ? " active" : ""}`}>
+              <span>{group.shortLabel}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
