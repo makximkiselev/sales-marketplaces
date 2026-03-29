@@ -148,7 +148,7 @@ export default function PricingSettingsPage() {
         title="Настройки ценообразования"
         subtitle="Единая рабочая зона для целей продаж, категорийных правил и логистики магазинов."
         className={styles.headCard}
-        innerClassName={styles.headCardInner}
+        innerClassName={`${styles.headCardInner} ${isSalesPlanSection ? styles.headCardInnerCompact : ""}`}
         toolbarLeft={
           <div className={styles.headerControlStack}>
             <div className={styles.mobileSectionTabs}>
