@@ -2003,12 +2003,11 @@
 }
 
 @media (max-width: 960px) {
-  .headerControlStack {
-    display: grid;
-  }
-
+  .headerControlStack,
+  .mobileSectionTabs,
+  .mobileStoreTabs,
   .headCardInner :global(.toolbar) {
-    display: flex;
+    display: none;
   }
 
   .headCardInnerCompact {
@@ -2018,14 +2017,6 @@
   .headInner {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .mobileSectionTabs {
-    display: block;
-  }
-
-  .mobileStoreTabs {
-    display: block;
   }
 
   .settingsShell {
@@ -2161,12 +2152,15 @@
     gap: 12px;
   }
 
-  .desktopSectionTabs {
-    display: none;
+  .desktopSectionTabs,
+  .desktopStoreTabs {
+    display: block;
   }
 
-  .sectionSubviewTabsRow {
+  .desktopSectionTabsRow,
+  .storeTabsBar {
     width: 100%;
+    max-width: 100%;
   }
 
   .salesPlanCardHead {

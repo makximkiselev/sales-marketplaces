@@ -161,32 +161,6 @@ export default function PricingSettingsPage() {
         subtitle="Единая рабочая зона для целей продаж, категорийных правил и логистики магазинов."
         className={styles.headCard}
         innerClassName={`${styles.headCardInner} ${isSalesPlanSection ? styles.headCardInnerCompact : ""}`}
-        toolbarLeft={
-          <div className={styles.headerControlStack}>
-            <div className={styles.mobileSectionTabs}>
-              <ControlTabs
-                className={styles.settingsTabsRow}
-                items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
-                activeId={settingsTab}
-                onChange={(id) => setSettingsTab(id)}
-              />
-            </div>
-            {!isSalesPlanSection ? (
-              <div className={styles.mobileStoreTabs}>
-                <ControlTabs
-                  className={styles.storeTabsRow}
-                  items={storeTabs.map((store) => ({
-                    id: store.key,
-                    label: store.storeName,
-                    badge: store.platformLabel,
-                  }))}
-                  activeId={activeStoreTabKey}
-                  onChange={setActiveStoreTabKey}
-                />
-              </div>
-            ) : null}
-          </div>
-        }
       >
         <div className={`${styles.settingsShell} ${isSalesPlanSection ? styles.settingsShellFull : ""}`}>
           <div className={`${styles.settingsMain} ${isSalesPlanSection ? styles.settingsMainCompact : ""}`}>
