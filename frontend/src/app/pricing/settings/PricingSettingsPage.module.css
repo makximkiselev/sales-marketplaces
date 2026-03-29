@@ -382,21 +382,29 @@
 
 .categorySidebarList {
   display: grid;
-  gap: 8px;
+  gap: 6px;
   max-height: 540px;
   overflow: auto;
   padding-right: 2px;
 }
 
+.categorySidebarSearch {
+  display: grid;
+}
+
+.categorySidebarSearchInput {
+  height: 38px;
+}
+
 .categoryTreeNode {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .categoryTreeRow {
   display: flex;
   align-items: stretch;
-  gap: 8px;
+  gap: 6px;
 }
 
 .categoryTreeRowActive .categoryTreeSelect {
@@ -408,7 +416,7 @@
 .categoryTreeToggle {
   flex: 0 0 28px;
   height: 28px;
-  margin-top: 6px;
+  margin-top: 4px;
   border: 1px solid rgba(132, 161, 214, 0.16);
   border-radius: 10px;
   background: rgba(8, 16, 30, 0.52);
@@ -424,13 +432,13 @@
 .categoryTreeSelect {
   flex: 1 1 auto;
   border: 1px solid rgba(132, 161, 214, 0.14);
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(7, 14, 27, 0.42);
   text-align: left;
   color: inherit;
-  padding: 12px;
+  padding: 10px 12px;
   display: grid;
-  gap: 4px;
+  gap: 6px;
   cursor: pointer;
   transition:
     border-color 0.16s ease,
@@ -461,9 +469,40 @@
   line-height: 1.35;
 }
 
+.categoryTreeMetaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.categoryTreeStatus {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.categoryTreeStatusInherited {
+  color: #ffd88a;
+  background: rgba(103, 74, 18, 0.28);
+  border: 1px solid rgba(255, 196, 73, 0.28);
+}
+
+.categoryTreeStatusCustom {
+  color: #9ff4bf;
+  background: rgba(15, 83, 49, 0.34);
+  border: 1px solid rgba(58, 206, 129, 0.34);
+}
+
 .categoryTreeChildren {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .categoryEditor {

@@ -111,11 +111,13 @@ export function GeneralSettingsSection({
   const [bulkField, setBulkField] = useState<EditableFieldKey | null>(null);
   const [selectedKey, setSelectedKey] = useState("");
   const [expandedPaths, setExpandedPaths] = useState<string[]>([]);
+  const [treeQuery, setTreeQuery] = useState("");
   const bulkColumn = bulkField ? tableColumns.find((col) => col.field === bulkField) ?? null : null;
   const categoryTree = buildCategoryTree(categoryRows);
   const fallbackRow = findFirstLeaf(categoryTree);
   const selectedRow = categoryRows.find((row) => row.key === selectedKey) ?? fallbackRow;
   const inputColumns = tableColumns.filter((col) => col.kind === "input" && col.field);
+  const normalizedTreeQuery = treeQuery.trim().toLowerCase();
 
   useEffect(() => {
     if (!categoryRows.length) {
@@ -145,11 +147,32 @@ export function GeneralSettingsSection({
     );
   }
 
+  function rowHasOverrides(row: PricingCategoryRow | null) {
+    if (!row) return false;
+    return inputColumns.some((column) => {
+      const field = column.field;
+      return field ? row.values[field] != null : false;
+    });
+  }
+
+  function filterTree(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
+    if (!normalizedTreeQuery) return nodes;
+    const walk = (items: CategoryTreeNode[]): CategoryTreeNode[] =>
+      items.flatMap((node) => {
+        const filteredChildren = walk(node.children);
+        const selfMatch = node.pathLabel.toLowerCase().includes(normalizedTreeQuery);
+        if (!selfMatch && !filteredChildren.length) return [];
+        return [{ ...node, children: filteredChildren }];
+      });
+    return walk(nodes);
+  }
+
   function renderTree(nodes: CategoryTreeNode[]) {
     return nodes.map((node) => {
       const expanded = expandedPaths.includes(node.id);
       const selectableRow = node.row;
       const isSelected = selectableRow ? selectedRow?.key === selectableRow.key : false;
+      const hasOverrides = rowHasOverrides(selectableRow);
       return (
         <div key={node.id} className={styles.categoryTreeNode}>
           <div
@@ -182,11 +205,16 @@ export function GeneralSettingsSection({
               }}
             >
               <span className={styles.categoryTreeLabel}>{node.label}</span>
-              {selectableRow ? (
-                <span className={styles.categoryTreeMeta}>{selectableRow.itemsCount} SKU</span>
-              ) : (
-                <span className={styles.categoryTreeMeta}>{node.children.length} веток</span>
-              )}
+              <span className={styles.categoryTreeMetaRow}>
+                {selectableRow ? (
+                  <span className={styles.categoryTreeMeta}>{selectableRow.itemsCount} SKU</span>
+                ) : (
+                  <span className={styles.categoryTreeMeta}>{node.children.length} веток</span>
+                )}
+                <span className={`${styles.categoryTreeStatus} ${hasOverrides ? styles.categoryTreeStatusCustom : styles.categoryTreeStatusInherited}`}>
+                  {hasOverrides ? "Есть overrides" : "Наследуется"}
+                </span>
+              </span>
             </button>
           </div>
           {node.children.length && expanded ? (
@@ -224,8 +252,16 @@ export function GeneralSettingsSection({
                           Заполнить комиссию всем
                         </button>
                       </div>
+                      <div className={styles.categorySidebarSearch}>
+                        <input
+                          className={`input ${styles.categorySidebarSearchInput}`}
+                          value={treeQuery}
+                          onChange={(e) => setTreeQuery(e.target.value)}
+                          placeholder="Поиск по категории или ветке"
+                        />
+                      </div>
                       <div className={styles.categorySidebarList}>
-                        {renderTree(categoryTree)}
+                        {renderTree(filterTree(categoryTree))}
                       </div>
                     </aside>
 
