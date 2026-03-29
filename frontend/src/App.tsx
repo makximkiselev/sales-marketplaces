@@ -32,7 +32,7 @@ export default function App() {
         <Route path="/catalog" element={<CatalogPage />} />
         <Route path="/catalog/content-rating" element={<CatalogContentRatingPage />} />
         <Route path="/catalog/kpis" element={<CatalogKpisPage />} />
-        <Route path="/data/sources" element={<SettingsSourcesPage />} />
+        <Route path="/data/sources" element={<Navigate to="/settings/sources" replace />} />
         <Route path="/monitoring" element={<MonitoringRedirectPage />} />
         <Route path="/pricing/attractiveness" element={<PricingAttractivenessPage />} />
         <Route path="/pricing/decision" element={<PricingDecisionPage />} />

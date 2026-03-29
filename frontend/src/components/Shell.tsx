@@ -32,13 +32,6 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    title: "Данные",
-    items: [
-      { href: "/settings/sources", label: "Источники данных" },
-      { href: "/monitoring", label: "Системный мониторинг" },
-    ],
-  },
-  {
     title: "Ценообразование",
     items: [
       { href: "/pricing/decision", label: "Стратегия ценообразования" },

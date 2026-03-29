@@ -20,7 +20,7 @@ export default function Page() {
           <Link className="btn" to="/sales/coinvest">Соинвест</Link>
           <Link className="btn" to="/sales/elasticity">Эластичность</Link>
           <Link className="btn" to="/catalog">Каталог</Link>
-          <Link className="btn" to="/data/sources">Источники данных</Link>
+          <Link className="btn" to="/settings/sources">Источники данных</Link>
           <Link className="btn" to="/settings/monitoring">Мониторинг</Link>
         </div>
       </div>
