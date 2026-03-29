@@ -121,25 +121,8 @@ def _parse_rows_matrix(matrix: list[list[Any]]) -> list[dict[str, Any]]:
         return []
     header_map = _header_index_map(matrix[header_row_index])
     offer_idx = _pick_index(header_map, "offer id", "offer_id", "shop sku", "shop_sku", "sku", "ваш sku")
-    name_idx = _pick_index(header_map, "offer name", "name", "название")
     currency_idx = _pick_index(header_map, "currency", "валюта")
-    shop_price_idx = _pick_index(header_map, "shop price", "ваша цена", "price", "цена магазина")
-    basic_price_idx = _pick_index(header_map, "basic price", "цена до скидки", "basic_price")
     on_display_idx = _pick_index(header_map, "on_display", "on display", "цена на витрине", "на витрине")
-    outside_market_idx = _pick_index(
-        header_map,
-        "price_value_outside_market",
-        "price value outside market",
-        "цена вне маркета",
-    )
-    on_market_idx = _pick_index(
-        header_map,
-        "price_value_on_market",
-        "price value on market",
-        "цена на маркете",
-    )
-    green_idx = _pick_index(header_map, "price green threshold", "green threshold", "зеленый порог цены")
-    red_idx = _pick_index(header_map, "price red threshold", "red threshold", "красный порог цены")
     if offer_idx is None:
         return []
     parsed: list[dict[str, Any]] = []
@@ -153,16 +136,9 @@ def _parse_rows_matrix(matrix: list[list[Any]]) -> list[dict[str, Any]]:
         parsed.append(
             {
                 "offer_id": offer_id,
-                "offer_name": "" if name_idx is None or name_idx >= len(raw) else str(raw[name_idx] or "").strip(),
                 "currency": "" if currency_idx is None or currency_idx >= len(raw) else str(raw[currency_idx] or "").strip(),
-                "shop_price": None if shop_price_idx is None or shop_price_idx >= len(raw) else _to_num(raw[shop_price_idx]),
-                "basic_price": None if basic_price_idx is None or basic_price_idx >= len(raw) else _to_num(raw[basic_price_idx]),
                 "on_display_raw": on_display_raw,
                 "on_display_price": _to_num(on_display_raw),
-                "price_value_outside_market": None if outside_market_idx is None or outside_market_idx >= len(raw) else _to_num(raw[outside_market_idx]),
-                "price_value_on_market": None if on_market_idx is None or on_market_idx >= len(raw) else _to_num(raw[on_market_idx]),
-                "price_green_threshold": None if green_idx is None or green_idx >= len(raw) else _to_num(raw[green_idx]),
-                "price_red_threshold": None if red_idx is None or red_idx >= len(raw) else _to_num(raw[red_idx]),
             }
         )
     return parsed

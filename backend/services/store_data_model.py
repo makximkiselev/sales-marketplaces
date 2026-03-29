@@ -3037,27 +3037,15 @@ def _init_store_data_model_sqlite_operational_tables(conn: sqlite3.Connection) -
         CREATE TABLE IF NOT EXISTS yandex_goods_price_report_items (
             store_uid TEXT NOT NULL,
             offer_id TEXT NOT NULL,
-            offer_name TEXT NOT NULL DEFAULT '',
             currency TEXT NOT NULL DEFAULT '',
-            shop_price REAL NULL,
-            basic_price REAL NULL,
             on_display_raw TEXT NOT NULL DEFAULT '',
             on_display_price REAL NULL,
-            price_value_outside_market REAL NULL,
-            price_value_on_market REAL NULL,
-            price_green_threshold REAL NULL,
-            price_red_threshold REAL NULL,
             source_updated_at TEXT NOT NULL DEFAULT '',
             loaded_at TEXT NOT NULL,
             PRIMARY KEY (store_uid, offer_id)
         )
         """
     )
-    goods_cols = _table_columns(conn, "yandex_goods_price_report_items")
-    if "price_value_outside_market" not in goods_cols:
-        conn.execute("ALTER TABLE yandex_goods_price_report_items ADD COLUMN price_value_outside_market REAL NULL")
-    if "price_value_on_market" not in goods_cols:
-        conn.execute("ALTER TABLE yandex_goods_price_report_items ADD COLUMN price_value_on_market REAL NULL")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_yandex_goods_price_report_store ON yandex_goods_price_report_items(store_uid)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_yandex_goods_price_report_offer ON yandex_goods_price_report_items(offer_id)")
     conn.execute(
@@ -3066,16 +3054,9 @@ def _init_store_data_model_sqlite_operational_tables(conn: sqlite3.Connection) -
             store_uid TEXT NOT NULL,
             offer_id TEXT NOT NULL,
             captured_at TEXT NOT NULL,
-            offer_name TEXT NOT NULL DEFAULT '',
             currency TEXT NOT NULL DEFAULT '',
-            shop_price REAL NULL,
-            basic_price REAL NULL,
             on_display_raw TEXT NOT NULL DEFAULT '',
             on_display_price REAL NULL,
-            price_value_outside_market REAL NULL,
-            price_value_on_market REAL NULL,
-            price_green_threshold REAL NULL,
-            price_red_threshold REAL NULL,
             source_updated_at TEXT NOT NULL DEFAULT '',
             PRIMARY KEY (store_uid, offer_id, captured_at),
             FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
@@ -5685,16 +5666,9 @@ def replace_yandex_goods_price_report_items(*, store_uid: str, rows: list[dict[s
             (
                 suid,
                 offer_id,
-                str(row.get("offer_name") or "").strip(),
                 str(row.get("currency") or "").strip(),
-                row.get("shop_price"),
-                row.get("basic_price"),
                 str(row.get("on_display_raw") or "").strip(),
                 row.get("on_display_price"),
-                row.get("price_value_outside_market"),
-                row.get("price_value_on_market"),
-                row.get("price_green_threshold"),
-                row.get("price_red_threshold"),
                 str(row.get("source_updated_at") or "").strip(),
                 now,
             )
@@ -5705,13 +5679,11 @@ def replace_yandex_goods_price_report_items(*, store_uid: str, rows: list[dict[s
             (suid,),
         )
         if prepared:
-            values_sql = _placeholders(14)
+            values_sql = _placeholders(7)
             _executemany(conn, 
                 f"""
                 INSERT INTO yandex_goods_price_report_items (
-                    store_uid, offer_id, offer_name, currency, shop_price, basic_price,
-                    on_display_raw, on_display_price, price_value_outside_market, price_value_on_market,
-                    price_green_threshold, price_red_threshold,
+                    store_uid, offer_id, currency, on_display_raw, on_display_price,
                     source_updated_at, loaded_at
                 ) VALUES ({values_sql})
                 """,
@@ -6930,9 +6902,7 @@ def get_yandex_goods_price_report_map(*, store_uids: list[str], skus: list[str])
             placeholders = _placeholders(len(sku_list))
             rows = conn.execute(
                 f"""
-                SELECT store_uid, offer_id, offer_name, currency, shop_price, basic_price,
-                       on_display_raw, on_display_price, price_value_outside_market, price_value_on_market,
-                       price_green_threshold, price_red_threshold,
+                SELECT store_uid, offer_id, currency, on_display_raw, on_display_price,
                        source_updated_at, loaded_at
                 FROM yandex_goods_price_report_items
                 WHERE store_uid = {'%s' if is_postgres_backend() else '?'} AND offer_id IN ({placeholders})
@@ -6962,16 +6932,9 @@ def get_yandex_goods_price_report_prev_map(*, store_uids: list[str], skus: list[
                 SELECT
                     store_uid,
                     offer_id,
-                    offer_name,
                     currency,
-                    shop_price,
-                    basic_price,
                     on_display_raw,
                     on_display_price,
-                    price_value_outside_market,
-                    price_value_on_market,
-                    price_green_threshold,
-                    price_red_threshold,
                     source_updated_at,
                     captured_at,
                     ROW_NUMBER() OVER (
