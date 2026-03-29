@@ -119,6 +119,7 @@ function isDraftChanged(row: SalesPlanRowApi, draft: PlanDraft) {
 export function SalesPlanSection({ loading, error, rows, savingMap, saveError, onSaveRows }: Props) {
   const [drafts, setDrafts] = useState<Record<string, PlanDraft>>({});
   const [focusedCell, setFocusedCell] = useState<string>("");
+  const [floatingNotice, setFloatingNotice] = useState<string>("");
 
   useEffect(() => {
     const next: Record<string, PlanDraft> = {};
@@ -200,6 +201,12 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
   const hasChanges = changedStoreUids.length > 0;
   const savingAny = Object.values(savingMap).some(Boolean);
 
+  useEffect(() => {
+    if (!floatingNotice) return;
+    const timer = window.setTimeout(() => setFloatingNotice(""), 2600);
+    return () => window.clearTimeout(timer);
+  }, [floatingNotice]);
+
   async function commitAll() {
     const changedRows = rows.flatMap((row) => {
       const draft = drafts[row.store_uid] || toDraft(row);
@@ -221,6 +228,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
     });
     if (!changedRows.length) return;
     await onSaveRows(changedRows);
+    setFloatingNotice("Изменения сохранены");
   }
 
   return (
@@ -230,26 +238,6 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
       {!loading && !error ? (
         <>
           {saveError ? <div className="status error">{saveError}</div> : null}
-          <div className={styles.salesPlanToolbar}>
-            <div className={styles.salesPlanToolbarText}>
-              <div className={styles.salesPlanToolbarTitle}>Store-level цели и режимы расчёта</div>
-              <div className={styles.salesPlanToolbarHint}>
-                {hasChanges
-                  ? `Изменено магазинов: ${changedStoreUids.length}. Эти значения используются дальше в pricing и strategy.`
-                  : "Изменений нет. Любая карточка ниже управляет расчётами соответствующего магазина."}
-              </div>
-            </div>
-            <div className={styles.salesPlanToolbarActions}>
-              <button
-                type="button"
-                className="btn"
-                disabled={savingAny || !hasChanges}
-                onClick={() => void commitAll()}
-              >
-                {savingAny ? "Сохранение..." : "Сохранить изменения"}
-              </button>
-            </div>
-          </div>
           <div className={styles.salesPlanGrid}>
             {rows.map((row) => {
               const draft = drafts[row.store_uid] || toDraft(row);
@@ -291,7 +279,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                           aria-pressed={draft.strategy_mode === "mix"}
                           onClick={() => patchDraft(row.store_uid, (prev) => ({ ...prev, strategy_mode: "mix" }))}
                         >
-                          Микс
+                          Выше прибыль
                         </button>
                         <button
                           type="button"
@@ -299,44 +287,44 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                           aria-pressed={draft.strategy_mode === "mrc"}
                           onClick={() => patchDraft(row.store_uid, (prev) => ({ ...prev, strategy_mode: "mrc" }))}
                         >
-                          МРЦ
+                          Выше оборот
                         </button>
                       </div>
                     </div>
 
                     <div className={styles.salesPlanModeCard}>
                       <div className={styles.salesPlanModeLabel}>Целевой показатель</div>
-                      <div className={styles.modeToggleWrap}>
-                        <span className={styles.modeToggleText}>Прибыль</span>
+                      <div className={styles.segmentedSwitch} role="tablist" aria-label={`Целевой показатель ${row.store_name}`}>
                         <button
                           type="button"
-                          className={`toggle sm ${styles.selectorToggle} ${draft.earning_mode === "margin" ? "on" : ""}`}
-                          role="switch"
-                          aria-checked={draft.earning_mode === "margin"}
+                          className={`${styles.segmentedSwitchButton} ${draft.earning_mode === "profit" ? styles.segmentedSwitchButtonActive : ""}`}
+                          aria-pressed={draft.earning_mode === "profit"}
                           onClick={() => {
-                            patchDraft(row.store_uid, (prev) => {
-                              const nextMode = prev.earning_mode === "profit" ? "margin" : "profit";
-                              const nextDraft: PlanDraft =
-                                nextMode === "margin"
-                                  ? {
-                                      ...prev,
-                                      earning_mode: "margin",
-                                      target_margin_rub: prev.target_margin_rub || prev.target_profit_rub,
-                                      target_margin_percent: prev.target_margin_percent || prev.target_profit_percent,
-                                    }
-                                  : {
-                                      ...prev,
-                                      earning_mode: "profit",
-                                      target_profit_rub: prev.target_profit_rub || prev.target_margin_rub,
-                                      target_profit_percent: prev.target_profit_percent || prev.target_margin_percent,
-                                    };
-                              return nextDraft;
-                            });
+                            patchDraft(row.store_uid, (prev) => ({
+                              ...prev,
+                              earning_mode: "profit",
+                              target_profit_rub: prev.target_profit_rub || prev.target_margin_rub,
+                              target_profit_percent: prev.target_profit_percent || prev.target_margin_percent,
+                            }));
                           }}
                         >
-                          <span className="toggle-track"><span className="toggle-thumb" /></span>
+                          Прибыль
                         </button>
-                        <span className={styles.modeToggleText}>Маржа</span>
+                        <button
+                          type="button"
+                          className={`${styles.segmentedSwitchButton} ${draft.earning_mode === "margin" ? styles.segmentedSwitchButtonActive : ""}`}
+                          aria-pressed={draft.earning_mode === "margin"}
+                          onClick={() => {
+                            patchDraft(row.store_uid, (prev) => ({
+                              ...prev,
+                              earning_mode: "margin",
+                              target_margin_rub: prev.target_margin_rub || prev.target_profit_rub,
+                              target_margin_percent: prev.target_margin_percent || prev.target_profit_percent,
+                            }));
+                          }}
+                        >
+                          Маржа
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -420,6 +408,36 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
             })}
             {!rows.length ? <div className="status">Нет доступных магазинов.</div> : null}
           </div>
+          {(hasChanges || savingAny || floatingNotice || saveError) ? (
+            <div className={styles.salesPlanFloatingBar}>
+              <div className={styles.salesPlanFloatingMeta}>
+                <div className={styles.salesPlanFloatingTitle}>
+                  {saveError
+                    ? "Ошибка сохранения"
+                    : savingAny
+                      ? "Сохраняем изменения..."
+                      : hasChanges
+                        ? `Изменено магазинов: ${changedStoreUids.length}`
+                        : floatingNotice || "Изменения сохранены"}
+                </div>
+                {saveError ? (
+                  <div className={styles.salesPlanFloatingHint}>{saveError}</div>
+                ) : !hasChanges && floatingNotice ? (
+                  <div className={styles.salesPlanFloatingHint}>{floatingNotice}</div>
+                ) : null}
+              </div>
+              {hasChanges ? (
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={savingAny}
+                  onClick={() => void commitAll()}
+                >
+                  {savingAny ? "Сохранение..." : "Сохранить"}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </>
       ) : null}
     </SectionBlock>

@@ -978,59 +978,21 @@
   margin-bottom: 12px;
 }
 
-.salesPlanToolbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 14px;
-  padding: 16px 18px;
-  border: 1px solid rgba(132, 161, 214, 0.14);
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(11, 20, 36, 0.78), rgba(8, 16, 30, 0.9));
-}
-
-.salesPlanToolbarText {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.salesPlanToolbarTitle {
-  color: #edf4ff;
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.salesPlanToolbarHint {
-  color: #aabfdc;
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.salesPlanToolbarActions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
 .salesPlanGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .salesPlanCard {
   border: 1px solid rgba(132, 161, 214, 0.16);
-  border-radius: 22px;
+  border-radius: 18px;
   background:
     radial-gradient(circle at top right, rgba(76, 201, 240, 0.08), transparent 34%),
     linear-gradient(180deg, rgba(13, 24, 42, 0.9), rgba(8, 16, 30, 0.96));
-  padding: 18px;
+  padding: 14px;
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .salesPlanCardHead {
@@ -1042,13 +1004,13 @@
 
 .salesPlanCardTitleBlock {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
 .salesPlanCardEyebrow {
   color: var(--text-soft);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1;
   text-transform: uppercase;
@@ -1058,20 +1020,20 @@
 .salesPlanCardTitle {
   margin: 0;
   color: #eef5ff;
-  font-size: 22px;
-  line-height: 1.15;
+  font-size: 17px;
+  line-height: 1.12;
 }
 
 .salesPlanCardState {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
-  padding: 0 12px;
+  min-height: 28px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid rgba(132, 161, 214, 0.16);
   background: rgba(7, 14, 27, 0.5);
   color: #aac0dd;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -1085,22 +1047,22 @@
 .salesPlanModeGrid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 10px;
 }
 
 .salesPlanModeCard {
-  padding: 14px;
-  border-radius: 16px;
+  padding: 10px 12px;
+  border-radius: 14px;
   border: 1px solid rgba(132, 161, 214, 0.12);
   background: rgba(7, 14, 27, 0.42);
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .salesPlanModeLabel,
 .salesPlanFieldLabel {
   color: var(--text-soft);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   line-height: 1;
   text-transform: uppercase;
@@ -1110,16 +1072,54 @@
 .salesPlanFields {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 10px;
 }
 
 .salesPlanField {
-  padding: 14px;
-  border-radius: 16px;
+  padding: 10px 12px;
+  border-radius: 14px;
   border: 1px solid rgba(132, 161, 214, 0.12);
   background: rgba(7, 14, 27, 0.34);
   display: grid;
-  gap: 10px;
+  gap: 8px;
+}
+
+.salesPlanFloatingBar {
+  position: sticky;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 14;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(10, 18, 33, 0.96), rgba(8, 16, 30, 0.98));
+  box-shadow:
+    0 10px 28px rgba(3, 8, 18, 0.24),
+    inset 0 1px 0 rgba(132, 161, 214, 0.08);
+}
+
+.salesPlanFloatingMeta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.salesPlanFloatingTitle {
+  color: #eaf2ff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.salesPlanFloatingHint {
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.3;
 }
 
 .monitoringHeader {
