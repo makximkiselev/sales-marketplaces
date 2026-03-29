@@ -1,28 +1,36 @@
+import { useEffect, useState } from "react";
 import styles from "./DataSourcesPage.module.css";
 import { PageFrame } from "../../../components/page/PageKit";
-import { ControlTabs } from "../../../components/page/ControlKit";
-import { PanelCard, PanelGrid, SectionBlock } from "../../../components/page/SectionKit";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
-import { ExternalSystemsPanel } from "./components/ExternalSystemsPanel";
 import { GoogleSheetsWizardModal } from "./components/GoogleSheetsWizardModal";
-import { GoogleTablesPanel } from "./components/GoogleTablesPanel";
-import { OzonPanel } from "./components/OzonPanel";
 import { OzonWizardModal } from "./components/OzonWizardModal";
-import { WildberriesPanel } from "./components/WildberriesPanel";
-import { YandexMarketPanel } from "./components/YandexMarketPanel";
-import { YandexTablesPanel } from "./components/YandexTablesPanel";
 import { YandexWizardModal } from "./components/YandexWizardModal";
 import { useSourcesPageController } from "./useSourcesPageController";
-import { platformMeta } from "./types";
+import { DataSourcesDesktop } from "./DataSourcesDesktop";
+import { DataSourcesMobile } from "./DataSourcesMobile";
+import type { SourcesSectionItem } from "./DataSourcesRendererTypes";
+
+function useSourcesMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 960px)");
+    const sync = () => setIsMobile(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  return isMobile;
+}
 
 export default function DataSourcesPage() {
+  const isMobile = useSourcesMobile();
+  const controller = useSourcesPageController();
   const {
     sectionTab,
-    setSectionTab,
     integrations,
-    loading,
-    refreshAllLoading,
-    lastRefreshAt,
     wizardOpen,
     ymWizardMode,
     step,
@@ -32,13 +40,6 @@ export default function DataSourcesPage() {
     selectedCampaignIds,
     wizardLoading,
     wizardError,
-    shopCheckLoading,
-    gsSourceCheckLoading,
-    sourceFlowSavingKey,
-    flowSavingKey,
-    currencySavingKey,
-    fulfillmentSavingKey,
-    flowError,
     gsWizardOpen,
     gsWizardMode,
     gsStep,
@@ -56,6 +57,7 @@ export default function DataSourcesPage() {
     gsWorksheet,
     gsEditingSourceId,
     ozWizardOpen,
+    gsheetsSources,
     ozClientId,
     ozApiKey,
     ozSellerId,
@@ -68,17 +70,6 @@ export default function DataSourcesPage() {
     deleteRequest,
     deleteBusy,
     deleteError,
-    gsheetsSources,
-    ymAccounts,
-    ozAccounts,
-    sortedYmAccounts,
-    totalYmShops,
-    sortedOzonAccounts,
-    ymActionAccount,
-    ozActionAccount,
-    headerImportOn,
-    headerExportOn,
-    headerFlowDisabled,
     setApiKey,
     setBusinessId,
     setOzClientId,
@@ -88,17 +79,9 @@ export default function DataSourcesPage() {
     setGsSelectedAccountId,
     setGsWorksheet,
     setGsDropActive,
-    setYmActionBusinessId,
-    setOzActionClientId,
     setStep,
     setGsStep,
-    updateHeaderFlow,
-    updateDataFlow,
-    updateStoreCurrency,
-    updateStoreFulfillment,
     openWizard,
-    openAddShop,
-    openEditAccount,
     closeWizard,
     goToYmStep,
     proceedFromStep2,
@@ -106,10 +89,6 @@ export default function DataSourcesPage() {
     toggleCampaign,
     formatDateTime,
     formatRefreshLabel,
-    checkGsheetSource,
-    updateSourceFlow,
-    checkShop,
-    openGsWizard,
     chooseExistingGsSource,
     closeGsWizard,
     goToGsStep,
@@ -121,12 +100,16 @@ export default function DataSourcesPage() {
     getDeleteConfirmText,
     confirmDelete,
     useExistingGoogleAccount,
-    openOzonWizard,
     closeOzonWizard,
     connectOzon,
-    checkOzonAccount,
-    refreshAllStatuses,
-  } = useSourcesPageController();
+  } = controller;
+
+  const sectionItems: SourcesSectionItem[] = [
+    { id: "all", label: "Все источники" },
+    { id: "platforms", label: "Площадки" },
+    { id: "tables", label: "Внешние таблицы" },
+    { id: "external", label: "Внешние системы" },
+  ];
 
   return (
     <>
@@ -134,142 +117,13 @@ export default function DataSourcesPage() {
         title="Источники данных"
         subtitle="Интеграции, таблицы и внешние системы."
         className={styles.sourcesHeadCard}
-        actions={
-          <div className={styles.refreshBlock}>
-            <button
-              className={`btn primary ${styles.refreshButton} ${refreshAllLoading ? styles.refreshButtonLoading : ""}`}
-              onClick={() => void refreshAllStatuses()}
-              disabled={refreshAllLoading}
-            >
-              {refreshAllLoading ? "Обновление..." : "Обновить источники"}
-            </button>
-          </div>
-        }
-        meta={<div className={styles.refreshMeta}>Последнее обновление: {formatRefreshLabel(lastRefreshAt)}</div>}
-        toolbarLeft={
-          <ControlTabs
-            className={styles.sourcesTabs}
-            items={[
-              { id: "all", label: "Все источники" },
-              { id: "platforms", label: "Площадки" },
-              { id: "tables", label: "Внешние таблицы" },
-              { id: "external", label: "Внешние системы" },
-            ]}
-            activeId={sectionTab}
-            onChange={setSectionTab}
-          />
-        }
-        toolbarRight={
-          <div className={styles.flowInline}>
-            <span className={styles.flowInlineTitle}>Режим обмена</span>
-            <div className={styles.flowInlineItem}>
-              <span className="muted-text">Импорт</span>
-              <button
-                type="button"
-                className={`toggle sm ${headerImportOn ? "on" : ""}`}
-                role="switch"
-                aria-checked={headerImportOn}
-                aria-label="Переключить импорт данных"
-                disabled={headerFlowDisabled || flowSavingKey === `header-${sectionTab}-import`}
-                onClick={() => void updateHeaderFlow("import", !headerImportOn)}
-              >
-                <span className="toggle-track"><span className="toggle-thumb" /></span>
-              </button>
-            </div>
-            <div className={styles.flowInlineItem}>
-              <span className="muted-text">Экспорт</span>
-              <button
-                type="button"
-                className={`toggle sm ${headerExportOn ? "on" : ""}`}
-                role="switch"
-                aria-checked={headerExportOn}
-                aria-label="Переключить экспорт данных"
-                disabled={headerFlowDisabled || flowSavingKey === `header-${sectionTab}-export`}
-                onClick={() => void updateHeaderFlow("export", !headerExportOn)}
-              >
-                <span className="toggle-track"><span className="toggle-thumb" /></span>
-              </button>
-            </div>
-          </div>
-        }
       >
-        {flowError ? <div className={`status error ${styles.flowErrorInline}`}>{flowError}</div> : null}
+        {isMobile ? (
+          <DataSourcesMobile controller={controller} sectionItems={sectionItems} />
+        ) : (
+          <DataSourcesDesktop controller={controller} sectionItems={sectionItems} />
+        )}
       </PageFrame>
-
-      {(sectionTab === "all" || sectionTab === "platforms") ? (
-      <SectionBlock title="Площадки">
-          <PanelGrid className={styles.platformRows}>
-            <YandexMarketPanel
-              accounts={sortedYmAccounts}
-              totalShops={totalYmShops}
-              actionAccount={ymActionAccount}
-              shopCheckLoading={shopCheckLoading}
-              flowSavingKey={flowSavingKey}
-              currencySavingKey={currencySavingKey}
-              fulfillmentSavingKey={fulfillmentSavingKey}
-              ymActionBusinessId={ymActionBusinessId}
-              setYmActionBusinessId={setYmActionBusinessId}
-              openWizard={() => openWizard("yandex_market")}
-              openEditAccount={openEditAccount}
-              openAddShop={openAddShop}
-              openDeleteConfirm={openDeleteConfirm}
-              updateStoreFulfillment={updateStoreFulfillment}
-              updateStoreCurrency={updateStoreCurrency}
-              updateDataFlow={updateDataFlow}
-              checkShop={checkShop}
-              formatDateTime={formatDateTime}
-              description={platformMeta.yandex_market.desc}
-            />
-
-            <OzonPanel
-              accounts={sortedOzonAccounts}
-              actionAccount={ozActionAccount}
-              ozActionClientId={ozActionClientId}
-              setOzActionClientId={setOzActionClientId}
-              ozCheckLoading={ozCheckLoading}
-              flowSavingKey={flowSavingKey}
-              currencySavingKey={currencySavingKey}
-              fulfillmentSavingKey={fulfillmentSavingKey}
-              openOzonWizard={openOzonWizard}
-              openDeleteConfirm={openDeleteConfirm}
-              updateStoreFulfillment={updateStoreFulfillment}
-              updateStoreCurrency={updateStoreCurrency}
-              updateDataFlow={updateDataFlow}
-              checkOzonAccount={checkOzonAccount}
-              formatDateTime={formatDateTime}
-              description={platformMeta.ozon.desc}
-            />
-
-            <WildberriesPanel title={platformMeta.wildberries.label} description={platformMeta.wildberries.desc} />
-          </PanelGrid>
-      </SectionBlock>
-      ) : null}
-
-      {(sectionTab === "all" || sectionTab === "tables") ? (
-      <SectionBlock title="Внешние таблицы">
-          <PanelGrid className={styles.platformRows}>
-            <GoogleTablesPanel
-              loading={loading}
-              sources={gsheetsSources}
-              gsSourceCheckLoading={gsSourceCheckLoading}
-              sourceFlowSavingKey={sourceFlowSavingKey}
-              openGsWizard={openGsWizard}
-              openDeleteConfirm={openDeleteConfirm}
-              updateSourceFlow={updateSourceFlow}
-              checkGsheetSource={checkGsheetSource}
-              formatDateTime={formatDateTime}
-            />
-
-            <YandexTablesPanel />
-          </PanelGrid>
-      </SectionBlock>
-      ) : null}
-
-      {(sectionTab === "all" || sectionTab === "external") ? (
-      <SectionBlock title="Внешние системы">
-          <ExternalSystemsPanel />
-      </SectionBlock>
-      ) : null}
 
       {deleteRequest ? (
         <DeleteConfirmModal
