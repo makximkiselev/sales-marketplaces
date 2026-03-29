@@ -1,8 +1,10 @@
+import { useState } from "react";
 import styles from "./PricingSettingsPage.module.css";
 import { PageFrame } from "../../../components/page/PageKit";
 import { ControlTabs } from "../../../components/page/ControlKit";
 import { CogsSourceModal } from "./components/CogsSourceModal";
 import { LogisticsImportModal } from "./components/LogisticsImportModal";
+import { BulkFillColumnModal } from "./components/BulkFillColumnModal";
 import { GeneralSettingsPanel } from "./components/GeneralSettingsPanel";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
@@ -10,8 +12,11 @@ import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection"
 import { SalesPlanSection } from "./components/SalesPlanSection";
 
 import { usePricingSettingsController } from "./usePricingSettingsController";
+import type { EditableFieldKey } from "./types";
 
 export default function PricingSettingsPage() {
+  const [bulkField, setBulkField] = useState<EditableFieldKey>("commission_percent");
+  const [bulkFillOpen, setBulkFillOpen] = useState(false);
   const {
     loading,
     refreshing,
@@ -125,6 +130,9 @@ export default function PricingSettingsPage() {
   const activeSection = sectionItems.find((item) => item.id === settingsTab) ?? sectionItems[0];
   const activeStore = storeTabs.find((store) => store.key === activeStoreTabKey) ?? null;
   const isSalesPlanSection = settingsTab === "sales_plan";
+  const bulkFillColumns = tableColumns
+    .filter((column) => column.kind === "input" && column.field)
+    .map((column) => ({ field: column.field as EditableFieldKey, label: column.label }));
   const currentSavedAt = settingsTab === "logistics" ? logisticsStoreSavedAt : storeSettingsSavedAt;
   const currentSaveState = settingsTab === "logistics"
     ? logisticsStoreSaving
@@ -293,7 +301,6 @@ export default function PricingSettingsPage() {
                 formatNum={formatNum}
                 queueSaveCell={queueSaveCell}
                 flushSaveCell={flushSaveCell}
-                applyColumnValue={applyColumnValue}
               />
             ) : null}
 
@@ -334,6 +341,15 @@ export default function PricingSettingsPage() {
                   <div className={styles.stickyActionHint}>{currentSaveState}</div>
                 </div>
                 <div className={styles.stickyActionButtons}>
+                  {settingsTab === "categories" ? (
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={() => setBulkFillOpen(true)}
+                    >
+                      Заполнить всем
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="btn ghost"
@@ -380,6 +396,19 @@ export default function PricingSettingsPage() {
           onClose={() => setStockModalOpen(false)}
         />
       )}
+
+      {settingsTab === "categories" && bulkFillOpen && bulkFillColumns.length ? (
+        <BulkFillColumnModal
+          fields={bulkFillColumns}
+          initialField={bulkField}
+          onClose={() => setBulkFillOpen(false)}
+          onConfirm={async (field, value) => {
+            setBulkField(field);
+            await applyColumnValue(field, value);
+            setBulkFillOpen(false);
+          }}
+        />
+      ) : null}
 
       <LogisticsImportModal
         open={logisticsImportOpen}

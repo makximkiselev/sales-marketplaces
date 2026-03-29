@@ -4,16 +4,18 @@ import styles from "../PricingSettingsPage.module.css";
 import type { EditableFieldKey } from "../types";
 
 type Props = {
-  field: EditableFieldKey;
-  label: string;
+  fields: Array<{ field: EditableFieldKey; label: string }>;
+  initialField: EditableFieldKey;
   onClose: () => void;
-  onConfirm: (value: string) => Promise<void> | void;
+  onConfirm: (field: EditableFieldKey, value: string) => Promise<void> | void;
 };
 
-export function BulkFillColumnModal({ field, label, onClose, onConfirm }: Props) {
+export function BulkFillColumnModal({ fields, initialField, onClose, onConfirm }: Props) {
+  const [field, setField] = useState<EditableFieldKey>(initialField);
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const activeField = fields.find((item) => item.field === field) ?? fields[0];
 
   const suffix = useMemo(() => {
     if (field.endsWith("_percent")) return "%";
@@ -25,7 +27,7 @@ export function BulkFillColumnModal({ field, label, onClose, onConfirm }: Props)
     setSaving(true);
     setError("");
     try {
-      await onConfirm(value);
+      await onConfirm(field, value);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setSaving(false);
@@ -36,7 +38,7 @@ export function BulkFillColumnModal({ field, label, onClose, onConfirm }: Props)
 
   return (
     <WizardModal
-      title={`Заполнить столбец: ${label}`}
+      title="Массовое заполнение"
       onClose={onClose}
       steps={[{ key: "bulk-fill", label: "Заполнение", active: true }]}
       error={error}
@@ -54,10 +56,24 @@ export function BulkFillColumnModal({ field, label, onClose, onConfirm }: Props)
     >
       <div className={styles.bulkFillModalBody}>
         <div className={styles.bulkFillModalText}>
-          Значение будет записано во все ячейки этого столбца для текущего магазина.
+          Выбери поле и значение. Оно будет записано во все ячейки этого поля для текущего магазина.
         </div>
         <label className={styles.bulkFillField}>
-          <span className={styles.columnSelectLabel}>{label}</span>
+          <span className={styles.columnSelectLabel}>Поле</span>
+          <select
+            className={styles.matrixSelect}
+            value={field}
+            onChange={(e) => setField(e.target.value as EditableFieldKey)}
+          >
+            {fields.map((item) => (
+              <option key={item.field} value={item.field}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={styles.bulkFillField}>
+          <span className={styles.columnSelectLabel}>{activeField?.label ?? "Значение"}</span>
           <div className={styles.inputWithSuffix}>
             <input
               className={`input ${styles.settingInput}`}

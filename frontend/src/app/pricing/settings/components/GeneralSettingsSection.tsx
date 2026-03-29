@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { SectionBlock } from "../../../../components/page/SectionKit";
 import styles from "../PricingSettingsPage.module.css";
 import type { EditableFieldKey, PricingCategoryRow, PricingTableColumn } from "../types";
-import { BulkFillColumnModal } from "./BulkFillColumnModal";
 
 type CategoryTreeNode = {
   id: string;
@@ -87,7 +86,6 @@ type Props = {
   formatNum: (value: number | null | undefined) => string;
   queueSaveCell: (row: PricingCategoryRow, field: EditableFieldKey, rawValue: string) => void;
   flushSaveCell: (row: PricingCategoryRow, field: EditableFieldKey, rawValue?: string) => void;
-  applyColumnValue: (field: EditableFieldKey, rawValue: string) => Promise<void> | void;
 };
 
 export function GeneralSettingsSection({
@@ -104,13 +102,10 @@ export function GeneralSettingsSection({
   formatNum,
   queueSaveCell,
   flushSaveCell,
-  applyColumnValue,
 }: Props) {
-  const [bulkField, setBulkField] = useState<EditableFieldKey | null>(null);
   const [selectedKey, setSelectedKey] = useState("");
   const [expandedPaths, setExpandedPaths] = useState<string[]>([]);
   const [treeQuery, setTreeQuery] = useState("");
-  const bulkColumn = bulkField ? tableColumns.find((col) => col.field === bulkField) ?? null : null;
   const categoryTree = buildCategoryTree(categoryRows);
   const fallbackRow = findFirstLeaf(categoryTree);
   const selectedRow = categoryRows.find((row) => row.key === selectedKey) ?? fallbackRow;
@@ -242,13 +237,6 @@ export function GeneralSettingsSection({
                           <div className={styles.categorySidebarTitle}>Каталог категорий</div>
                           <div className={styles.categorySidebarMeta}>Раскрывай только нужную ветку, а не весь список сразу.</div>
                         </div>
-                        <button
-                          type="button"
-                          className="btn ghost"
-                          onClick={() => setBulkField("commission_percent")}
-                        >
-                          Заполнить комиссию всем
-                        </button>
                       </div>
                       <div className={styles.categorySidebarSearch}>
                         <input
@@ -355,17 +343,6 @@ export function GeneralSettingsSection({
               </>
             )}
           </>
-        ) : null}
-        {bulkField && bulkColumn?.field ? (
-          <BulkFillColumnModal
-            field={bulkColumn.field}
-            label={bulkColumn.label}
-            onClose={() => setBulkField(null)}
-            onConfirm={async (value) => {
-              await applyColumnValue(bulkColumn.field!, value);
-              setBulkField(null);
-            }}
-          />
         ) : null}
     </SectionBlock>
   );
