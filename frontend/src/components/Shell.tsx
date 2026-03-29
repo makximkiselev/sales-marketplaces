@@ -41,8 +41,6 @@ const groups: NavGroup[] = [
       { href: "/sales/elasticity", label: "Эластичность" },
       { href: "/sales/coinvest", label: "Соинвест" },
       { href: "/pricing/lab", label: "Лаборатория цены" },
-      { href: "/settings/fx-rates", label: "Курс валют" },
-      { href: "/pricing/settings", label: "Настройки цены" },
     ],
   },
   {
