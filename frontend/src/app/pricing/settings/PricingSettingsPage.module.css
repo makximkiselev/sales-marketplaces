@@ -2,6 +2,12 @@
   padding: 16px 18px 10px;
 }
 
+.headCardInner {
+  max-width: 1480px;
+  width: 100%;
+  margin-inline: auto;
+}
+
 .headInner {
   display: flex;
   align-items: center;
@@ -89,24 +95,30 @@
 }
 
 .desktopSectionTabsRow :global(.btn) {
-  height: auto;
+  height: 38px;
   min-height: 0;
-  padding: 0 0 10px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #8fa5c4;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: rgba(10, 18, 32, 0.24);
+  color: #a8bdd8;
   box-shadow: none;
 }
 
 .desktopSectionTabsRow :global(.btn:hover) {
   color: #deebff;
-  background: transparent;
+  background: rgba(18, 32, 54, 0.52);
+  border-color: rgba(132, 161, 214, 0.12);
 }
 
 .desktopSectionTabsRow :global(.btn).tabBtnActive {
   color: #eef5ff;
-  border-bottom: 2px solid rgba(135, 209, 255, 0.9);
+  border-color: rgba(101, 189, 255, 0.28);
+  background:
+    linear-gradient(180deg, rgba(34, 76, 118, 0.58), rgba(17, 31, 53, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(192, 223, 255, 0.1),
+    0 10px 22px rgba(4, 9, 18, 0.18);
 }
 
 .desktopRailCard {
@@ -269,6 +281,12 @@
   display: grid;
   gap: 16px;
   padding-bottom: 88px;
+}
+
+.settingsMainCompact {
+  max-width: 1280px;
+  width: 100%;
+  justify-self: center;
 }
 
 .workspaceHero {
