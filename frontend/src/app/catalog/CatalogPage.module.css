@@ -147,3 +147,199 @@
   color: var(--text-soft);
   padding: 24px 10px;
 }
+
+.mobilePageCard :global(.inner) {
+  padding: 14px 14px 18px;
+}
+
+.mobileCatalogShell {
+  display: grid;
+  gap: 14px;
+}
+
+.mobileCatalogTabs {
+  gap: 12px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  width: 100%;
+  padding: 0 0 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 0;
+  background: transparent;
+  scrollbar-width: none;
+}
+
+.mobileCatalogTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mobileCatalogTabs :global(.btn) {
+  height: 34px;
+  min-height: 0;
+  padding: 0 2px 8px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent;
+  color: #8ea5c4;
+  font-size: 13px;
+  font-weight: 700;
+  position: relative;
+  white-space: nowrap;
+}
+
+.mobileCatalogTabs :global(.btn)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #55c8ff, #9fe4ff);
+  opacity: 0;
+  transform: scaleX(0.35);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.mobileCatalogTabs :global(button[data-active="true"]) {
+  color: #eef5ff !important;
+}
+
+.mobileCatalogTabs :global(button[data-active="true"])::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.mobileCatalogControls {
+  display: grid;
+  gap: 10px;
+}
+
+.mobileSearchBlock {
+  display: grid;
+  gap: 8px;
+}
+
+.mobileSearchInput {
+  height: 40px;
+}
+
+.mobileCatalogMeta {
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+.mobileCatalogCards {
+  display: grid;
+  gap: 12px;
+}
+
+.mobileCatalogCard {
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(12, 23, 41, 0.9), rgba(8, 16, 30, 0.86));
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.mobileCatalogCardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mobileCatalogSku {
+  color: #eef5ff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.mobileCatalogUpdated {
+  color: var(--text-soft);
+  font-size: 11px;
+  text-align: right;
+}
+
+.mobileCatalogName {
+  color: #e9f2ff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.mobileCatalogPath {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.mobileCatalogStoreGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.mobileCatalogStoreCard {
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 14px;
+  background: rgba(7, 14, 27, 0.42);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.mobileCatalogStoreTitle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  color: #edf4ff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mobileCatalogStoreSub {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mobileCatalogMetric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #d9e6fb;
+  font-size: 12px;
+}
+
+.mobileCatalogMetricMuted {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.mobileCatalogPager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mobileCatalogPagerMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #d9e6fb;
+  font-size: 13px;
+}
+
+.mobileCatalogPageSize {
+  width: 88px;
+  height: 36px;
+}

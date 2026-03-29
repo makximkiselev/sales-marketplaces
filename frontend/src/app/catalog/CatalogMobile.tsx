@@ -1,0 +1,127 @@
+import { PageFrame } from "../../components/page/PageKit";
+import { ControlTabs } from "../../components/page/ControlKit";
+import commonStyles from "../pricing/_components/PricingPageCommon.module.css";
+import styles from "./CatalogPage.module.css";
+import type { CatalogController } from "./CatalogRendererTypes";
+
+type Props = {
+  controller: CatalogController;
+  treeSelector: React.ReactNode;
+};
+
+export function CatalogMobile({ controller, treeSelector }: Props) {
+  const {
+    error,
+    tab,
+    setTab,
+    searchDraft,
+    setSearchDraft,
+    page,
+    setPage,
+    pageSize,
+    setPageSize,
+    selectedTreePath,
+    rows,
+    totalCount,
+    totalPages,
+    tableLoading,
+    tabItems,
+  } = controller;
+
+  return (
+    <PageFrame
+      title="Список товаров"
+      subtitle="Каталог в мобильном формате без горизонтальной таблицы."
+      className={styles.mobilePageCard}
+    >
+      <div className={styles.mobileCatalogShell}>
+        <ControlTabs
+          className={styles.mobileCatalogTabs}
+          items={tabItems.map((item) => ({ id: item.id, label: item.label, badge: "badge" in item ? item.badge : undefined }))}
+          activeId={tab}
+          onChange={setTab}
+        />
+
+        <div className={styles.mobileCatalogControls}>
+          <div className={styles.treeSourcePanel}>{treeSelector}</div>
+          <div className={styles.mobileSearchBlock}>
+            <label className={commonStyles.fieldLabel} htmlFor="catalog-mobile-search">Поиск</label>
+            <input
+              id="catalog-mobile-search"
+              className={`input ${styles.mobileSearchInput}`}
+              value={searchDraft}
+              onChange={(e) => setSearchDraft(e.target.value)}
+              placeholder="Поиск по SKU или наименованию"
+            />
+          </div>
+        </div>
+
+        {error ? <div className="status error">{error}</div> : null}
+
+        <div className={styles.mobileCatalogMeta}>
+          {tableLoading ? "Обновление..." : `Всего: ${totalCount}`}
+          {selectedTreePath ? ` • ${selectedTreePath}` : ""}
+        </div>
+
+        <div className={styles.mobileCatalogCards}>
+          {rows.length === 0 ? (
+            <div className={styles.placeholder}>{tableLoading ? "Загрузка..." : "Нет товаров для выбранных параметров"}</div>
+          ) : (
+            rows.map((row) => (
+              <article key={row.sku} className={styles.mobileCatalogCard}>
+                <div className={styles.mobileCatalogCardHead}>
+                  <div className={styles.mobileCatalogSku}>{row.sku}</div>
+                  <div className={styles.mobileCatalogUpdated}>
+                    {row.updated_at ? new Date(row.updated_at).toLocaleString("ru-RU") : "—"}
+                  </div>
+                </div>
+                <div className={styles.mobileCatalogName}>{row.name || "—"}</div>
+                <div className={styles.mobileCatalogPath}>{(row.tree_path || []).join(" / ") || "Не определено"}</div>
+                <div className={styles.mobileCatalogStoreGrid}>
+                  {controller.visibleStores.map((store) => (
+                    <div key={`${row.sku}-${store.store_uid}`} className={styles.mobileCatalogStoreCard}>
+                      <div className={styles.mobileCatalogStoreTitle}>
+                        <span>{store.label}</span>
+                        <span className={styles.mobileCatalogStoreSub}>{store.store_id}</span>
+                      </div>
+                      <div className={styles.mobileCatalogMetric}>
+                        <span>Размещение</span>
+                        <strong>{row.placements?.[store.store_uid] ? "Есть" : "Нет"}</strong>
+                      </div>
+                      <div className={styles.mobileCatalogMetricMuted}>Цены появятся после расчета</div>
+                      <div className={styles.mobileCatalogMetricMuted}>Заработок появится после расчета</div>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+
+        <div className={styles.mobileCatalogPager}>
+          <button className="btn ghost" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
+            Назад
+          </button>
+          <div className={styles.mobileCatalogPagerMeta}>
+            <span>{page} / {totalPages}</span>
+            <select
+              className={`input ${styles.mobileCatalogPageSize}`}
+              value={pageSize}
+              onChange={(e) => {
+                setPage(1);
+                setPageSize(Number(e.target.value) || 50);
+              }}
+            >
+              {[25, 50, 100, 200, -1].map((n) => (
+                <option key={n} value={n}>{n < 0 ? "Все" : n}</option>
+              ))}
+            </select>
+          </div>
+          <button className="btn ghost" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page >= totalPages}>
+            Дальше
+          </button>
+        </div>
+      </div>
+    </PageFrame>
+  );
+}

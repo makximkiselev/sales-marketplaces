@@ -1,14 +1,30 @@
+import { useEffect, useState } from "react";
 import PricingCatalogFrame from "../pricing/_components/PricingCatalogFrame";
 import commonStyles from "../pricing/_components/PricingPageCommon.module.css";
-import { tabKeyForStore } from "../_shared/catalogState";
 import { useCatalogPageController } from "./useCatalogPageController";
+import { CatalogDesktop } from "./CatalogDesktop";
+import { CatalogMobile } from "./CatalogMobile";
 import styles from "./CatalogPage.module.css";
+
+function useCatalogMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(max-width: 960px)");
+    const sync = () => setIsMobile(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
+  return isMobile;
+}
 
 export default function CatalogPage() {
   const controller = useCatalogPageController();
+  const isMobile = useCatalogMobile();
   const {
-    loading,
-    error,
     stores,
     treeMode,
     setTreeMode,
@@ -30,15 +46,7 @@ export default function CatalogPage() {
     flatTree,
     rows,
     visibleStores,
-    totalCount,
-    totalPages,
     tableLoading,
-    activeStoreLabel,
-    expandedSize,
-    isExpanded,
-    onToggleTree,
-    onToggleExpand,
-    onToggleExpandAll,
     tabItems,
     context,
   } = controller;
@@ -191,61 +199,13 @@ export default function CatalogPage() {
     </table>
   );
 
-  return (
-    <PricingCatalogFrame
-      title="Список товаров"
-      subtitle="Быстрый свод по товарам, размещению и будущим ценовым/рекламным метрикам."
-      tabs={(
-        <>
-          {tabItems.map((item) => (
-            <button
-              key={item.id}
-              className={`btn inline ${commonStyles.tabBtn} ${tab === item.id ? commonStyles.tabBtnActive : ""}`}
-              onClick={() => setTab(item.id)}
-            >
-              <span>{item.label}</span>
-              {"badge" in item && item.badge ? <span className={commonStyles.tabBadge}>{item.badge}</span> : null}
-            </button>
-          ))}
-        </>
-      )}
-      searchValue={searchDraft}
-      onSearchChange={setSearchDraft}
-      searchPlaceholder="Поиск по SKU или наименованию"
-      error={error}
-      treeSelector={treeSelector}
-      treeMeta={tab === "all" ? "Сводный список товаров" : activeStoreLabel}
-      flatTree={flatTree}
-      selectedTreePath={selectedTreePath}
-      expandedSize={expandedSize}
-      isExpanded={isExpanded}
-      onToggleExpandAll={onToggleExpandAll}
-      onToggleExpand={onToggleExpand}
-      onToggleTree={onToggleTree}
-      treeLoadingText={flatTree.length === 0 ? (loading || tableLoading ? "Загрузка..." : "Нет данных для дерева") : ""}
-      tableTitle="Товары"
-      tableMeta={
-        <>
-          {tableLoading ? "Обновление..." : `Всего: ${totalCount}`}
-          {selectedTreePath ? ` • Фильтр: ${selectedTreePath}` : ""}
-        </>
-      }
-      table={treeMode === "external" ? (
-        <div className={styles.placeholder}>
-          Режим внешнего источника древа подготовлен в интерфейсе. Подключение дерева из таблиц и внешних систем будет следующим шагом.
-        </div>
-      ) : table}
-      page={page}
-      totalPages={totalPages}
-      onPrevPage={() => setPage((current) => Math.max(1, current - 1))}
-      onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
-      canPrev={page > 1}
-      canNext={page < totalPages}
-      pageSize={pageSize}
-      onPageSizeChange={(value) => {
-        setPage(1);
-        setPageSize(value);
-      }}
-    />
-  );
+  if (isMobile) {
+    return <CatalogMobile controller={controller} treeSelector={treeSelector} />;
+  }
+
+  return <CatalogDesktop controller={controller} treeSelector={treeSelector} table={treeMode === "external" ? (
+    <div className={styles.placeholder}>
+      Режим внешнего источника древа подготовлен в интерфейсе. Подключение дерева из таблиц и внешних систем будет следующим шагом.
+    </div>
+  ) : table} />;
 }
