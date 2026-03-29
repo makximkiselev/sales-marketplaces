@@ -617,6 +617,71 @@
   gap: 12px;
 }
 
+.planRelayCard {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(12, 22, 39, 0.64), rgba(9, 18, 34, 0.58));
+  padding: 14px 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.planRelayHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.planRelayBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(76, 201, 240, 0.24);
+  background: rgba(18, 41, 62, 0.56);
+  color: #bdeaff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.planRelayText {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.planRelayGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.planRelayItem {
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 14px;
+  background: rgba(7, 14, 27, 0.42);
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.planRelayItemLabel {
+  color: var(--text-soft);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.planRelayItemValue {
+  color: #edf4ff;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
 .logisticsSettingsGrid {
   grid-template-columns: minmax(520px, 1.7fr) minmax(300px, 1fr) minmax(300px, 1fr) minmax(260px, 0.85fr);
 }
@@ -1539,6 +1604,10 @@
   }
 
   .globalSettingsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .planRelayGrid {
     grid-template-columns: 1fr;
   }
 

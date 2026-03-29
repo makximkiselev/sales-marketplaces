@@ -262,6 +262,7 @@ export default function PricingSettingsPage() {
                   cogsSource={cogsSource}
                   stockSource={stockSource}
                   activeStoreId={activeStoreId}
+                  showTargets={false}
                   setEarningMode={setEarningMode}
                   setEarningUnit={setEarningUnit}
                   setActiveTargetValue={setActiveTargetValue}

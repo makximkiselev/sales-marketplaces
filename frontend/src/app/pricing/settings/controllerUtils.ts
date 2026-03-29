@@ -91,6 +91,15 @@ export function buildCategoryRows(rows: PricingCategoryTreeApiRow[]): PricingCat
       target_margin_percent: r.target_margin_percent == null ? null : Number(r.target_margin_percent),
     },
   }));
+  const subtreeCounts = new Map<string, number>();
+  for (const row of built) {
+    const path = row.leafPath || row.key;
+    const segments = String(path).split(" / ").map((part) => part.trim()).filter(Boolean);
+    for (let size = 1; size <= segments.length; size += 1) {
+      const prefix = segments.slice(0, size).join(" / ");
+      subtreeCounts.set(prefix, Number(subtreeCounts.get(prefix) || 0) + Number(row.itemsCount || 0));
+    }
+  }
   const byLeaf = new Map(built.map((row) => [row.leafPath || row.key, row] as const));
   const fields: EditableFieldKey[] = [
     "commission_percent",
@@ -120,7 +129,11 @@ export function buildCategoryRows(rows: PricingCategoryTreeApiRow[]): PricingCat
         }
       }
     }
-    return { ...row, values: nextValues };
+    return {
+      ...row,
+      itemsCount: Number(subtreeCounts.get(row.leafPath || row.key) || row.itemsCount || 0),
+      values: nextValues,
+    };
   }).filter((row, _, allRows) => {
     if (row.subcategoryLevels.length < 3) return true;
     const parts = [row.category, ...row.subcategoryLevels].filter(Boolean);

@@ -42,8 +42,40 @@ export function GeneralSettingsPanel({
   setStockModalOpen,
   setStockSource,
 }: Props) {
+  const targetModeLabel = earningMode === "margin" ? "Маржа" : "Прибыль";
+  const targetValueLabel = activeTargetValue?.trim()
+    ? `${activeTargetValue}${earningUnit === "percent" ? "%" : ` ${moneySign}`}`
+    : "Не задан";
+  const targetDrrLabel = targetDrr?.trim() ? `${targetDrr}%` : "Не задан";
+
   return (
     <div className={styles.globalSettingsGrid}>
+      {!showTargets ? (
+        <div className={styles.planRelayCard}>
+          <div className={styles.planRelayHead}>
+            <div className={styles.settingLabel}>Цели из плана продаж</div>
+            <span className={styles.planRelayBadge}>Транслируется автоматически</span>
+          </div>
+          <div className={styles.planRelayText}>
+            Целевой показатель редактируется в разделе «План продаж», а здесь только применяется к категорийным правилам.
+          </div>
+          <div className={styles.planRelayGrid}>
+            <div className={styles.planRelayItem}>
+              <span className={styles.planRelayItemLabel}>Режим</span>
+              <strong className={styles.planRelayItemValue}>{targetModeLabel}</strong>
+            </div>
+            <div className={styles.planRelayItem}>
+              <span className={styles.planRelayItemLabel}>Цель</span>
+              <strong className={styles.planRelayItemValue}>{targetValueLabel}</strong>
+            </div>
+            <div className={styles.planRelayItem}>
+              <span className={styles.planRelayItemLabel}>Целевой ДРР</span>
+              <strong className={styles.planRelayItemValue}>{targetDrrLabel}</strong>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {showTargets ? (
         <div className={styles.settingField}>
           <div className={styles.settingLabel}>Целевой показатель</div>
