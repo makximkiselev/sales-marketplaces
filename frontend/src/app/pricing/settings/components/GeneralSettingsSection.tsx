@@ -72,6 +72,20 @@ function findFirstLeaf(nodes: CategoryTreeNode[]): PricingCategoryRow | null {
   return null;
 }
 
+function collectExpandableNodeIds(nodes: CategoryTreeNode[]): string[] {
+  const ids: string[] = [];
+  const walk = (items: CategoryTreeNode[]) => {
+    for (const node of items) {
+      if (node.children.length) {
+        ids.push(node.id);
+        walk(node.children);
+      }
+    }
+  };
+  walk(nodes);
+  return ids;
+}
+
 type Props = {
   loading: boolean;
   error: string;
@@ -115,6 +129,7 @@ export function GeneralSettingsSection({
   const [expandedPaths, setExpandedPaths] = useState<string[]>([]);
   const [treeQuery, setTreeQuery] = useState("");
   const categoryTree = buildCategoryTree(categoryRows);
+  const expandableNodeIds = collectExpandableNodeIds(categoryTree);
   const fallbackRow = findFirstLeaf(categoryTree);
   const selectedRow = categoryRows.find((row) => row.key === selectedKey) ?? fallbackRow;
   const inputColumns = tableColumns.filter((col) => col.kind === "input" && col.field);
@@ -146,6 +161,10 @@ export function GeneralSettingsSection({
     setExpandedPaths((current) =>
       current.includes(pathId) ? current.filter((id) => id !== pathId) : [...current, pathId],
     );
+  }
+
+  function toggleAllNodes() {
+    setExpandedPaths((current) => (current.length ? [] : expandableNodeIds));
   }
 
   function rowHasOverrides(row: PricingCategoryRow | null) {
@@ -243,6 +262,9 @@ export function GeneralSettingsSection({
             onChange={(e) => setTreeQuery(e.target.value)}
             placeholder="Поиск по категории или ветке"
           />
+          <button type="button" className={`btn ghost ${styles.categorySidebarAction}`} onClick={toggleAllNodes}>
+            {expandedPaths.length ? "Свернуть все" : "Развернуть все"}
+          </button>
         </div>
         <div className={styles.categorySidebarList}>
           {renderTree(filterTree(categoryTree))}
