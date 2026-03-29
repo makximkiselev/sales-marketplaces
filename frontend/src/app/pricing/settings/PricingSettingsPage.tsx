@@ -207,7 +207,7 @@ export default function PricingSettingsPage() {
                 onChange={(id) => setSettingsTab(id)}
               />
             </div>
-            <div className={styles.workspaceHero}>
+            <div className={`${styles.workspaceHero} ${isSalesPlanSection ? styles.workspaceHeroCompact : ""}`}>
               <div className={styles.workspaceHeroMain}>
                 {!isSalesPlanSection ? <div className={styles.workspaceEyebrow}>{activeSection.title}</div> : null}
                 <div className={styles.workspaceTitleRow}>

@@ -3,7 +3,7 @@
 }
 
 .headCardInner {
-  max-width: 1480px;
+  max-width: 1320px;
   width: 100%;
   margin-inline: auto;
 }
@@ -66,7 +66,7 @@
   grid-template-columns: minmax(250px, 300px) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
-  max-width: 1480px;
+  max-width: 1320px;
   width: 100%;
   margin-inline: auto;
 }
@@ -87,38 +87,47 @@
 }
 
 .desktopSectionTabsRow {
-  gap: 24px;
+  gap: 12px;
   flex-wrap: nowrap;
   overflow-x: auto;
-  padding: 0 0 12px;
-  border-bottom: 1px solid rgba(132, 161, 214, 0.14);
+  padding: 8px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(11, 21, 38, 0.86), rgba(8, 16, 29, 0.92));
+  box-shadow:
+    inset 0 1px 0 rgba(132, 161, 214, 0.05),
+    0 1px 0 rgba(6, 11, 22, 0.5);
 }
 
 .desktopSectionTabsRow :global(.btn) {
-  height: 38px;
+  height: 42px;
   min-height: 0;
-  padding: 0 14px;
-  border: 1px solid transparent;
+  padding: 0 18px;
+  border: 1px solid rgba(132, 161, 214, 0.06);
   border-radius: 999px;
-  background: rgba(10, 18, 32, 0.24);
-  color: #a8bdd8;
+  background: transparent;
+  color: #97adca;
+  font-size: 13px;
+  font-weight: 700;
   box-shadow: none;
 }
 
 .desktopSectionTabsRow :global(.btn:hover) {
   color: #deebff;
-  background: rgba(18, 32, 54, 0.52);
-  border-color: rgba(132, 161, 214, 0.12);
+  background: rgba(18, 32, 54, 0.42);
+  border-color: rgba(132, 161, 214, 0.18);
 }
 
 .desktopSectionTabsRow :global(.btn).tabBtnActive {
   color: #eef5ff;
-  border-color: rgba(101, 189, 255, 0.28);
+  border-color: rgba(101, 189, 255, 0.34);
   background:
-    linear-gradient(180deg, rgba(34, 76, 118, 0.58), rgba(17, 31, 53, 0.9));
+    linear-gradient(180deg, rgba(42, 95, 145, 0.78), rgba(20, 38, 63, 0.94));
   box-shadow:
     inset 0 1px 0 rgba(192, 223, 255, 0.1),
-    0 10px 22px rgba(4, 9, 18, 0.18);
+    0 10px 22px rgba(4, 9, 18, 0.22),
+    0 0 0 1px rgba(89, 197, 255, 0.08);
 }
 
 .desktopRailCard {
@@ -284,7 +293,7 @@
 }
 
 .settingsMainCompact {
-  max-width: 1280px;
+  max-width: 1180px;
   width: 100%;
   justify-self: center;
 }
@@ -299,6 +308,11 @@
   padding: 18px 20px;
   display: grid;
   gap: 14px;
+}
+
+.workspaceHeroCompact {
+  max-width: 1120px;
+  width: 100%;
 }
 
 .workspaceHeroMain {
@@ -323,7 +337,7 @@
 .workspaceTitle {
   margin: 0;
   font-size: 24px;
-  line-height: 1.08;
+  line-height: 1.12;
   color: #f1f6ff;
 }
 
@@ -1047,6 +1061,14 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
   gap: 14px;
+  max-width: 1120px;
+  width: 100%;
+  justify-self: start;
+  padding: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.15);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(12, 23, 41, 0.6), rgba(8, 16, 30, 0.54));
 }
 
 .salesPlanCard {
@@ -1138,7 +1160,7 @@
   color: var(--text-soft);
   font-size: 10px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.28;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
