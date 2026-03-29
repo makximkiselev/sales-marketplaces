@@ -107,6 +107,88 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+.mobileSettingsShell {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.mobileSettingsMain {
+  gap: 12px;
+  padding-bottom: 112px;
+}
+
+.mobileNavStack {
+  display: grid;
+  gap: 8px;
+}
+
+.mobileSectionTabsRow,
+.mobileStoreTabsRow {
+  gap: 12px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  width: 100%;
+  padding: 0 2px 8px;
+  border: 0;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.12);
+  border-radius: 0;
+  background: transparent;
+  scrollbar-width: none;
+}
+
+.mobileSectionTabsRow::-webkit-scrollbar,
+.mobileStoreTabsRow::-webkit-scrollbar {
+  display: none;
+}
+
+.mobileSectionTabsRow :global(.btn),
+.mobileStoreTabsRow :global(.btn) {
+  height: 34px;
+  min-height: 0;
+  padding: 0 2px 8px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent;
+  color: #9db2d0;
+  font-size: 13px;
+  font-weight: 700;
+  position: relative;
+  white-space: nowrap;
+}
+
+.mobileSectionTabsRow :global(.btn)::after,
+.mobileStoreTabsRow :global(.btn)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #55c8ff, #9fe4ff);
+  opacity: 0;
+  transform: scaleX(0.35);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.mobileSectionTabsRow :global(button[data-active="true"]),
+.mobileStoreTabsRow :global(button[data-active="true"]) {
+  color: #eef5ff !important;
+}
+
+.mobileSectionTabsRow :global(button[data-active="true"])::after,
+.mobileStoreTabsRow :global(button[data-active="true"])::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.mobileSectionHero {
+  display: grid;
+  gap: 4px;
+}
+
 .desktopSectionTabs {
   display: block;
 }
@@ -602,6 +684,10 @@
   align-items: start;
 }
 
+.categoryWorkspaceMobile {
+  grid-template-columns: 1fr;
+}
+
 .categorySidebar,
 .categoryEditor {
   border: 1px solid rgba(132, 161, 214, 0.18);
@@ -613,6 +699,10 @@
 
 .categoryEditor {
   align-self: start;
+}
+
+.categoryEditorMobile {
+  padding: 14px;
 }
 
 .categorySidebar {
@@ -829,6 +919,10 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
+}
+
+.categoryEditorGridMobile {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .categoryEditorField {
@@ -2133,6 +2227,10 @@
     grid-template-columns: 1fr;
   }
 
+  .categoryEditorGridMobile {
+    grid-template-columns: 1fr;
+  }
+
   .refreshBlock {
     justify-items: start;
     width: 100%;
@@ -2244,10 +2342,6 @@
     display: none;
   }
 
-  .mobileOnlyAction {
-    display: inline-flex;
-  }
-
   .mobileSheetBackdrop {
     display: block;
   }
@@ -2281,6 +2375,11 @@
 
   .categoryEditor {
     min-width: 0;
+  }
+
+  .mobileSectionTabsRow,
+  .mobileStoreTabsRow {
+    display: flex;
   }
 }
 

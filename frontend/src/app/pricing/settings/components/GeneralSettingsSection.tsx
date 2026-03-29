@@ -86,7 +86,9 @@ type Props = {
   formatNum: (value: number | null | undefined) => string;
   queueSaveCell: (row: PricingCategoryRow, field: EditableFieldKey, rawValue: string) => void;
   flushSaveCell: (row: PricingCategoryRow, field: EditableFieldKey, rawValue?: string) => void;
+  mobileMode?: boolean;
   mobileCatalogOpen?: boolean;
+  onOpenMobileCatalog?: () => void;
   onCloseMobileCatalog?: () => void;
 };
 
@@ -104,7 +106,9 @@ export function GeneralSettingsSection({
   formatNum,
   queueSaveCell,
   flushSaveCell,
+  mobileMode = false,
   mobileCatalogOpen = false,
+  onOpenMobileCatalog,
   onCloseMobileCatalog,
 }: Props) {
   const [selectedKey, setSelectedKey] = useState("");
@@ -259,12 +263,14 @@ export function GeneralSettingsSection({
             ) : (
               <>
                 {selectedRow ? (
-                  <div className={styles.categoryWorkspace}>
-                    <aside className={styles.categorySidebar}>
-                      {renderSidebarContent()}
-                    </aside>
+                  <div className={`${styles.categoryWorkspace} ${mobileMode ? styles.categoryWorkspaceMobile : ""}`}>
+                    {!mobileMode ? (
+                      <aside className={styles.categorySidebar}>
+                        {renderSidebarContent()}
+                      </aside>
+                    ) : null}
 
-                    <div className={styles.categoryEditor}>
+                    <div className={`${styles.categoryEditor} ${mobileMode ? styles.categoryEditorMobile : ""}`}>
                       <div className={styles.categoryEditorHead}>
                         <div>
                           <div className={styles.categoryEditorEyebrow}>Категория</div>
@@ -275,10 +281,15 @@ export function GeneralSettingsSection({
                         </div>
                         <div className={styles.categoryEditorMeta}>
                           <span className={styles.categoryEditorMetaChip}>{selectedRow.itemsCount} SKU</span>
+                          {mobileMode ? (
+                            <button type="button" className="btn ghost" onClick={() => onOpenMobileCatalog?.()}>
+                              Каталог
+                            </button>
+                          ) : null}
                         </div>
                       </div>
 
-                      <div className={styles.categoryEditorGrid}>
+                      <div className={`${styles.categoryEditorGrid} ${mobileMode ? styles.categoryEditorGridMobile : ""}`}>
                         {inputColumns.map((col) => {
                           const field = col.field!;
                           const cellKey = getCellKey(selectedRow.leafPath || selectedRow.key, field);
@@ -326,48 +337,6 @@ export function GeneralSettingsSection({
                     </div>
                   </div>
                 ) : null}
-                <div className={styles.pricingMobileList}>
-                  {categoryRows.map((row) => (
-                    <article key={row.key} className={styles.pricingMobileCard}>
-                      <div className={styles.pricingMobileCardHead}>
-                        <div className={styles.pricingMobileCardTitle}>{row.category || "-"}</div>
-                        {row.subcategoryLevels.length ? (
-                          <div className={styles.pricingMobileCardPath}>
-                            {row.subcategoryLevels.join(" / ")}
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className={styles.pricingMobileFields}>
-                        {tableColumns.map((col) => {
-                          if (col.kind !== "input" || !col.field) return null;
-                          const field = col.field;
-                          const cellKey = getCellKey(row.leafPath || row.key, field);
-                          const baseVal = row.values[field];
-                          const fallbackVal = baseVal == null ? defaultFieldValue(field) : "";
-                          const value = cellDrafts[cellKey] ?? (baseVal == null ? fallbackVal : formatNum(baseVal));
-                          return (
-                            <label key={col.id} className={styles.pricingMobileField}>
-                              <span className={styles.pricingMobileFieldLabel}>{col.label}</span>
-                              <div className={styles.cellInputWrap}>
-                                <input
-                                  className={`input ${styles.cellInput}`}
-                                  value={value}
-                                  onChange={(e) => queueSaveCell(row, field, e.target.value)}
-                                  onBlur={(e) => flushSaveCell(row, field, e.target.value)}
-                                  inputMode="decimal"
-                                />
-                                {cellSaving[cellKey] ? <span className={styles.cellSavingDot} /> : null}
-                              </div>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </article>
-                  ))}
-                  {!categoryRows.length ? (
-                    <div className={styles.emptyState}>Нет загруженных категорий для выбранного магазина.</div>
-                  ) : null}
-                </div>
               </>
             )}
           </>
