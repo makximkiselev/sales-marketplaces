@@ -217,6 +217,10 @@ a {
   color: #ffe8e8;
 }
 
+.mobile-route-progress {
+  display: none;
+}
+
 .topbar {
   position: sticky;
   top: 0;
@@ -983,6 +987,39 @@ td.source-col {
     min-height: calc(100vh - 60px);
   }
 
+  .mobile-route-progress {
+    position: fixed;
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    z-index: 170;
+    height: 3px;
+    display: block;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(115, 145, 198, 0.16);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease;
+  }
+
+  .mobile-route-progress.active {
+    opacity: 1;
+  }
+
+  .mobile-route-progress-bar {
+    width: 42%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    box-shadow: 0 0 14px rgba(76, 201, 240, 0.45);
+    transform: translateX(-120%);
+  }
+
+  .mobile-route-progress.active .mobile-route-progress-bar {
+    animation: mobile-route-progress-slide 0.95s ease-in-out infinite;
+  }
+
   .pull-refresh-indicator {
     position: relative;
     z-index: 1;
@@ -1089,6 +1126,15 @@ td.source-col {
   }
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes mobile-route-progress-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(360%);
   }
 }
 

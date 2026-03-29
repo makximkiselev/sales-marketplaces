@@ -96,6 +96,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<AppToastDetail | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileGroupTitle, setMobileGroupTitle] = useState<string | null>(null);
+  const [mobileRouteLoading, setMobileRouteLoading] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [pullReady, setPullReady] = useState(false);
   const [pullRefreshing, setPullRefreshing] = useState(false);
@@ -114,6 +115,14 @@ export function Shell({ children }: { children: ReactNode }) {
       }
     }
     return groupItems(groups[0])[0] ?? { href: "/", label: "Дашборд" };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(max-width: 960px) and (pointer: coarse)").matches) return;
+    setMobileRouteLoading(true);
+    const timer = window.setTimeout(() => setMobileRouteLoading(false), 900);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   useEffect(() => {
@@ -466,6 +475,9 @@ export function Shell({ children }: { children: ReactNode }) {
             {toast.message}
           </div>
         ) : null}
+        <div className={`mobile-route-progress${mobileRouteLoading ? " active" : ""}`} aria-hidden="true">
+          <div className="mobile-route-progress-bar" />
+        </div>
       </main>
     </div>
   );
