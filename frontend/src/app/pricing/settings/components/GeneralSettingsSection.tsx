@@ -210,7 +210,7 @@ export function GeneralSettingsSection({
                   <span className={styles.categoryTreeMeta}>{node.children.length} веток</span>
                 )}
                 <span className={`${styles.categoryTreeStatus} ${hasOverrides ? styles.categoryTreeStatusCustom : styles.categoryTreeStatusInherited}`}>
-                  {hasOverrides ? "Есть overrides" : "Наследуется"}
+                  {hasOverrides ? "Свои настройки" : "Общие настройки"}
                 </span>
               </span>
             </button>
@@ -266,7 +266,7 @@ export function GeneralSettingsSection({
                     <div className={styles.categoryEditor}>
                       <div className={styles.categoryEditorHead}>
                         <div>
-                          <div className={styles.categoryEditorEyebrow}>Редактор категории</div>
+                          <div className={styles.categoryEditorEyebrow}>Категория</div>
                           <h3 className={styles.categoryEditorTitle}>{selectedRow.category || "-"}</h3>
                           <div className={styles.categoryEditorPath}>
                             {selectedRow.subcategoryLevels.length ? selectedRow.subcategoryLevels.join(" / ") : "Корневая категория"}
@@ -290,7 +290,7 @@ export function GeneralSettingsSection({
                               <span className={styles.categoryEditorFieldHead}>
                                 <span className={styles.categoryEditorFieldLabel}>{col.label}</span>
                                 <span className={`${styles.categoryEditorFieldBadge} ${inherited ? styles.categoryEditorFieldBadgeInherited : styles.categoryEditorFieldBadgeCustom}`}>
-                                  {inherited ? "Наследуется" : "Переопределено"}
+                                  {inherited ? "Общее" : "Свое"}
                                 </span>
                               </span>
                               <div className={styles.cellInputWrap}>

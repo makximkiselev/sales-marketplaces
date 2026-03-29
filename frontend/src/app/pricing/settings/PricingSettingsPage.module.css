@@ -129,10 +129,16 @@
 }
 
 .storeTabsBar {
-  gap: 8px;
+  gap: 22px;
   flex-wrap: nowrap;
   overflow-x: auto;
-  padding: 0;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0 0 8px;
+  border: 0;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.12);
+  border-radius: 0;
+  background: transparent;
 }
 
 .settingsTabsRow :global(.btn),
@@ -196,21 +202,21 @@
 
 .storeTabsBar :global(.btn) {
   height: 32px;
-  padding: 0 12px;
-  border: 1px solid rgba(132, 161, 214, 0.16) !important;
-  border-radius: 999px !important;
-  background: rgba(8, 15, 28, 0.58);
-  color: #9ab0cd;
+  padding: 0 2px 8px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent;
+  color: #8ea5c4;
 }
 
 .storeTabsBar :global(.btn)::after {
-  display: none;
+  display: block;
 }
 
 .storeTabsBar :global(button[data-active="true"]) {
-  background: linear-gradient(180deg, rgba(35, 82, 121, 0.58), rgba(17, 33, 57, 0.98)) !important;
-  border-color: rgba(84, 203, 255, 0.34) !important;
-  box-shadow: inset 0 1px 0 rgba(159, 228, 255, 0.08);
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none;
 }
 
 .desktopRailCard {
@@ -466,6 +472,7 @@
   box-shadow:
     0 14px 32px rgba(3, 8, 18, 0.28),
     inset 0 1px 0 rgba(132, 161, 214, 0.08);
+  margin-top: 6px;
 }
 
 .stickyActionBarAlways {
@@ -652,15 +659,15 @@
 }
 
 .categoryTreeStatusInherited {
-  color: #ffd88a;
-  background: rgba(103, 74, 18, 0.28);
-  border: 1px solid rgba(255, 196, 73, 0.28);
+  color: #c7d9f4;
+  background: rgba(23, 35, 56, 0.44);
+  border: 1px solid rgba(132, 161, 214, 0.2);
 }
 
 .categoryTreeStatusCustom {
   color: #9ff4bf;
-  background: rgba(15, 83, 49, 0.34);
-  border: 1px solid rgba(58, 206, 129, 0.34);
+  background: rgba(15, 83, 49, 0.3);
+  border: 1px solid rgba(58, 206, 129, 0.3);
 }
 
 .categoryTreeChildren {
@@ -670,11 +677,11 @@
 
 .categoryEditor {
   display: grid;
-  gap: 16px;
+  gap: 10px;
 }
 
 .categoryEditorHead {
-  padding: 2px 2px 0;
+  padding: 0;
 }
 
 .categoryEditorHead {
@@ -692,8 +699,8 @@
 }
 
 .categoryEditorTitle {
-  margin: 6px 0 4px;
-  font-size: 24px;
+  margin: 2px 0;
+  font-size: 22px;
   line-height: 1.08;
   color: #f1f6ff;
 }
@@ -701,7 +708,7 @@
 .categoryEditorPath {
   color: #abc3e8;
   font-size: 13px;
-  line-height: 1.45;
+  line-height: 1.35;
 }
 
 .categoryEditorMeta {
@@ -725,15 +732,15 @@
 
 .categoryEditorGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .categoryEditorField {
   display: grid;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 16px;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 14px;
   border: 1px solid rgba(132, 161, 214, 0.14);
   background: rgba(7, 14, 27, 0.36);
 }
@@ -747,9 +754,9 @@
 
 .categoryEditorFieldLabel {
   color: #e4eeff;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .categoryEditorFieldBadge {
@@ -764,15 +771,15 @@
 }
 
 .categoryEditorFieldBadgeInherited {
-  color: #ffd88a;
-  background: rgba(103, 74, 18, 0.34);
-  border: 1px solid rgba(255, 196, 73, 0.35);
+  color: #c7d9f4;
+  background: rgba(23, 35, 56, 0.44);
+  border: 1px solid rgba(132, 161, 214, 0.2);
 }
 
 .categoryEditorFieldBadgeCustom {
   color: #9ff4bf;
-  background: rgba(15, 83, 49, 0.42);
-  border: 1px solid rgba(58, 206, 129, 0.45);
+  background: rgba(15, 83, 49, 0.32);
+  border: 1px solid rgba(58, 206, 129, 0.34);
 }
 
 .pricingTableRowActive td {
@@ -2201,6 +2208,10 @@
 
 @media (max-width: 1320px) and (min-width: 961px) {
   .globalSettingsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .categoryEditorGrid {
     grid-template-columns: 1fr 1fr;
   }
 

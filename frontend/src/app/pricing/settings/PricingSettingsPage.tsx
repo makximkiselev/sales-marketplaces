@@ -224,33 +224,6 @@ export default function PricingSettingsPage() {
               </div>
             </div>
 
-            {activeStoreId && !isSalesPlanSection ? (
-              <div className={styles.stickyActionBar}>
-                <div className={styles.stickyActionMeta}>
-                  <div className={styles.stickyActionTitle}>Изменения сохраняются автоматически</div>
-                  <div className={styles.stickyActionHint}>{currentSaveState}</div>
-                </div>
-                <div className={styles.stickyActionButtons}>
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    disabled={refreshing}
-                    onClick={() => void refreshStoreDataFromPlatform()}
-                  >
-                    {refreshing ? "Обновление..." : "Обновить данные"}
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn ${styles.recalculateButton}`}
-                    disabled={Boolean(monitoringRunning.strategy_refresh)}
-                    onClick={() => void runMonitoringJob("strategy_refresh")}
-                  >
-                    {monitoringRunning.strategy_refresh ? "Пересчет..." : "Пересчитать цены"}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
             {settingsTab === "sources" ? (
               <div className={styles.controlsRow}>
                 <GeneralSettingsPanel
@@ -352,6 +325,33 @@ export default function PricingSettingsPage() {
                 commitLogisticsCell={commitLogisticsCell}
                 setLogisticsCellDrafts={setLogisticsCellDrafts}
               />
+            ) : null}
+
+            {activeStoreId && !isSalesPlanSection ? (
+              <div className={`${styles.stickyActionBar} ${styles.stickyActionBarAlways}`}>
+                <div className={styles.stickyActionMeta}>
+                  <div className={styles.stickyActionTitle}>Действия по магазину</div>
+                  <div className={styles.stickyActionHint}>{currentSaveState}</div>
+                </div>
+                <div className={styles.stickyActionButtons}>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    disabled={refreshing}
+                    onClick={() => void refreshStoreDataFromPlatform()}
+                  >
+                    {refreshing ? "Обновление..." : "Обновить данные"}
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${styles.recalculateButton}`}
+                    disabled={Boolean(monitoringRunning.strategy_refresh)}
+                    onClick={() => void runMonitoringJob("strategy_refresh")}
+                  >
+                    {monitoringRunning.strategy_refresh ? "Пересчет..." : "Пересчитать цены"}
+                  </button>
+                </div>
+              </div>
             ) : null}
           </div>
         </div>
