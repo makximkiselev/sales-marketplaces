@@ -296,6 +296,11 @@
     --matrix-name-col-width: 220px;
   }
 
+  .matrixTable thead {
+    position: static;
+    top: auto;
+  }
+
   .matrixTable thead th {
     min-width: 112px;
     padding: 8px 6px;
@@ -315,6 +320,31 @@
   .updatedCell,
   .mutedText {
     font-size: 10px;
+  }
+
+  .matrixTable thead th:nth-child(1),
+  .matrixTable thead th:nth-child(2),
+  .skuCell,
+  .nameCell {
+    position: static;
+    left: auto;
+    z-index: auto;
+    box-shadow: none;
+  }
+
+  .matrixTable thead th:nth-child(1),
+  .skuCell {
+    min-width: 92px;
+    width: 92px;
+    max-width: 92px;
+  }
+
+  .matrixTable thead th:nth-child(2),
+  .nameHeader,
+  .nameCell {
+    min-width: 220px;
+    width: 220px;
+    max-width: 220px;
   }
 }
 
