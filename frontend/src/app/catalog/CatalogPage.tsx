@@ -1,5 +1,3 @@
-"use client";
-
 import PricingCatalogFrame from "../pricing/_components/PricingCatalogFrame";
 import commonStyles from "../pricing/_components/PricingPageCommon.module.css";
 import { tabKeyForStore } from "../_shared/catalogState";

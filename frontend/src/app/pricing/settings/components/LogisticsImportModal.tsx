@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import { API_BASE } from "../../../../lib/api";
 import { ModalShell } from "../../../../components/page/PageKit";

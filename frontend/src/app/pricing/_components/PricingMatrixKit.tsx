@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import styles from "./PricingMatrixKit.module.css";
 import type { StoreCtx } from "../_shared/catalogPageShared";

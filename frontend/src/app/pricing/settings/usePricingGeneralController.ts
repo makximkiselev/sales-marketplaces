@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import { savePricingStoreSettings } from "./api";
 import { clearPricingSettingsCache } from "./cache";

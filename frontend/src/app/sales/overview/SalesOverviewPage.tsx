@@ -1,5 +1,3 @@
-"use client";
-
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { PageFrame, PageSectionTitle } from "../../../components/page/PageKit";
 import { API_BASE } from "../../../lib/api";

@@ -1,5 +1,3 @@
-"use client";
-
 import { WizardLabel, WizardModal } from "../../../../components/page/WizardKit";
 import type { CampaignItem } from "../types";
 

@@ -1,5 +1,3 @@
-"use client";
-
 export type AppToastDetail = {
   message: string;
   tone?: "success" | "error";

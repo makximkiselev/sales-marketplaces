@@ -1,5 +1,3 @@
-"use client";
-
 import { ReactNode, useEffect, useState } from "react";
 import styles from "./PricingCatalogFrame.module.css";
 import { PageFrame, PageSectionTitle } from "../../../components/page/PageKit";

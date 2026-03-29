@@ -1,5 +1,3 @@
-"use client";
-
 import { useRef } from "react";
 import { WizardDropzone, WizardLabel, WizardModal } from "../../../../components/page/WizardKit";
 import type { IntegrationsPayload } from "../types";

@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useState } from "react";
 import { WizardModal } from "../../../../components/page/WizardKit";
 import styles from "../PricingSettingsPage.module.css";

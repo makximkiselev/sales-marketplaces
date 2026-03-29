@@ -1,5 +1,3 @@
-"use client";
-
 import { WizardLabel, WizardModal } from "../../../../components/page/WizardKit";
 
 export function OzonWizardModal({

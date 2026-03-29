@@ -1,5 +1,3 @@
-"use client";
-
 import { fetchPricingSettingsIntegrations, refreshPricingMarketItems } from "./api";
 import { clearPricingSettingsCache, PRICING_SETTINGS_CTX_CACHE_KEY, safeReadJson, safeWriteJson } from "./cache";
 import { buildPlatformsFromIntegrations } from "./controllerUtils";

@@ -1,5 +1,3 @@
-"use client";
-
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { APP_TOAST_EVENT, type AppToastDetail } from "./ui/toastBus";

@@ -1,5 +1,3 @@
-"use client";
-
 import styles from "./PricingSettingsPage.module.css";
 import { PageFrame } from "../../../components/page/PageKit";
 import { ControlTabs } from "../../../components/page/ControlKit";

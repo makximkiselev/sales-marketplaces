@@ -1,5 +1,3 @@
-"use client";
-
 import { PanelCard } from "../../../../components/page/SectionKit";
 import styles from "../DataSourcesPage.module.css";
 import type { DeleteRequest, OzonAccount } from "../types";

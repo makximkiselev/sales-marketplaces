@@ -1,5 +1,3 @@
-"use client";
-
 import { MatrixMultiValue, MatrixNameCell, buildStoreLines, pricingMatrixStyles as matrixStyles } from "../../pricing/_components/PricingMatrixKit";
 import { currencySymbol, formatMoney, formatPercent, StoreCtx } from "../../pricing/_shared/catalogPageShared";
 

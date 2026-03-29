@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { API_BASE } from "../../../lib/api";
 import { LoadingButton } from "../../../components/page/ControlKit";

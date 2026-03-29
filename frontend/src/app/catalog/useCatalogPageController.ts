@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { apiGetOk, apiGetParams } from "../../lib/api";
 import {

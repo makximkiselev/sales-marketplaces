@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { apiGet } from "../../../../lib/api";
 import { WizardModal } from "../../../../components/page/WizardKit";

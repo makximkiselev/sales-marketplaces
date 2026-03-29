@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { ErrorBox } from "../../../components/ErrorBox";
 import { ControlTabs } from "../../../components/page/ControlKit";

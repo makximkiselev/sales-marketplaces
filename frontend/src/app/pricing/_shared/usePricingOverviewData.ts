@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { apiGetParams, apiPostOk } from "../../../lib/api";
 import { ensureUndefinedRoot, parseStoreTabKey, safeReadJson, safeWriteJson, StoreCtx, TreeResp } from "./catalogPageShared";

@@ -1,5 +1,3 @@
-"use client";
-
 import styles from "../DataSourcesPage.module.css";
 import { PanelCard } from "../../../../components/page/SectionKit";
 

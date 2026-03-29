@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { MatrixMultiValue, MatrixNameCell, buildStoreLines, pricingMatrixStyles as matrixStyles } from "../_components/PricingMatrixKit";
 import { currencySymbol, formatMoney, StoreCtx } from "../_shared/catalogPageShared";

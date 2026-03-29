@@ -1,5 +1,3 @@
-"use client";
-
 export function DeleteIcon() {
   return (
     <svg className="delete-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">

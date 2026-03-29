@@ -1,5 +1,3 @@
-"use client";
-
 import { ReactNode } from "react";
 import { ModalShell } from "./PageKit";
 import styles from "./WizardKit.module.css";

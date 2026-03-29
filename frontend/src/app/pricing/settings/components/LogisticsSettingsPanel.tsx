@@ -1,5 +1,3 @@
-"use client";
-
 import styles from "../PricingSettingsPage.module.css";
 import type { LogisticsNumericKey, LogisticsStoreSettingsApi } from "../types";
 

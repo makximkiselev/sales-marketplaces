@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { fetchPricingMonitoring, fetchPricingSalesPlan, runPricingMonitoringAll, runPricingMonitoringJob, savePricingMonitoringJob, savePricingStoreSettings } from "./api";
 import { usePricingCategoryController } from "./usePricingCategoryController";

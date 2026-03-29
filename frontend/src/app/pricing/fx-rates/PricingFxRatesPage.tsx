@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../../lib/api";
 import { ControlField, ControlTabs, LoadingButton } from "../../../components/page/ControlKit";

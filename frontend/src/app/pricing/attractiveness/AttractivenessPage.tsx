@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import PricingCatalogFrame from "../_components/PricingCatalogFrame";
 import CatalogTreeControls from "../_components/CatalogTreeControls";

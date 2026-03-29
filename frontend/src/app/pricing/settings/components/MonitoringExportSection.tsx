@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo, useState } from "react";
 import { SectionBlock } from "../../../../components/page/SectionKit";
 import styles from "../PricingSettingsPage.module.css";

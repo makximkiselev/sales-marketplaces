@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { useDeleteConfirmController } from "./useDeleteConfirmController";
 import { useGsheetsSourcesController } from "./useGsheetsSourcesController";

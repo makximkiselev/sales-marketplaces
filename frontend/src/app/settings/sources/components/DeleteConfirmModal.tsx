@@ -1,5 +1,3 @@
-"use client";
-
 import { ModalShell } from "../../../../components/page/PageKit";
 import styles from "../DataSourcesPage.module.css";
 

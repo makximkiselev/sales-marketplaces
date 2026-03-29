@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import { fetchPricingLogistics, saveLogisticsProductSettings, saveLogisticsStoreSettings } from "./api";
 import { clearPricingSettingsCache, PRICING_SETTINGS_LOGISTICS_CACHE_PREFIX, safeReadJson, safeWriteJson } from "./cache";

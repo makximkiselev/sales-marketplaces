@@ -1,5 +1,3 @@
-"use client";
-
 export const PRICING_SETTINGS_CTX_CACHE_KEY = "pricing_settings_ctx_v1";
 export const PRICING_SETTINGS_TREE_CACHE_PREFIX = "pricing_settings_tree_v1:";
 export const PRICING_SETTINGS_LOGISTICS_CACHE_PREFIX = "pricing_settings_logistics_v1:";

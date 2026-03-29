@@ -1,5 +1,3 @@
-"use client";
-
 import styles from "../PricingSettingsPage.module.css";
 import type { CogsSource, StockSource } from "../types";
 

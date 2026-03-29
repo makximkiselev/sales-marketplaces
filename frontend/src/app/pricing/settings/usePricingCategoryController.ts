@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { applyPricingCategoryDefaults, fetchPricingCategoryTree, savePricingCategorySettings } from "./api";
 import { clearPricingSettingsCache, PRICING_SETTINGS_TREE_CACHE_PREFIX, safeReadJson, safeWriteJson } from "./cache";

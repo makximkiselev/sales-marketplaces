@@ -1,5 +1,3 @@
-"use client";
-
 import { ControlField } from "../../../../components/page/ControlKit";
 import { SectionBlock } from "../../../../components/page/SectionKit";
 import styles from "../PricingSettingsPage.module.css";

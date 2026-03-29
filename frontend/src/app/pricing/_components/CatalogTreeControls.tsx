@@ -1,5 +1,3 @@
-"use client";
-
 import commonStyles from "./PricingPageCommon.module.css";
 import type { StoreCtx } from "../_shared/catalogPageShared";
 
