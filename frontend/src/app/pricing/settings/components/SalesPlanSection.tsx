@@ -254,7 +254,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
               const cardState = savingMap[row.store_uid]
                 ? "Сохранение..."
                 : isDirty
-                  ? "Есть несохранённые изменения"
+                  ? "Есть изменения"
                   : row.updated_at
                     ? `Сохранено ${new Date(row.updated_at).toLocaleString("ru-RU")}`
                     : "Нет изменений";
@@ -263,13 +263,15 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                   <div className={styles.salesPlanCardHead}>
                     <div className={styles.salesPlanCardTitleBlock}>
                       <div className={styles.salesPlanCardEyebrow}>{row.platform_label}</div>
-                      <h3 className={styles.salesPlanCardTitle}>
-                        <span>{row.store_name}</span>
-                        {row.store_id ? <span className={styles.salesPlanCardId}>{row.store_id}</span> : null}
-                      </h3>
-                    </div>
-                    <div className={`${styles.salesPlanCardState} ${isDirty ? styles.salesPlanCardStateDirty : ""}`}>
-                      {cardState}
+                      <div className={styles.salesPlanCardTitleRow}>
+                        <h3 className={styles.salesPlanCardTitle}>
+                          <span>{row.store_name}</span>
+                          {row.store_id ? <span className={styles.salesPlanCardId}>{row.store_id}</span> : null}
+                        </h3>
+                        <div className={`${styles.salesPlanCardState} ${isDirty ? styles.salesPlanCardStateDirty : ""}`}>
+                          {cardState}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -431,25 +433,26 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                     : savingAny
                       ? "Сохраняем изменения..."
                       : hasChanges
-                        ? `Изменено магазинов: ${changedStoreUids.length}`
-                        : floatingNotice || "Изменения сохранены"}
+                        ? "Есть изменения"
+                        : floatingNotice || "Данные сохранены"}
                 </div>
-                {saveError ? (
-                  <div className={styles.salesPlanFloatingHint}>{saveError}</div>
-                ) : !hasChanges && floatingNotice ? (
+                {saveError ? <div className={styles.salesPlanFloatingHint}>{saveError}</div> : null}
+              </div>
+              <div className={styles.salesPlanFloatingMeta}>
+                {(!hasChanges && !saveError && floatingNotice) ? (
                   <div className={styles.salesPlanFloatingHint}>{floatingNotice}</div>
                 ) : null}
+                {hasChanges ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={savingAny}
+                    onClick={() => void commitAll()}
+                  >
+                    {savingAny ? "Сохранение..." : "Сохранить"}
+                  </button>
+                ) : null}
               </div>
-              {hasChanges ? (
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={savingAny}
-                  onClick={() => void commitAll()}
-                >
-                  {savingAny ? "Сохранение..." : "Сохранить"}
-                </button>
-              ) : null}
             </div>
           ) : null}
         </>
