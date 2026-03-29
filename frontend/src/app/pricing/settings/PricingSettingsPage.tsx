@@ -199,15 +199,15 @@ export default function PricingSettingsPage() {
           ) : null}
 
           <div className={`${styles.settingsMain} ${isSalesPlanSection ? styles.settingsMainCompact : ""}`}>
-            <div className={styles.desktopSectionTabs}>
-              <ControlTabs
-                className={styles.desktopSectionTabsRow}
-                items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
-                activeId={settingsTab}
-                onChange={(id) => setSettingsTab(id)}
-              />
-            </div>
             <div className={`${styles.workspaceHero} ${isSalesPlanSection ? styles.workspaceHeroCompact : ""}`}>
+              <div className={styles.desktopSectionTabs}>
+                <ControlTabs
+                  className={styles.desktopSectionTabsRow}
+                  items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
+                  activeId={settingsTab}
+                  onChange={(id) => setSettingsTab(id)}
+                />
+              </div>
               <div className={styles.workspaceHeroMain}>
                 {!isSalesPlanSection ? <div className={styles.workspaceEyebrow}>{activeSection.title}</div> : null}
                 <div className={styles.workspaceTitleRow}>

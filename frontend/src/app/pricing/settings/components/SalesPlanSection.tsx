@@ -48,10 +48,6 @@ function toNum(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function fmtCurrencySign(currencyCode: string) {
-  return String(currencyCode || "").toUpperCase() === "USD" ? "$" : "₽";
-}
-
 function formatGrouped(value: string) {
   const raw = String(value ?? "").trim();
   if (!raw) return "";
@@ -250,7 +246,6 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
           <div className={styles.salesPlanGrid}>
             {rows.map((row) => {
               const draft = drafts[row.store_uid] || toDraft(row);
-              const currencySign = fmtCurrencySign(row.currency_code);
               const rubValue = draft.earning_mode === "margin" ? draft.target_margin_rub : draft.target_profit_rub;
               const pctValue = draft.earning_mode === "margin" ? draft.target_margin_percent : draft.target_profit_percent;
               const revenueCellKey = `${row.store_uid}:planned_revenue`;
@@ -338,12 +333,12 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                     </div>
                   </div>
 
-                  <div className={styles.salesPlanFields}>
-                    <div className={styles.salesPlanField}>
-                      <div className={styles.salesPlanFieldLabel}>
-                        {stackedLabel("Плановый", `оборот, ${currencySign}`)}
-                      </div>
-                      <div className={styles.cellInputWrap}>
+                    <div className={styles.salesPlanFields}>
+                      <div className={styles.salesPlanField}>
+                        <div className={styles.salesPlanFieldLabel}>
+                          {stackedLabel("Плановый", "оборот, ₽")}
+                        </div>
+                        <div className={styles.cellInputWrap}>
                         <input
                           className={`input ${styles.cellInput}`}
                           value={focusedCell === revenueCellKey ? draft.planned_revenue : formatGrouped(draft.planned_revenue)}
@@ -360,7 +355,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
 
                     <div className={styles.salesPlanField}>
                       <div className={styles.salesPlanFieldLabel}>
-                        {stackedLabel("Целевые рекламные", "расходы, %")}
+                        {stackedLabel("Целевой", "ДРР, %")}
                       </div>
                       <div className={styles.cellInputWrap}>
                         <input
@@ -374,7 +369,9 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
 
                     <div className={`${styles.salesPlanField} ${styles.salesPlanFieldCompact}`}>
                       <div className={styles.salesPlanFieldLabel}>
-                        {stackedLabel("Целевое", `значение, ${currencySign}`)}
+                        {draft.earning_mode === "margin"
+                          ? stackedLabel("Целевая", "маржа, ₽")
+                          : stackedLabel("Целевая", "прибыль, ₽")}
                       </div>
                       <div className={styles.cellInputWrap}>
                         <input
@@ -392,7 +389,9 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
 
                     <div className={`${styles.salesPlanField} ${styles.salesPlanFieldCompact}`}>
                       <div className={styles.salesPlanFieldLabel}>
-                        {stackedLabel("Целевое", "значение, %")}
+                        {draft.earning_mode === "margin"
+                          ? stackedLabel("Целевая", "маржа, %")
+                          : stackedLabel("Целевая", "прибыль, %")}
                       </div>
                       <div className={styles.cellInputWrap}>
                         <input
