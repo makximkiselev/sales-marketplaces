@@ -120,6 +120,7 @@ export default function PricingSettingsPage() {
   ];
   const activeSection = sectionItems.find((item) => item.id === settingsTab) ?? sectionItems[0];
   const activeStore = storeTabs.find((store) => store.key === activeStoreTabKey) ?? null;
+  const isSalesPlanSection = settingsTab === "sales_plan";
   const currentSavedAt = settingsTab === "logistics" ? logisticsStoreSavedAt : storeSettingsSavedAt;
   const currentSaveState = settingsTab === "logistics"
     ? logisticsStoreSaving
@@ -157,18 +158,20 @@ export default function PricingSettingsPage() {
                 onChange={(id) => setSettingsTab(id)}
               />
             </div>
-            <div className={styles.mobileStoreTabs}>
-              <ControlTabs
-                className={styles.storeTabsRow}
-                items={storeTabs.map((store) => ({
-                  id: store.key,
-                  label: store.storeName,
-                  badge: store.platformLabel,
-                }))}
-                activeId={activeStoreTabKey}
-                onChange={setActiveStoreTabKey}
-              />
-            </div>
+            {!isSalesPlanSection ? (
+              <div className={styles.mobileStoreTabs}>
+                <ControlTabs
+                  className={styles.storeTabsRow}
+                  items={storeTabs.map((store) => ({
+                    id: store.key,
+                    label: store.storeName,
+                    badge: store.platformLabel,
+                  }))}
+                  activeId={activeStoreTabKey}
+                  onChange={setActiveStoreTabKey}
+                />
+              </div>
+            ) : null}
           </div>
         }
       >
@@ -191,35 +194,38 @@ export default function PricingSettingsPage() {
               </div>
             </section>
 
-            <section className={styles.desktopRailCard}>
-              <div className={styles.desktopRailTitle}>Магазины</div>
-              <div className={styles.desktopStoreList}>
-                {storeTabs.map((store) => (
-                  <button
-                    key={store.key}
-                    type="button"
-                    className={`${styles.desktopStoreButton} ${activeStoreTabKey === store.key ? styles.desktopStoreButtonActive : ""}`}
-                    onClick={() => setActiveStoreTabKey(store.key)}
-                  >
-                    <span className={styles.desktopStoreButtonTitle}>{store.storeName}</span>
-                    <span className={styles.desktopStoreButtonMeta}>{store.platformLabel}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
+            {!isSalesPlanSection ? (
+              <section className={styles.desktopRailCard}>
+                <div className={styles.desktopRailTitle}>Магазины</div>
+                <div className={styles.desktopStoreList}>
+                  {storeTabs.map((store) => (
+                    <button
+                      key={store.key}
+                      type="button"
+                      className={`${styles.desktopStoreButton} ${activeStoreTabKey === store.key ? styles.desktopStoreButtonActive : ""}`}
+                      onClick={() => setActiveStoreTabKey(store.key)}
+                    >
+                      <span className={styles.desktopStoreButtonTitle}>{store.storeName}</span>
+                      <span className={styles.desktopStoreButtonMeta}>{store.platformLabel}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </aside>
 
           <div className={styles.settingsMain}>
             <div className={styles.workspaceHero}>
               <div className={styles.workspaceHeroMain}>
                 <div className={styles.workspaceEyebrow}>{activeSection.title}</div>
-                <h2 className={styles.workspaceTitle}>{activeStore?.storeName || activeSection.title}</h2>
+                <h2 className={styles.workspaceTitle}>{isSalesPlanSection ? activeSection.title : (activeStore?.storeName || activeSection.title)}</h2>
                 <p className={styles.workspaceSubtitle}>{activeSection.description}</p>
                 <div className={styles.workspaceHeroChips}>
-                  {activeStore?.platformLabel ? (
+                  {!isSalesPlanSection && activeStore?.platformLabel ? (
                     <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
                   ) : null}
-                  <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
+                  {!isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span> : null}
+                  {isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : null}
                 </div>
               </div>
             </div>
