@@ -302,6 +302,200 @@
   line-height: 1.35;
 }
 
+.categoryWorkspace {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.categorySidebar,
+.categoryEditor {
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(12, 23, 41, 0.88), rgba(8, 16, 30, 0.84));
+  padding: 16px;
+}
+
+.categorySidebar {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.categorySidebarHead {
+  display: grid;
+  gap: 4px;
+}
+
+.categorySidebarTitle {
+  color: #edf4ff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.categorySidebarMeta {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.categorySidebarList {
+  display: grid;
+  gap: 8px;
+  max-height: 540px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.categorySidebarItem {
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 14px;
+  background: rgba(7, 14, 27, 0.42);
+  text-align: left;
+  color: inherit;
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.categorySidebarItem:hover {
+  border-color: rgba(76, 201, 240, 0.32);
+  background: rgba(12, 24, 44, 0.78);
+  transform: translateY(-1px);
+}
+
+.categorySidebarItemActive {
+  border-color: rgba(76, 201, 240, 0.4);
+  background:
+    linear-gradient(180deg, rgba(28, 66, 98, 0.42), rgba(16, 30, 53, 0.88));
+}
+
+.categorySidebarItemTitle {
+  color: #edf4ff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.categorySidebarItemPath {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.categoryEditor {
+  display: grid;
+  gap: 16px;
+}
+
+.categoryEditorHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.categoryEditorEyebrow {
+  color: var(--text-soft);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.categoryEditorTitle {
+  margin: 6px 0 4px;
+  font-size: 24px;
+  line-height: 1.08;
+  color: #f1f6ff;
+}
+
+.categoryEditorPath {
+  color: #abc3e8;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.categoryEditorMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.categoryEditorMetaChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(7, 14, 27, 0.46);
+  color: #dbe8ff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.categoryEditorGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.categoryEditorField {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  background: rgba(7, 14, 27, 0.36);
+}
+
+.categoryEditorFieldHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.categoryEditorFieldLabel {
+  color: #e4eeff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.categoryEditorFieldBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.categoryEditorFieldBadgeInherited {
+  color: #ffd88a;
+  background: rgba(103, 74, 18, 0.34);
+  border: 1px solid rgba(255, 196, 73, 0.35);
+}
+
+.categoryEditorFieldBadgeCustom {
+  color: #9ff4bf;
+  background: rgba(15, 83, 49, 0.42);
+  border: 1px solid rgba(58, 206, 129, 0.45);
+}
+
+.pricingTableRowActive td {
+  background: rgba(54, 114, 173, 0.12);
+}
+
 .tableHeaderCell {
   display: grid;
   gap: 6px;
@@ -1235,6 +1429,19 @@
   }
 
   .workspaceMetaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .categoryWorkspace {
+    grid-template-columns: 1fr;
+  }
+
+  .categorySidebar,
+  .categoryEditor {
+    padding: 14px;
+  }
+
+  .categoryEditorGrid {
     grid-template-columns: 1fr;
   }
 

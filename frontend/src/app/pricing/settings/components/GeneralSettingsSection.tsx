@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SectionBlock } from "../../../../components/page/SectionKit";
 import styles from "../PricingSettingsPage.module.css";
 import type { EditableFieldKey, PricingCategoryRow, PricingTableColumn } from "../types";
@@ -40,7 +40,20 @@ export function GeneralSettingsSection({
   applyColumnValue,
 }: Props) {
   const [bulkField, setBulkField] = useState<EditableFieldKey | null>(null);
+  const [selectedKey, setSelectedKey] = useState("");
   const bulkColumn = bulkField ? tableColumns.find((col) => col.field === bulkField) ?? null : null;
+  const selectedRow = categoryRows.find((row) => row.key === selectedKey) ?? categoryRows[0] ?? null;
+  const inputColumns = tableColumns.filter((col) => col.kind === "input" && col.field);
+
+  useEffect(() => {
+    if (!categoryRows.length) {
+      setSelectedKey("");
+      return;
+    }
+    if (!selectedKey || !categoryRows.some((row) => row.key === selectedKey)) {
+      setSelectedKey(categoryRows[0].key);
+    }
+  }, [categoryRows, selectedKey]);
 
   return (
     <SectionBlock>
@@ -53,6 +66,78 @@ export function GeneralSettingsSection({
               <div className="status">Загрузка категорий...</div>
             ) : (
               <>
+                {selectedRow ? (
+                  <div className={styles.categoryWorkspace}>
+                    <aside className={styles.categorySidebar}>
+                      <div className={styles.categorySidebarHead}>
+                        <div className={styles.categorySidebarTitle}>Категории</div>
+                        <div className={styles.categorySidebarMeta}>{categoryRows.length} записей</div>
+                      </div>
+                      <div className={styles.categorySidebarList}>
+                        {categoryRows.map((row) => (
+                          <button
+                            key={row.key}
+                            type="button"
+                            className={`${styles.categorySidebarItem} ${selectedRow.key === row.key ? styles.categorySidebarItemActive : ""}`}
+                            onClick={() => setSelectedKey(row.key)}
+                          >
+                            <span className={styles.categorySidebarItemTitle}>{row.category || "-"}</span>
+                            {row.subcategoryLevels.length ? (
+                              <span className={styles.categorySidebarItemPath}>{row.subcategoryLevels.join(" / ")}</span>
+                            ) : null}
+                          </button>
+                        ))}
+                      </div>
+                    </aside>
+
+                    <div className={styles.categoryEditor}>
+                      <div className={styles.categoryEditorHead}>
+                        <div>
+                          <div className={styles.categoryEditorEyebrow}>Редактор категории</div>
+                          <h3 className={styles.categoryEditorTitle}>{selectedRow.category || "-"}</h3>
+                          <div className={styles.categoryEditorPath}>
+                            {selectedRow.subcategoryLevels.length ? selectedRow.subcategoryLevels.join(" / ") : "Корневая категория"}
+                          </div>
+                        </div>
+                        <div className={styles.categoryEditorMeta}>
+                          <span className={styles.categoryEditorMetaChip}>{selectedRow.itemsCount} SKU</span>
+                        </div>
+                      </div>
+
+                      <div className={styles.categoryEditorGrid}>
+                        {inputColumns.map((col) => {
+                          const field = col.field!;
+                          const cellKey = getCellKey(selectedRow.leafPath || selectedRow.key, field);
+                          const baseVal = selectedRow.values[field];
+                          const fallbackVal = baseVal == null ? defaultFieldValue(field) : "";
+                          const value = cellDrafts[cellKey] ?? (baseVal == null ? fallbackVal : formatNum(baseVal));
+                          const inherited = baseVal == null;
+                          return (
+                            <label key={col.id} className={styles.categoryEditorField}>
+                              <span className={styles.categoryEditorFieldHead}>
+                                <span className={styles.categoryEditorFieldLabel}>{col.label}</span>
+                                <span className={`${styles.categoryEditorFieldBadge} ${inherited ? styles.categoryEditorFieldBadgeInherited : styles.categoryEditorFieldBadgeCustom}`}>
+                                  {inherited ? "Наследуется" : "Переопределено"}
+                                </span>
+                              </span>
+                              <div className={styles.cellInputWrap}>
+                                <input
+                                  className={`input ${styles.cellInput}`}
+                                  value={value}
+                                  onChange={(e) => queueSaveCell(selectedRow, field, e.target.value)}
+                                  onBlur={(e) => flushSaveCell(selectedRow, field, e.target.value)}
+                                  inputMode="decimal"
+                                />
+                                {cellSaving[cellKey] ? <span className={styles.cellSavingDot} /> : null}
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className={`${styles.pricingTableWrap} ${styles.pricingDesktopTableWrap}`}>
                   <table className={styles.pricingTable}>
                     <thead>
@@ -77,7 +162,7 @@ export function GeneralSettingsSection({
                     </thead>
                     <tbody>
                       {categoryRows.map((row) => (
-                        <tr key={row.key}>
+                        <tr key={row.key} className={selectedRow?.key === row.key ? styles.pricingTableRowActive : ""}>
                           {tableColumns.map((col) => {
                             if (col.id === "category") return <td key={col.id} className={styles.colText}>{row.category || "-"}</td>;
                             if (col.id.startsWith("subcategory_")) {
