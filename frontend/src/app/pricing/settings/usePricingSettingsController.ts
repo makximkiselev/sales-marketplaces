@@ -298,7 +298,12 @@ export function usePricingSettingsController() {
     setMonitoringError("");
     try {
       await runPricingMonitoringJob(code);
-      showAppToast({ message: "Обновление запущено" });
+      showAppToast({
+        message:
+          code === "strategy_refresh"
+            ? "Пересчет стратегии запущен, статус можно смотреть в Мониторинге."
+            : "Обновление запущено",
+      });
       await loadMonitoringData();
     } catch (e) {
       setMonitoringError(e instanceof Error ? e.message : String(e));
