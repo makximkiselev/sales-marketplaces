@@ -147,11 +147,6 @@ export default function PricingSettingsPage() {
         title="Настройки ценообразования"
         subtitle="Единая рабочая зона для целей продаж, категорийных правил и логистики магазинов."
         className={styles.headCard}
-        meta={
-          <div className={styles.headerMetaStack}>
-            <div className={styles.storeSettingsMeta}>{currentSaveState}</div>
-          </div>
-        }
         toolbarLeft={
           <div className={styles.headerControlStack}>
             <div className={styles.mobileSectionTabs}>
@@ -175,9 +170,6 @@ export default function PricingSettingsPage() {
               />
             </div>
           </div>
-        }
-        toolbarRight={
-          <div className={styles.toolbarActions} />
         }
       >
         <div className={styles.settingsShell}>
@@ -220,22 +212,14 @@ export default function PricingSettingsPage() {
           <div className={styles.settingsMain}>
             <div className={styles.workspaceHero}>
               <div className={styles.workspaceHeroMain}>
-                <div className={styles.workspaceEyebrow}>{activeStore?.platformLabel || "Рабочее пространство"}</div>
+                <div className={styles.workspaceEyebrow}>{activeSection.title}</div>
                 <h2 className={styles.workspaceTitle}>{activeStore?.storeName || activeSection.title}</h2>
                 <p className={styles.workspaceSubtitle}>{activeSection.description}</p>
-              </div>
-              <div className={styles.workspaceMetaGrid}>
-                <div className={styles.workspaceMetaCard}>
-                  <span className={styles.workspaceMetaLabel}>Раздел</span>
-                  <strong className={styles.workspaceMetaValue}>{activeSection.title}</strong>
-                </div>
-                <div className={styles.workspaceMetaCard}>
-                  <span className={styles.workspaceMetaLabel}>Валюта</span>
-                  <strong className={styles.workspaceMetaValue}>{moneySign}</strong>
-                </div>
-                <div className={styles.workspaceMetaCard}>
-                  <span className={styles.workspaceMetaLabel}>Состояние</span>
-                  <strong className={styles.workspaceMetaValue}>{currentSaveState}</strong>
+                <div className={styles.workspaceHeroChips}>
+                  {activeStore?.platformLabel ? (
+                    <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
+                  ) : null}
+                  <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
                 </div>
               </div>
             </div>

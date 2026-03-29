@@ -6,6 +6,75 @@ import styles from "../PricingSettingsPage.module.css";
 import type { EditableFieldKey, PricingCategoryRow, PricingTableColumn } from "../types";
 import { BulkFillColumnModal } from "./BulkFillColumnModal";
 
+type CategoryTreeNode = {
+  id: string;
+  label: string;
+  depth: number;
+  pathLabel: string;
+  row: PricingCategoryRow | null;
+  children: CategoryTreeNode[];
+};
+
+function buildCategoryTree(rows: PricingCategoryRow[]): CategoryTreeNode[] {
+  const root: CategoryTreeNode[] = [];
+
+  for (const row of rows) {
+    const segments = [row.category, ...row.subcategoryLevels].filter(Boolean);
+    let level = root;
+    let currentPath = "";
+
+    segments.forEach((segment, index) => {
+      currentPath = currentPath ? `${currentPath} / ${segment}` : segment;
+      let node = level.find((candidate) => candidate.id === currentPath);
+      if (!node) {
+        node = {
+          id: currentPath,
+          label: segment,
+          depth: index,
+          pathLabel: currentPath,
+          row: null,
+          children: [],
+        };
+        level.push(node);
+      }
+      if (index === segments.length - 1) {
+        node.row = row;
+      }
+      level = node.children;
+    });
+  }
+
+  const normalize = (nodes: CategoryTreeNode[]): CategoryTreeNode[] =>
+    nodes
+      .map((node) => ({
+        ...node,
+        children: normalize(node.children).sort((a, b) => a.label.localeCompare(b.label, "ru")),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, "ru"));
+  return normalize(root);
+}
+
+function collectExpandedPathIds(row: PricingCategoryRow | null): string[] {
+  if (!row) return [];
+  const segments = [row.category, ...row.subcategoryLevels].filter(Boolean);
+  const ids: string[] = [];
+  let path = "";
+  for (const segment of segments) {
+    path = path ? `${path} / ${segment}` : segment;
+    ids.push(path);
+  }
+  return ids;
+}
+
+function findFirstLeaf(nodes: CategoryTreeNode[]): PricingCategoryRow | null {
+  for (const node of nodes) {
+    if (node.row) return node.row;
+    const nested = findFirstLeaf(node.children);
+    if (nested) return nested;
+  }
+  return null;
+}
+
 type Props = {
   loading: boolean;
   error: string;
@@ -41,19 +110,92 @@ export function GeneralSettingsSection({
 }: Props) {
   const [bulkField, setBulkField] = useState<EditableFieldKey | null>(null);
   const [selectedKey, setSelectedKey] = useState("");
+  const [expandedPaths, setExpandedPaths] = useState<string[]>([]);
   const bulkColumn = bulkField ? tableColumns.find((col) => col.field === bulkField) ?? null : null;
-  const selectedRow = categoryRows.find((row) => row.key === selectedKey) ?? categoryRows[0] ?? null;
+  const categoryTree = buildCategoryTree(categoryRows);
+  const fallbackRow = findFirstLeaf(categoryTree);
+  const selectedRow = categoryRows.find((row) => row.key === selectedKey) ?? fallbackRow;
   const inputColumns = tableColumns.filter((col) => col.kind === "input" && col.field);
 
   useEffect(() => {
     if (!categoryRows.length) {
       setSelectedKey("");
+      setExpandedPaths([]);
       return;
     }
     if (!selectedKey || !categoryRows.some((row) => row.key === selectedKey)) {
       setSelectedKey(categoryRows[0].key);
     }
   }, [categoryRows, selectedKey]);
+
+  useEffect(() => {
+    if (!selectedRow) return;
+    setExpandedPaths((current) => {
+      const next = new Set(current);
+      for (const id of collectExpandedPathIds(selectedRow)) {
+        next.add(id);
+      }
+      return Array.from(next);
+    });
+  }, [selectedRow]);
+
+  function toggleNode(pathId: string) {
+    setExpandedPaths((current) =>
+      current.includes(pathId) ? current.filter((id) => id !== pathId) : [...current, pathId],
+    );
+  }
+
+  function renderTree(nodes: CategoryTreeNode[]) {
+    return nodes.map((node) => {
+      const expanded = expandedPaths.includes(node.id);
+      const selectableRow = node.row;
+      const isSelected = selectableRow ? selectedRow?.key === selectableRow.key : false;
+      return (
+        <div key={node.id} className={styles.categoryTreeNode}>
+          <div
+            className={`${styles.categoryTreeRow} ${isSelected ? styles.categoryTreeRowActive : ""}`}
+            style={{ paddingLeft: `${12 + node.depth * 14}px` }}
+          >
+            <button
+              type="button"
+              className={`${styles.categoryTreeToggle} ${!node.children.length ? styles.categoryTreeToggleGhost : ""}`}
+              onClick={() => {
+                if (node.children.length) {
+                  toggleNode(node.id);
+                } else if (selectableRow) {
+                  setSelectedKey(selectableRow.key);
+                }
+              }}
+              aria-label={expanded ? "Свернуть категорию" : "Раскрыть категорию"}
+            >
+              {node.children.length ? (expanded ? "−" : "+") : "•"}
+            </button>
+            <button
+              type="button"
+              className={`${styles.categoryTreeSelect} ${isSelected ? styles.categoryTreeSelectActive : ""}`}
+              onClick={() => {
+                if (selectableRow) {
+                  setSelectedKey(selectableRow.key);
+                } else if (node.children.length) {
+                  toggleNode(node.id);
+                }
+              }}
+            >
+              <span className={styles.categoryTreeLabel}>{node.label}</span>
+              {selectableRow ? (
+                <span className={styles.categoryTreeMeta}>{selectableRow.itemsCount} SKU</span>
+              ) : (
+                <span className={styles.categoryTreeMeta}>{node.children.length} веток</span>
+              )}
+            </button>
+          </div>
+          {node.children.length && expanded ? (
+            <div className={styles.categoryTreeChildren}>{renderTree(node.children)}</div>
+          ) : null}
+        </div>
+      );
+    });
+  }
 
   return (
     <SectionBlock>
@@ -70,23 +212,20 @@ export function GeneralSettingsSection({
                   <div className={styles.categoryWorkspace}>
                     <aside className={styles.categorySidebar}>
                       <div className={styles.categorySidebarHead}>
-                        <div className={styles.categorySidebarTitle}>Категории</div>
-                        <div className={styles.categorySidebarMeta}>{categoryRows.length} записей</div>
+                        <div>
+                          <div className={styles.categorySidebarTitle}>Каталог категорий</div>
+                          <div className={styles.categorySidebarMeta}>Раскрывай только нужную ветку, а не весь список сразу.</div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn ghost"
+                          onClick={() => setBulkField("commission_percent")}
+                        >
+                          Заполнить комиссию всем
+                        </button>
                       </div>
                       <div className={styles.categorySidebarList}>
-                        {categoryRows.map((row) => (
-                          <button
-                            key={row.key}
-                            type="button"
-                            className={`${styles.categorySidebarItem} ${selectedRow.key === row.key ? styles.categorySidebarItemActive : ""}`}
-                            onClick={() => setSelectedKey(row.key)}
-                          >
-                            <span className={styles.categorySidebarItemTitle}>{row.category || "-"}</span>
-                            {row.subcategoryLevels.length ? (
-                              <span className={styles.categorySidebarItemPath}>{row.subcategoryLevels.join(" / ")}</span>
-                            ) : null}
-                          </button>
-                        ))}
+                        {renderTree(categoryTree)}
                       </div>
                     </aside>
 
@@ -137,72 +276,6 @@ export function GeneralSettingsSection({
                     </div>
                   </div>
                 ) : null}
-
-                <div className={styles.categoryEditorActions}>
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    onClick={() => setBulkField("commission_percent")}
-                  >
-                    Заполнить комиссию всем
-                  </button>
-                </div>
-
-                <div className={`${styles.pricingTableWrap} ${styles.pricingDesktopTableWrap}`}>
-                  <table className={styles.pricingTable}>
-                    <thead>
-                      <tr>
-                        {tableColumns.map((col) => (
-                          <th key={col.id}>
-                            <div className={styles.tableHeaderCell}>
-                              <span>{col.label}</span>
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {categoryRows.map((row) => (
-                        <tr key={row.key} className={selectedRow?.key === row.key ? styles.pricingTableRowActive : ""}>
-                          {tableColumns.map((col) => {
-                            if (col.id === "category") return <td key={col.id} className={styles.colText}>{row.category || "-"}</td>;
-                            if (col.id.startsWith("subcategory_")) {
-                              const idx = col.subIndex ?? 0;
-                              return <td key={col.id} className={styles.colText}>{row.subcategoryLevels[idx] || "-"}</td>;
-                            }
-                            const field = col.field;
-                            if (col.kind === "input" && field) {
-                              const cellKey = getCellKey(row.leafPath || row.key, field);
-                              const baseVal = row.values[field];
-                              const fallbackVal = baseVal == null ? defaultFieldValue(field) : "";
-                              const value = cellDrafts[cellKey] ?? (baseVal == null ? fallbackVal : formatNum(baseVal));
-                              return (
-                                <td key={col.id}>
-                                  <div className={styles.cellInputWrap}>
-                                    <input
-                                      className={`input ${styles.cellInput}`}
-                                      value={value}
-                                      onChange={(e) => queueSaveCell(row, field, e.target.value)}
-                                      onBlur={(e) => flushSaveCell(row, field, e.target.value)}
-                                      inputMode="decimal"
-                                    />
-                                    {cellSaving[cellKey] ? <span className={styles.cellSavingDot} /> : null}
-                                  </div>
-                                </td>
-                              );
-                            }
-                            return <td key={col.id}><span className={styles.placeholderDash}>-</span></td>;
-                          })}
-                        </tr>
-                      ))}
-                      {!categoryRows.length ? (
-                        <tr>
-                          <td colSpan={tableColumns.length}>Нет загруженных категорий для выбранного магазина.</td>
-                        </tr>
-                      ) : null}
-                    </tbody>
-                  </table>
-                </div>
                 <div className={styles.pricingMobileList}>
                   {categoryRows.map((row) => (
                     <article key={row.key} className={styles.pricingMobileCard}>
