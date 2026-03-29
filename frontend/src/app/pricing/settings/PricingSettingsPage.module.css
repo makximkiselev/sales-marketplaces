@@ -1078,18 +1078,16 @@
 }
 
 .salesPlanGrid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
   gap: 14px;
   max-width: 1120px;
-  width: fit-content;
+  width: min(100%, 1120px);
   justify-self: start;
 }
 
 .salesPlanCard {
-  width: min(346px, 100%);
-  flex: 0 0 min(346px, 100%);
   border: 1px solid rgba(132, 161, 214, 0.14);
   border-radius: 20px;
   background:
@@ -1181,6 +1179,11 @@
   line-height: 1.28;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.salesPlanLabelStack {
+  display: grid;
+  gap: 1px;
 }
 
 .salesPlanFields {
@@ -2078,7 +2081,6 @@
 
   .salesPlanCard {
     width: 100%;
-    flex-basis: 100%;
   }
 
   .salesPlanCardTitle {
@@ -2101,6 +2103,12 @@
 
   .pricingDesktopTableWrap {
     display: none;
+  }
+}
+
+@media (max-width: 1180px) and (min-width: 961px) {
+  .salesPlanGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

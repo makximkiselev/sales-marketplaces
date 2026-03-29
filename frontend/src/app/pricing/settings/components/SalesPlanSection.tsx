@@ -231,6 +231,15 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
     setFloatingNotice("Изменения сохранены");
   }
 
+  function stackedLabel(firstLine: string, secondLine: string) {
+    return (
+      <span className={styles.salesPlanLabelStack}>
+        <span>{firstLine}</span>
+        <span>{secondLine}</span>
+      </span>
+    );
+  }
+
   return (
     <SectionBlock>
       {loading ? <div className="status">Загрузка плана продаж...</div> : null}
@@ -331,7 +340,9 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
 
                   <div className={styles.salesPlanFields}>
                     <div className={styles.salesPlanField}>
-                      <div className={styles.salesPlanFieldLabel}>Плановый оборот, {currencySign}</div>
+                      <div className={styles.salesPlanFieldLabel}>
+                        {stackedLabel("Плановый", `оборот, ${currencySign}`)}
+                      </div>
                       <div className={styles.cellInputWrap}>
                         <input
                           className={`input ${styles.cellInput}`}
@@ -348,7 +359,9 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                     </div>
 
                     <div className={styles.salesPlanField}>
-                      <div className={styles.salesPlanFieldLabel}>Целевые рекламные расходы, %</div>
+                      <div className={styles.salesPlanFieldLabel}>
+                        {stackedLabel("Целевые рекламные", "расходы, %")}
+                      </div>
                       <div className={styles.cellInputWrap}>
                         <input
                           className={`input ${styles.cellInput}`}
@@ -360,7 +373,9 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                     </div>
 
                     <div className={`${styles.salesPlanField} ${styles.salesPlanFieldCompact}`}>
-                      <div className={styles.salesPlanFieldLabel}>Целевое значение, {currencySign}</div>
+                      <div className={styles.salesPlanFieldLabel}>
+                        {stackedLabel("Целевое", `значение, ${currencySign}`)}
+                      </div>
                       <div className={styles.cellInputWrap}>
                         <input
                           className={`input ${styles.cellInput}`}
@@ -376,7 +391,9 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                     </div>
 
                     <div className={`${styles.salesPlanField} ${styles.salesPlanFieldCompact}`}>
-                      <div className={styles.salesPlanFieldLabel}>Целевое значение, %</div>
+                      <div className={styles.salesPlanFieldLabel}>
+                        {stackedLabel("Целевое", "значение, %")}
+                      </div>
                       <div className={styles.cellInputWrap}>
                         <input
                           className={`input ${styles.cellInput}`}
@@ -388,7 +405,9 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                     </div>
 
                     <div className={`${styles.salesPlanField} ${styles.salesPlanFieldCompact}`}>
-                      <div className={styles.salesPlanFieldLabel}>Минимальная прибыль, %</div>
+                      <div className={styles.salesPlanFieldLabel}>
+                        {stackedLabel("Минимальная", "прибыль, %")}
+                      </div>
                       <div className={styles.cellInputWrap}>
                         <input
                           className={`input ${styles.cellInput}`}
