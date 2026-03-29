@@ -352,14 +352,6 @@ export default function PricingSettingsPage() {
                   ) : null}
                   <button
                     type="button"
-                    className="btn ghost"
-                    disabled={refreshing}
-                    onClick={() => void refreshStoreDataFromPlatform()}
-                  >
-                    {refreshing ? "Обновление..." : "Обновить данные"}
-                  </button>
-                  <button
-                    type="button"
                     className={`btn ${styles.recalculateButton}`}
                     disabled={Boolean(monitoringRunning.strategy_refresh)}
                     onClick={() => void runMonitoringJob("strategy_refresh")}
