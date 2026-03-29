@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { APP_TOAST_EVENT, type AppToastDetail } from "./ui/toastBus";
 
@@ -74,6 +74,9 @@ const groups: NavGroup[] = [
 const groupItems = (group: NavGroup): NavItem[] =>
   group.items ?? group.sections?.flatMap((section) => section.items) ?? [];
 
+const PULL_REFRESH_MAX = 84;
+const PULL_REFRESH_TRIGGER = 64;
+
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") {
     return pathname === "/";
@@ -93,6 +96,11 @@ export function Shell({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<AppToastDetail | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileGroupTitle, setMobileGroupTitle] = useState<string | null>(null);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+  const pullStartYRef = useRef<number | null>(null);
+  const pullActiveRef = useRef(false);
+  const pullTriggeredRef = useRef(false);
   const currentGroupTitle = useMemo(() => {
     const match = groups.find((group) => groupItems(group).some((item) => isActive(pathname, item.href)));
     return match?.title ?? groups[0].title;
@@ -113,6 +121,11 @@ export function Shell({ children }: { children: ReactNode }) {
     setSuppressHoverTitle(null);
     setMobileMenuOpen(false);
     setMobileGroupTitle(null);
+    setPullDistance(0);
+    setPullRefreshing(false);
+    pullStartYRef.current = null;
+    pullActiveRef.current = false;
+    pullTriggeredRef.current = false;
   }, [pathname]);
 
   useEffect(() => {
@@ -147,6 +160,58 @@ export function Shell({ children }: { children: ReactNode }) {
       const el = document.activeElement as HTMLElement | null;
       el?.blur?.();
     }
+  }
+
+  function canPullRefresh() {
+    if (mobileMenuOpen || pullRefreshing || typeof window === "undefined") return false;
+    if (!window.matchMedia("(max-width: 960px) and (pointer: coarse)").matches) return false;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    return scrollTop <= 0;
+  }
+
+  function handlePullStart(clientY: number) {
+    if (!canPullRefresh()) return;
+    pullStartYRef.current = clientY;
+    pullActiveRef.current = true;
+    pullTriggeredRef.current = false;
+  }
+
+  function handlePullMove(clientY: number) {
+    if (!pullActiveRef.current || pullStartYRef.current == null) return;
+    const delta = clientY - pullStartYRef.current;
+    if (delta <= 0) {
+      setPullDistance(0);
+      pullTriggeredRef.current = false;
+      return;
+    }
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    if (scrollTop > 0) {
+      pullActiveRef.current = false;
+      pullStartYRef.current = null;
+      setPullDistance(0);
+      pullTriggeredRef.current = false;
+      return;
+    }
+    const nextDistance = Math.min(PULL_REFRESH_MAX, delta * 0.45);
+    setPullDistance(nextDistance);
+    pullTriggeredRef.current = nextDistance >= PULL_REFRESH_TRIGGER;
+  }
+
+  function handlePullEnd() {
+    if (!pullActiveRef.current) return;
+    pullActiveRef.current = false;
+    pullStartYRef.current = null;
+    if (pullTriggeredRef.current) {
+      pullTriggeredRef.current = false;
+      setPullRefreshing(true);
+      setPullDistance(PULL_REFRESH_TRIGGER);
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 120);
+      return;
+    }
+    pullTriggeredRef.current = false;
+    setPullDistance(0);
   }
 
   function renderMobileMenu() {
@@ -356,7 +421,29 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </header>
         {renderMobileMenu()}
-        <div className="wrap">{children}</div>
+        <div
+          className={`pull-refresh-shell${pullDistance > 0 || pullRefreshing ? " active" : ""}`}
+          onTouchStart={(event) => {
+            if (event.touches.length !== 1) return;
+            handlePullStart(event.touches[0].clientY);
+          }}
+          onTouchMove={(event) => {
+            if (event.touches.length !== 1) return;
+            handlePullMove(event.touches[0].clientY);
+          }}
+          onTouchEnd={handlePullEnd}
+          onTouchCancel={handlePullEnd}
+        >
+          <div
+            className={`pull-refresh-indicator${pullTriggeredRef.current ? " ready" : ""}${pullRefreshing ? " loading" : ""}`}
+            style={{ height: `${pullDistance}px` }}
+            aria-hidden="true"
+          >
+            <div className="pull-refresh-spinner" />
+            <span>{pullRefreshing ? "Обновляем..." : pullTriggeredRef.current ? "Отпустите, чтобы обновить" : "Потяните вниз для обновления"}</span>
+          </div>
+          <div className="wrap">{children}</div>
+        </div>
         {toast ? (
           <div className={`app-toast${toast.tone === "error" ? " error" : ""}`}>
             {toast.message}
