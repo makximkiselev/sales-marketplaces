@@ -290,30 +290,6 @@
   font-weight: 700;
 }
 
-.salesPlanIntro {
-  border: 1px solid rgba(132, 161, 214, 0.16);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(12, 23, 41, 0.84), rgba(8, 16, 30, 0.9));
-  padding: 16px 18px;
-  display: grid;
-  gap: 6px;
-}
-
-.salesPlanIntroTitle {
-  color: #edf5ff;
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.salesPlanIntroText {
-  color: #abc0e0;
-  font-size: 13px;
-  line-height: 1.45;
-  max-width: 760px;
-}
-
 .stickyActionBar {
   position: sticky;
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
@@ -1042,7 +1018,7 @@
 
 .salesPlanGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -1108,7 +1084,7 @@
 
 .salesPlanModeGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
@@ -1133,7 +1109,7 @@
 
 .salesPlanFields {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
@@ -2004,7 +1980,7 @@
 
   .salesPlanGrid,
   .salesPlanFields {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
   .logisticsSettingsGrid {
@@ -2017,6 +1993,10 @@
 }
 
 @media (max-width: 1720px) and (min-width: 1321px) {
+  .salesPlanGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .logisticsSettingsGrid {
     grid-template-columns: minmax(500px, 1.6fr) minmax(290px, 1fr) minmax(290px, 1fr) minmax(250px, 0.85fr);
   }
