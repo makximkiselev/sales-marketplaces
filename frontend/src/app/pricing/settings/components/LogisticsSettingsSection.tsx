@@ -90,6 +90,7 @@ export function LogisticsSettingsSection({
     { field: "weight_kg", label: "Вес, кг" },
   ];
   const visibleSkuLabel = logisticsTreePath ? "SKU выбранной ветки" : "Все SKU магазина";
+  const selectedBranchLabel = logisticsTreePath || "Весь каталог";
 
   return (
     <SectionBlock>
@@ -129,6 +130,7 @@ export function LogisticsSettingsSection({
                     });
                   }}
                   emptyText="Нет категорий для выбранного магазина"
+                  actionLabel={expandedTreePaths.length ? "Свернуть все" : "Развернуть все"}
                 />
               </div>
 
@@ -136,12 +138,24 @@ export function LogisticsSettingsSection({
                 <div className={styles.logisticsTableHead}>
                   <div className={styles.logisticsTableIntro}>
                     <div className={styles.categorySidebarTitle}>Товары</div>
-                    <div className={styles.categorySidebarMeta}>
-                      {visibleSkuLabel}
-                      {logisticsTreePath ? ` • ${logisticsTreePath}` : ""}
-                    </div>
+                    <div className={styles.categorySidebarMeta}>{visibleSkuLabel}</div>
                   </div>
-                  <div className={styles.logisticsTableInfo}>Всего: {logisticsTotal}</div>
+                  <div className={styles.logisticsTableInfo}>
+                    <span className={styles.logisticsBranchChip}>{selectedBranchLabel}</span>
+                    <span>Всего: {logisticsTotal}</span>
+                    {logisticsTreePath ? (
+                      <button
+                        type="button"
+                        className={`btn ghost ${styles.logisticsResetButton}`}
+                        onClick={() => {
+                          setLogisticsTreePath("");
+                          setLogisticsPage(1);
+                        }}
+                      >
+                        Сбросить
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className={styles.logisticsTableControls}>

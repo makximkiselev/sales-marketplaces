@@ -2,6 +2,7 @@
   display: grid;
   gap: 12px;
   align-content: start;
+  min-height: 0;
 }
 
 .browserHead {
@@ -24,6 +25,7 @@
 .browserControls {
   display: grid;
   gap: 8px;
+  align-content: start;
 }
 
 .browserSearch {
@@ -32,6 +34,7 @@
 
 .browserAction {
   justify-self: start;
+  min-height: 38px;
 }
 
 .browserList {
@@ -78,20 +81,19 @@
   cursor: pointer;
   transition:
     border-color 0.16s ease,
-    background 0.16s ease,
-    transform 0.16s ease;
+    background 0.16s ease;
 }
 
 .browserNode:hover {
   border-color: rgba(76, 201, 240, 0.32);
   background: rgba(12, 24, 44, 0.78);
-  transform: translateY(-1px);
 }
 
 .browserNodeActive {
   border-color: rgba(76, 201, 240, 0.42);
   background:
     linear-gradient(180deg, rgba(28, 66, 98, 0.42), rgba(16, 30, 53, 0.88));
+  box-shadow: 0 0 0 1px rgba(76, 201, 240, 0.1) inset;
 }
 
 .browserLabel {

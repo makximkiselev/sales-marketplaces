@@ -21,6 +21,7 @@ type Props = {
   onSelectPath: (path: string) => void;
   getNodeMeta?: (path: string, hasChildren: boolean) => NodeMeta;
   emptyText?: string;
+  actionLabel?: string;
 };
 
 function filterTree(nodes: TreeNode[], query: string): TreeNode[] {
@@ -75,6 +76,7 @@ export function CatalogBrowser({
   onSelectPath,
   getNodeMeta,
   emptyText = "Нет данных для каталога",
+  actionLabel,
 }: Props) {
   const filteredRoots = useMemo(() => filterTree(roots, query), [roots, query]);
   const effectiveExpanded = useMemo(
@@ -98,7 +100,7 @@ export function CatalogBrowser({
           placeholder="Поиск по категории или ветке"
         />
         <button type="button" className={`btn ghost ${styles.browserAction}`} onClick={onToggleExpandAll}>
-          {expandedPaths.length ? "Свернуть все" : "Развернуть все"}
+          {actionLabel ?? (expandedPaths.length ? "Свернуть все" : "Развернуть все")}
         </button>
       </div>
 
@@ -125,7 +127,10 @@ export function CatalogBrowser({
                 <button
                   type="button"
                   className={`${styles.browserNode} ${selected ? styles.browserNodeActive : ""}`}
-                  onClick={() => onSelectPath(node.path)}
+                  onClick={() => {
+                    if (node.hasChildren && !effectiveExpanded.has(node.path)) onToggleExpand(node.path);
+                    onSelectPath(node.path);
+                  }}
                 >
                   <span className={styles.browserLabel}>{node.name}</span>
                   {(meta?.secondary || meta?.badge) ? (

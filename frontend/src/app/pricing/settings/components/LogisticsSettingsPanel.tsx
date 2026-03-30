@@ -52,17 +52,19 @@ export function LogisticsSettingsPanel({
         <div className={`${styles.logisticsStoreCard} ${styles.logisticsStoreCardWide} ${logisticsFieldErrors.handling ? styles.settingFieldError : ""}`}>
           <div className={styles.logisticsStoreCardHead}>
             <div className={styles.logisticsStoreCardTitle}>Обработка заказа</div>
-            <div className={styles.logisticsModeTabs}>
+            <div className={styles.segmentedSwitch} role="tablist" aria-label="Режим обработки заказа">
               <button
                 type="button"
-                className={`${styles.logisticsModeTab} ${!isPercentMode ? styles.logisticsModeTabActive : ""}`}
+                className={`${styles.segmentedSwitchButton} ${!isPercentMode ? styles.segmentedSwitchButtonActive : ""}`}
+                aria-pressed={!isPercentMode}
                 onClick={() => setLogisticsField("handling_mode", "fixed")}
               >
                 Фикс, {moneySign}
               </button>
               <button
                 type="button"
-                className={`${styles.logisticsModeTab} ${isPercentMode ? styles.logisticsModeTabActive : ""}`}
+                className={`${styles.segmentedSwitchButton} ${isPercentMode ? styles.segmentedSwitchButtonActive : ""}`}
+                aria-pressed={isPercentMode}
                 onClick={() => setLogisticsField("handling_mode", "percent")}
               >
                 Процент

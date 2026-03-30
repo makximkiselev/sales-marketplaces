@@ -849,20 +849,24 @@ async def pricing_settings_logistics(
 
         return _normalize(root)
 
-    filtered: list[dict] = []
+    searched_rows: list[dict] = []
     for r in raw_rows:
         sku = str(r.get("sku") or "").strip()
         if not sku:
             continue
         name = str(r.get("name") or "").strip()
-        tree_path_parts = _row_tree_path(r)
         if q and q not in f"{sku} {name}".lower():
             continue
+        searched_rows.append(r)
+
+    filtered: list[dict] = []
+    for r in searched_rows:
+        tree_path_parts = _row_tree_path(r)
         if selected_category_parts and tree_path_parts[: len(selected_category_parts)] != selected_category_parts:
             continue
         filtered.append(r)
     filtered.sort(key=lambda r: str(r.get("sku") or ""))
-    tree_roots = _build_tree([_row_tree_path(r) for r in filtered])
+    tree_roots = _build_tree([_row_tree_path(r) for r in searched_rows])
 
     page_size_n = max(1, min(int(page_size or 50), 500))
     page_n = max(1, int(page or 1))
