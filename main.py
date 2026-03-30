@@ -191,6 +191,7 @@ async def health() -> dict[str, bool]:
 _AUTH_EXEMPT_API_PATHS = {
     "/api/health",
     "/api/auth/me",
+    "/api/auth/login",
     "/api/auth/session",
     "/api/auth/logout",
 }
