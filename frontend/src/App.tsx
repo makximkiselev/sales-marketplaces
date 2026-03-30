@@ -20,6 +20,7 @@ import SalesElasticityPage from "./app/sales/elasticity/SalesElasticityPage";
 import SalesOverviewPage from "./app/sales/overview/SalesOverviewPage";
 import SettingsMonitoringPage from "./app/settings/monitoring/MonitoringPage";
 import SettingsSourcesPage from "./app/settings/sources/DataSourcesPage";
+import SettingsAdminPage from "./app/settings/admin/AdminPage";
 import { buildApiUrl } from "./lib/api";
 
 type AuthUser = {
@@ -95,6 +96,7 @@ export default function App() {
         <Route path="/sales/promos" element={<Navigate to="/pricing/promos" replace />} />
         <Route path="/attractiveness/overview" element={<Navigate to="/pricing/attractiveness" replace />} />
         <Route path="/settings/fx-rates" element={<PricingFxRatesPage />} />
+        <Route path="/settings/admin" element={<SettingsAdminPage />} />
         <Route path="/settings/monitoring" element={<SettingsMonitoringPage />} />
         <Route path="/settings/pricing" element={<PricingSettingsPage />} />
         <Route path="/settings/sources" element={<SettingsSourcesPage />} />

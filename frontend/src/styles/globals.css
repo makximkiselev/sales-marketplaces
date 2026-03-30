@@ -1914,6 +1914,58 @@ select.input {
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
+  flex: 1 1 auto;
+}
+
+.app-shell-userzone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.app-shell-utility-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  background: rgba(10, 18, 33, 0.52);
+  color: #bfd1ee;
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    color 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.app-shell-utility-link:hover {
+  color: #f3f8ff;
+  border-color: rgba(76, 201, 240, 0.22);
+  background: rgba(16, 28, 48, 0.76);
+}
+
+.app-shell-utility-link.active {
+  color: #f7fbff;
+  border-color: rgba(76, 201, 240, 0.24);
+  background: linear-gradient(180deg, rgba(44, 78, 122, 0.5), rgba(18, 32, 58, 0.78));
+}
+
+.app-shell-userchip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.12);
+  background: rgba(7, 14, 27, 0.52);
+  color: #e8f1ff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .app-shell-primary-link {

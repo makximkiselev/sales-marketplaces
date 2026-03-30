@@ -1,10 +1,12 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { buildApiUrl } from "../lib/api";
 import { APP_TOAST_EVENT, type AppToastDetail } from "./ui/toastBus";
 
 type NavItem = { href: string; label: string };
 type NavSection = { title: string; items: NavItem[] };
 type NavGroup = { title: string; shortLabel: string; items?: NavItem[]; sections?: NavSection[] };
+type AuthUser = { user_id: string; identifier: string; display_name: string; role: string; is_active: boolean };
 
 const groups: NavGroup[] = [
   { title: "Сводка", shortLabel: "Сводка", items: [{ href: "/", label: "Дашборд" }] },
@@ -56,6 +58,7 @@ const groups: NavGroup[] = [
     items: [
       { href: "/settings/sources", label: "Источники" },
       { href: "/settings/pricing", label: "Настройки ценообразования" },
+      { href: "/settings/admin", label: "Администрирование" },
       { href: "/settings/fx-rates", label: "Курс валют" },
       { href: "/settings/monitoring", label: "Мониторинг" },
     ],
@@ -92,6 +95,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const [toast, setToast] = useState<AppToastDetail | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [mobileRouteLoading, setMobileRouteLoading] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [pullReady, setPullReady] = useState(false);
@@ -108,6 +112,21 @@ export function Shell({ children }: { children: ReactNode }) {
     [currentGroup, pathname],
   );
   const currentSections = useMemo(() => flattenCurrentGroupSections(currentGroup), [currentGroup]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(buildApiUrl("/api/auth/me"), { cache: "no-store", credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { ok?: boolean; user?: AuthUser } | null) => {
+        if (!cancelled) setAuthUser(data?.ok && data.user ? data.user : null);
+      })
+      .catch(() => {
+        if (!cancelled) setAuthUser(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -309,6 +328,14 @@ export function Shell({ children }: { children: ReactNode }) {
                 );
               })}
             </nav>
+            <div className="app-shell-userzone">
+              {authUser?.role === "owner" ? (
+                <Link to="/settings/admin" className={`app-shell-utility-link${isActive(pathname, "/settings/admin") ? " active" : ""}`}>
+                  Пользователи
+                </Link>
+              ) : null}
+              {authUser ? <div className="app-shell-userchip">{authUser.display_name || authUser.identifier}</div> : null}
+            </div>
           </div>
         </div>
       </header>
