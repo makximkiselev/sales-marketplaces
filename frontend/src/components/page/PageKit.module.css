@@ -141,6 +141,34 @@
   padding: 16px 18px 18px;
 }
 
+.mobileDockLayout {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.mobileDockContent {
+  min-width: 0;
+}
+
+.mobileDockSpacer {
+  height: calc(var(--mobile-dock-height, 208px) + 12px);
+  flex: 0 0 auto;
+}
+
+.mobileDockFixed {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--mobile-dock-offset, 82px) + env(safe-area-inset-bottom, 0px));
+  z-index: 135;
+  pointer-events: none;
+}
+
+.mobileDockInner {
+  pointer-events: auto;
+}
+
 @media (max-width: 960px) {
   .frameInner {
     padding: 14px 12px 16px;
@@ -214,5 +242,9 @@
   .modalHead,
   .modalBody {
     padding-inline: 14px;
+  }
+
+  .mobileDockSpacer {
+    height: calc(var(--mobile-dock-height, 208px) + 12px);
   }
 }

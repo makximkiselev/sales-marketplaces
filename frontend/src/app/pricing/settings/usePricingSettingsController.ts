@@ -4,8 +4,19 @@ import { usePricingCategoryController } from "./usePricingCategoryController";
 import { usePricingGeneralController } from "./usePricingGeneralController";
 import { usePricingLogisticsController } from "./usePricingLogisticsController";
 import { getCachedPricingPlatforms, loadPricingPlatforms, refreshPricingStoreData, resolveNextStoreSelection } from "./controllerServices";
+import { safeReadJson, safeWriteJson } from "./cache";
 import type { PlatformItem, RefreshMonitoringRowApi, SalesPlanRowApi, StoreTabItem } from "./types";
 import { showAppToast } from "../../../components/ui/toastBus";
+
+const PRICING_SETTINGS_TAB_KEY = "pricing_settings_active_tab_v1";
+type SettingsTab = "sales_plan" | "categories" | "logistics" | "monitoring";
+
+function readInitialSettingsTab(): SettingsTab {
+  const saved = safeReadJson<SettingsTab>(PRICING_SETTINGS_TAB_KEY);
+  return saved === "sales_plan" || saved === "categories" || saved === "logistics" || saved === "monitoring"
+    ? saved
+    : "sales_plan";
+}
 
 export function usePricingSettingsController() {
   const [loading, setLoading] = useState(true);
@@ -14,7 +25,7 @@ export function usePricingSettingsController() {
   const [platforms, setPlatforms] = useState<PlatformItem[]>([]);
   const [activePlatform, setActivePlatform] = useState("yandex_market");
   const [activeStoreId, setActiveStoreId] = useState("");
-  const [settingsTab, setSettingsTab] = useState<"sales_plan" | "categories" | "sources" | "logistics" | "monitoring">("sales_plan");
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>(() => readInitialSettingsTab());
   const [salesPlanRows, setSalesPlanRows] = useState<SalesPlanRowApi[]>([]);
   const [salesPlanLoading, setSalesPlanLoading] = useState(false);
   const [salesPlanError, setSalesPlanError] = useState("");
@@ -174,7 +185,7 @@ export function usePricingSettingsController() {
       await loadMonitoringData();
       await refreshPricingStoreData(activePlatform, activeStoreId);
       if (settingsTab === "logistics") await logistics.loadLogisticsData();
-      else if (settingsTab === "categories" || settingsTab === "sources") await categories.loadPricingCategoryTree();
+      else if (settingsTab === "categories") await categories.loadPricingCategoryTree();
     } catch (e) {
       categories.setItemsError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -185,6 +196,9 @@ export function usePricingSettingsController() {
   useEffect(() => { void loadContext(); }, []);
   useEffect(() => { void loadSalesPlanData(); }, []);
   useEffect(() => { void loadMonitoringData(); }, []);
+  useEffect(() => {
+    safeWriteJson(PRICING_SETTINGS_TAB_KEY, settingsTab);
+  }, [settingsTab]);
 
   useEffect(() => {
     if (!activeStores.length) {

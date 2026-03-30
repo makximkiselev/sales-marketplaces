@@ -114,7 +114,20 @@
 
 .mobileSettingsMain {
   gap: 12px;
-  padding-bottom: 112px;
+  padding-bottom: 96px;
+}
+
+.mobileActionDockPanel {
+  display: grid;
+  gap: 14px;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(10, 18, 33, 0.96), rgba(8, 16, 30, 0.98));
+  box-shadow:
+    0 14px 32px rgba(3, 8, 18, 0.28),
+    inset 0 1px 0 rgba(132, 161, 214, 0.08);
 }
 
 .mobileNavStack {
@@ -187,6 +200,13 @@
 .mobileSectionHero {
   display: grid;
   gap: 4px;
+}
+
+:global(body.pricing-mobile-catalog-open) :global(.app-shell-header),
+:global(body.pricing-mobile-catalog-open) :global(.app-shell-subnav-wrap),
+:global(body.pricing-mobile-catalog-open) :global(.app-shell-bottom-nav) {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .desktopSectionTabs {
@@ -600,26 +620,28 @@
 .mobileSheetBackdrop {
   position: fixed;
   inset: 0;
-  z-index: 40;
-  background: rgba(2, 6, 16, 0.58);
-  backdrop-filter: blur(10px);
+  z-index: 260;
+  background: rgba(7, 12, 22, 0.96);
+  backdrop-filter: blur(18px);
   display: none;
 }
 
 .mobileSheet {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  border: 1px solid rgba(132, 161, 214, 0.18);
-  border-radius: 22px;
+  position: fixed;
+  inset: 0;
+  border: 0;
+  border-radius: 0;
   background:
-    linear-gradient(180deg, rgba(12, 22, 39, 0.96), rgba(8, 16, 30, 0.98));
-  box-shadow: 0 24px 48px rgba(3, 8, 18, 0.42);
-  padding: 16px;
+    linear-gradient(180deg, rgba(10, 18, 33, 0.998), rgba(7, 13, 24, 0.998));
+  box-shadow: none;
+  padding:
+    calc(12px + env(safe-area-inset-top, 0px))
+    14px
+    calc(18px + env(safe-area-inset-bottom, 0px));
   display: grid;
-  gap: 14px;
-  max-height: min(72vh, 720px);
+  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr);
+  max-height: none;
   overflow: auto;
 }
 
@@ -628,6 +650,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0 0 10px;
+  background: linear-gradient(180deg, rgba(10, 18, 33, 0.998), rgba(10, 18, 33, 0.94));
 }
 
 .mobileSheetTitle {
@@ -712,9 +739,11 @@
 }
 
 .categorySidebarMobile {
+  display: grid;
   border: 0;
   background: transparent;
   padding: 0;
+  align-content: start;
 }
 
 .categorySidebarHead {
@@ -741,6 +770,8 @@
   max-height: 540px;
   overflow: auto;
   padding-right: 2px;
+  align-content: start;
+  align-items: start;
 }
 
 .categorySidebarSearch {
@@ -759,11 +790,12 @@
 .categoryTreeNode {
   display: grid;
   gap: 4px;
+  align-content: start;
 }
 
 .categoryTreeRow {
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 6px;
 }
 
@@ -799,6 +831,7 @@
   padding: 10px 12px;
   display: grid;
   gap: 6px;
+  align-content: start;
   cursor: pointer;
   transition:
     border-color 0.16s ease,
@@ -1798,9 +1831,9 @@
   min-width: 0;
   max-width: 100%;
   color: var(--text-soft);
-  font-size: 26px;
-  line-height: 1.12;
-  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.22;
+  font-weight: 700;
   white-space: normal;
   overflow-wrap: anywhere;
 }
@@ -2263,8 +2296,9 @@
   .stickyActionBar {
     position: fixed;
     left: 50%;
-    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(82px + env(safe-area-inset-bottom, 0px));
     transform: translateX(-50%);
+    z-index: 135;
     width: min(calc(100vw - 20px), 720px);
     flex-direction: column;
     align-items: stretch;
@@ -2390,6 +2424,10 @@
 
   .categorySidebar {
     display: none;
+  }
+
+  .categorySidebarMobile {
+    display: grid;
   }
 
   .categoryEditor {

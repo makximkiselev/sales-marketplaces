@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { CSSProperties, ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./PageKit.module.css";
 
@@ -68,6 +68,45 @@ export function PageSectionTitle({
         {meta ? <div className={styles.sectionMeta}>{meta}</div> : null}
       </div>
       {actions}
+    </div>
+  );
+}
+
+export function MobileDockLayout({
+  children,
+  dock,
+  dockVisible = true,
+  dockHeight = 208,
+  dockOffset = 82,
+  className = "",
+  contentClassName = "",
+  dockClassName = "",
+}: {
+  children: ReactNode;
+  dock?: ReactNode;
+  dockVisible?: boolean;
+  dockHeight?: number;
+  dockOffset?: number;
+  className?: string;
+  contentClassName?: string;
+  dockClassName?: string;
+}) {
+  const vars = {
+    ["--mobile-dock-height" as string]: `${dockHeight}px`,
+    ["--mobile-dock-offset" as string]: `${dockOffset}px`,
+  } as CSSProperties;
+
+  return (
+    <div className={`${styles.mobileDockLayout} ${className}`.trim()} style={vars}>
+      <div className={`${styles.mobileDockContent} ${contentClassName}`.trim()}>{children}</div>
+      {dockVisible && dock ? (
+        <>
+          <div className={styles.mobileDockSpacer} aria-hidden="true" />
+          <div className={`${styles.mobileDockFixed} ${dockClassName}`.trim()}>
+            <div className={styles.mobileDockInner}>{dock}</div>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

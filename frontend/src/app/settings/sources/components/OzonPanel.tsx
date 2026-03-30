@@ -1,6 +1,6 @@
 import { PanelCard } from "../../../../components/page/SectionKit";
 import styles from "../DataSourcesPage.module.css";
-import type { DeleteRequest, OzonAccount } from "../types";
+import type { DeleteRequest, OzonAccount, StoreSourceBinding } from "../types";
 
 type Props = {
   accounts: OzonAccount[];
@@ -11,6 +11,14 @@ type Props = {
   flowSavingKey: string | null;
   currencySavingKey: string | null;
   fulfillmentSavingKey: string | null;
+  sourceBindingSavingKey: string | null;
+  storeSourceBindings: Record<string, StoreSourceBinding>;
+  openStoreSourceModal: (params: {
+    target: "cogs" | "stock";
+    platform: "ozon";
+    storeId: string;
+    storeName: string;
+  }) => void;
   openOzonWizard: (account?: {
     client_id: string;
     api_key?: string;
@@ -52,6 +60,9 @@ export function OzonPanel({
   flowSavingKey,
   currencySavingKey,
   fulfillmentSavingKey,
+  sourceBindingSavingKey,
+  storeSourceBindings,
+  openStoreSourceModal,
   openOzonWizard,
   openDeleteConfirm,
   updateStoreFulfillment,
@@ -82,6 +93,8 @@ export function OzonPanel({
                   <col className={styles.ymColName} />
                   <col className={styles.ymColModel} />
                   <col className={styles.ymColCurrency} />
+                  <col className={styles.ymColSource} />
+                  <col className={styles.ymColSource} />
                   <col className={styles.ymColToggle} />
                   <col className={styles.ymColToggle} />
                   <col className={styles.ymColStatus} />
@@ -94,6 +107,8 @@ export function OzonPanel({
                     <th>Наименование</th>
                     <th>Модель</th>
                     <th>Валюта</th>
+                    <th>Себестоимость</th>
+                    <th>Остаток</th>
                     <th className={styles.ymToggleHead}>Импорт</th>
                     <th className={styles.ymToggleHead}>Экспорт</th>
                     <th className={styles.ymStatusHead}>Статус</th>
@@ -103,6 +118,7 @@ export function OzonPanel({
                 <tbody>
                   {accounts.map((acc) => {
                     const isChecking = Boolean(ozCheckLoading[acc.client_id]);
+                    const sourceBinding = storeSourceBindings[`ozon:${acc.client_id}`];
                     const statusClass = acc.health_status === "error" ? "err" : acc.health_status === "ok" ? "ok" : "warn";
                     const statusLabel = acc.health_status === "error" ? "Ошибка" : acc.health_status === "ok" ? "Доступен" : "Не проверен";
                     return (
@@ -184,6 +200,70 @@ export function OzonPanel({
                             <option value="RUB">RUB</option>
                             <option value="USD">USD</option>
                           </select>
+                        </td>
+                        <td className={styles.ymSourceCell}>
+                          <div className={styles.storeSourceCell}>
+                            <div className={styles.storeSourceName}>
+                              {sourceBinding?.cogsSource?.sourceName || "Не выбран"}
+                            </div>
+                            <div className={styles.storeSourceMeta}>
+                              {sourceBinding?.cogsSource ? (
+                                <>
+                                  <span>SKU: {sourceBinding.cogsSource.skuColumn}</span>
+                                  <span>Значение: {sourceBinding.cogsSource.valueColumn}</span>
+                                </>
+                              ) : (
+                                <span>Источник не настроен</span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              className={`btn inline ${styles.storeSourceButton}`}
+                              disabled={sourceBindingSavingKey === `cogs:ozon:${acc.client_id}`}
+                              onClick={() =>
+                                openStoreSourceModal({
+                                  target: "cogs",
+                                  platform: "ozon",
+                                  storeId: acc.client_id,
+                                  storeName: acc.seller_name || `Ozon кабинет ${acc.client_id}`,
+                                })
+                              }
+                            >
+                              {sourceBinding?.cogsSource ? "Изменить" : "Выбрать"}
+                            </button>
+                          </div>
+                        </td>
+                        <td className={styles.ymSourceCell}>
+                          <div className={styles.storeSourceCell}>
+                            <div className={styles.storeSourceName}>
+                              {sourceBinding?.stockSource?.sourceName || "Не выбран"}
+                            </div>
+                            <div className={styles.storeSourceMeta}>
+                              {sourceBinding?.stockSource ? (
+                                <>
+                                  <span>SKU: {sourceBinding.stockSource.skuColumn}</span>
+                                  <span>Значение: {sourceBinding.stockSource.valueColumn}</span>
+                                </>
+                              ) : (
+                                <span>Источник не настроен</span>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              className={`btn inline ${styles.storeSourceButton}`}
+                              disabled={sourceBindingSavingKey === `stock:ozon:${acc.client_id}`}
+                              onClick={() =>
+                                openStoreSourceModal({
+                                  target: "stock",
+                                  platform: "ozon",
+                                  storeId: acc.client_id,
+                                  storeName: acc.seller_name || `Ozon кабинет ${acc.client_id}`,
+                                })
+                              }
+                            >
+                              {sourceBinding?.stockSource ? "Изменить" : "Выбрать"}
+                            </button>
+                          </div>
                         </td>
                         <td className={styles.ymToggleCell}>
                           <div className={styles.ymToggleWrap}>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { fetchPricingCategoryTree, savePricingStoreSettings } from "../../pricing/settings/api";
 import { useDeleteConfirmController } from "./useDeleteConfirmController";
 import { useGsheetsSourcesController } from "./useGsheetsSourcesController";
 import { useOzonSourcesController } from "./useOzonSourcesController";
@@ -31,7 +32,52 @@ import {
   verifyGsheets as apiVerifyGsheets,
 } from "./api";
 import { formatDateTime, formatRefreshLabel, getSortedOzonAccounts, getSortedYandexAccounts } from "./controllerUtils";
-import type { IntegrationsPayload, SourceItem } from "./types";
+import type { IntegrationsPayload, SourceItem, StoreSourceBinding } from "./types";
+import type { CogsSource, StockSource } from "../../pricing/settings/types";
+
+type SourceBindingTarget = "cogs" | "stock";
+type SourceBindingModalState = {
+  target: SourceBindingTarget;
+  platform: "yandex_market" | "ozon";
+  storeId: string;
+  storeName: string;
+};
+
+function buildStoreSourceBinding(data?: {
+  cogs_source_type?: "table" | "system" | null;
+  cogs_source_id?: string | null;
+  cogs_source_name?: string | null;
+  cogs_sku_column?: string | null;
+  cogs_value_column?: string | null;
+  stock_source_type?: "table" | "system" | null;
+  stock_source_id?: string | null;
+  stock_source_name?: string | null;
+  stock_sku_column?: string | null;
+  stock_value_column?: string | null;
+  updated_at?: string | null;
+}): StoreSourceBinding {
+  return {
+    cogsSource: data?.cogs_source_id
+      ? {
+          type: data.cogs_source_type ?? "table",
+          sourceId: data.cogs_source_id,
+          sourceName: data.cogs_source_name ?? "",
+          skuColumn: data.cogs_sku_column ?? "",
+          valueColumn: data.cogs_value_column ?? "",
+        }
+      : null,
+    stockSource: data?.stock_source_id
+      ? {
+          type: data.stock_source_type ?? "table",
+          sourceId: data.stock_source_id,
+          sourceName: data.stock_source_name ?? "",
+          skuColumn: data.stock_sku_column ?? "",
+          valueColumn: data.stock_value_column ?? "",
+        }
+      : null,
+    updatedAt: data?.updated_at ?? null,
+  };
+}
 
 export function useSourcesPageController() {
   const [sectionTab, setSectionTab] = useState<"all" | "platforms" | "tables" | "external">("all");
@@ -46,6 +92,9 @@ export function useSourcesPageController() {
   const [flowSavingKey, setFlowSavingKey] = useState<string | null>(null);
   const [currencySavingKey, setCurrencySavingKey] = useState<string | null>(null);
   const [fulfillmentSavingKey, setFulfillmentSavingKey] = useState<string | null>(null);
+  const [sourceBindingSavingKey, setSourceBindingSavingKey] = useState<string | null>(null);
+  const [storeSourceBindings, setStoreSourceBindings] = useState<Record<string, StoreSourceBinding>>({});
+  const [sourceBindingModal, setSourceBindingModal] = useState<SourceBindingModalState | null>(null);
   const [flowError, setFlowError] = useState("");
 
   const gsheetsSources = useMemo(
@@ -150,10 +199,42 @@ export function useSourcesPageController() {
       const data = await loadSourcesContext();
       setSources(data.sources);
       setIntegrations(data.integrations);
+      const targets: Array<{ key: string; platform: "yandex_market" | "ozon"; storeId: string }> = [];
+      for (const account of data.integrations.yandex_market?.accounts || []) {
+        for (const shop of account.shops || []) {
+          const storeId = String(shop.campaign_id || "").trim();
+          if (!storeId) continue;
+          targets.push({ key: `yandex_market:${storeId}`, platform: "yandex_market", storeId });
+        }
+      }
+      for (const account of data.integrations.ozon?.accounts || []) {
+        const storeId = String(account.client_id || "").trim();
+        if (!storeId) continue;
+        targets.push({ key: `ozon:${storeId}`, platform: "ozon", storeId });
+      }
+      const sourceBindings = await Promise.all(
+        targets.map(async ({ key, platform, storeId }) => {
+          try {
+            const pricingData = await fetchPricingCategoryTree(platform, storeId);
+            return [key, buildStoreSourceBinding(pricingData.store_settings)] as const;
+          } catch {
+            return [key, buildStoreSourceBinding()] as const;
+          }
+        }),
+      );
+      setStoreSourceBindings(Object.fromEntries(sourceBindings));
       if (data.lastRefreshAt) setLastRefreshAt(data.lastRefreshAt);
     } finally {
       setLoading(false);
     }
+  }
+
+  function openStoreSourceModal(params: SourceBindingModalState) {
+    setSourceBindingModal(params);
+  }
+
+  function closeStoreSourceModal() {
+    setSourceBindingModal(null);
   }
 
   useEffect(() => {
@@ -298,6 +379,54 @@ export function useSourcesPageController() {
     }
   }
 
+  async function saveStoreSourceBinding(source: CogsSource | StockSource) {
+    if (!sourceBindingModal) return;
+    const { target, platform, storeId } = sourceBindingModal;
+    const saveKey = `${target}:${platform}:${storeId}`;
+    setSourceBindingSavingKey(saveKey);
+    try {
+      const values =
+        target === "cogs"
+          ? {
+              cogs_source_type: source.type ?? null,
+              cogs_source_id: source.sourceId ?? null,
+              cogs_source_name: source.sourceName ?? null,
+              cogs_sku_column: source.skuColumn ?? null,
+              cogs_value_column: source.valueColumn ?? null,
+            }
+          : {
+              stock_source_type: source.type ?? null,
+              stock_source_id: source.sourceId ?? null,
+              stock_source_name: source.sourceName ?? null,
+              stock_sku_column: source.skuColumn ?? null,
+              stock_value_column: source.valueColumn ?? null,
+            };
+      const data = await savePricingStoreSettings({
+        platform,
+        store_id: storeId,
+        values,
+      });
+      if (!data.ok) throw new Error(data.message || "Не удалось сохранить источник");
+      setStoreSourceBindings((current) => {
+        const key = `${platform}:${storeId}`;
+        const prev = current[key] || buildStoreSourceBinding();
+        return {
+          ...current,
+          [key]: {
+            ...prev,
+            [target === "cogs" ? "cogsSource" : "stockSource"]: source,
+            updatedAt: data.settings?.updated_at ?? prev.updatedAt ?? null,
+          },
+        };
+      });
+      setSourceBindingModal(null);
+    } catch (e) {
+      setFlowError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSourceBindingSavingKey(null);
+    }
+  }
+
 
 
 
@@ -356,6 +485,9 @@ export function useSourcesPageController() {
     flowSavingKey,
     currencySavingKey,
     fulfillmentSavingKey,
+    sourceBindingSavingKey,
+    storeSourceBindings,
+    sourceBindingModal,
     flowError,
     gsWizardOpen: gsheets.gsWizardOpen,
     gsWizardMode: gsheets.gsWizardMode,
@@ -422,6 +554,9 @@ export function useSourcesPageController() {
     updateDataFlow,
     updateStoreCurrency,
     updateStoreFulfillment,
+    openStoreSourceModal,
+    closeStoreSourceModal,
+    saveStoreSourceBinding,
     openWizard: yandex.openWizard,
     openAddShop: yandex.openAddShop,
     openEditAccount: yandex.openEditAccount,

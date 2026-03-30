@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import styles from "./PricingSettingsPage.module.css";
 import { PageFrame } from "../../../components/page/PageKit";
-import { CogsSourceModal } from "./components/CogsSourceModal";
 import { LogisticsImportModal } from "./components/LogisticsImportModal";
 import { BulkFillColumnModal } from "./components/BulkFillColumnModal";
 import { usePricingSettingsController } from "./usePricingSettingsController";
@@ -33,14 +32,8 @@ export default function PricingSettingsPage() {
   const controller = usePricingSettingsController();
   const {
     activeStoreId,
-    cogsSource,
-    cogsModalOpen,
-    earningMode,
-    stockSource,
-    stockModalOpen,
     settingsTab,
     salesPlanError,
-    monitoringRunning,
     storeSettingsSaving,
     storeSettingsError,
     storeSettingsSavedAt,
@@ -49,12 +42,7 @@ export default function PricingSettingsPage() {
     logisticsStoreError,
     logisticsImportOpen,
     tableColumns,
-    setCogsModalOpen,
-    setCogsSource,
-    setStockModalOpen,
-    setStockSource,
     setLogisticsImportOpen,
-    runMonitoringJob,
     applyColumnValue,
     handleLogisticsImportDone,
     storeTabs,
@@ -76,12 +64,6 @@ export default function PricingSettingsPage() {
       description: "Комиссии, реклама и правила расчёта по категориям.",
     },
     {
-      id: "sources" as const,
-      label: "Источники данных",
-      title: "Источники данных",
-      description: "Источники себестоимости и остатков для активного магазина.",
-    },
-    {
       id: "logistics" as const,
       label: "Логистические затраты",
       title: "Логистические затраты",
@@ -92,8 +74,20 @@ export default function PricingSettingsPage() {
   const activeStore = storeTabs.find((store) => store.key === activeStoreTabKey) ?? null;
   const isSalesPlanSection = settingsTab === "sales_plan";
   const bulkFillColumns = tableColumns
-    .filter((column) => column.kind === "input" && column.field)
+    .filter(
+      (column) =>
+        column.kind === "input" &&
+        column.field &&
+        ![
+          "target_profit_rub",
+          "target_profit_percent",
+          "target_margin_rub",
+          "target_margin_percent",
+        ].includes(column.field),
+    )
     .map((column) => ({ field: column.field as EditableFieldKey, label: column.label }));
+  const activeBulkField =
+    bulkFillColumns.find((column) => column.field === bulkField)?.field ?? bulkFillColumns[0]?.field ?? "commission_percent";
   const currentSavedAt = settingsTab === "logistics" ? logisticsStoreSavedAt : storeSettingsSavedAt;
   const currentSaveState = settingsTab === "logistics"
     ? logisticsStoreSaving
@@ -103,7 +97,7 @@ export default function PricingSettingsPage() {
         : currentSavedAt
           ? `Сохранено ${new Date(currentSavedAt).toLocaleString("ru-RU")}`
           : "Изменения ещё не зафиксированы"
-    : settingsTab === "categories" || settingsTab === "sources"
+    : settingsTab === "categories"
       ? storeSettingsSaving
         ? "Автосохранение..."
         : storeSettingsError
@@ -158,34 +152,10 @@ export default function PricingSettingsPage() {
         )}
       </PageFrame>
 
-      {cogsModalOpen && earningMode === "profit" && activeStoreId && (
-        <CogsSourceModal
-          current={cogsSource}
-          onSave={(src) => {
-            setCogsSource(src);
-            setCogsModalOpen(false);
-          }}
-          onClose={() => setCogsModalOpen(false)}
-        />
-      )}
-
-      {stockModalOpen && activeStoreId && (
-        <CogsSourceModal
-          current={stockSource}
-          title="Источник остатка"
-          valueColumnLabel="Столбец с остатком"
-          onSave={(src) => {
-            setStockSource(src);
-            setStockModalOpen(false);
-          }}
-          onClose={() => setStockModalOpen(false)}
-        />
-      )}
-
       {settingsTab === "categories" && bulkFillOpen && bulkFillColumns.length ? (
         <BulkFillColumnModal
           fields={bulkFillColumns}
-          initialField={bulkField}
+          initialField={activeBulkField}
           onClose={() => setBulkFillOpen(false)}
           onConfirm={async (field, value) => {
             setBulkField(field);

@@ -1,3 +1,5 @@
+import type { CogsSource, StockSource } from "../../pricing/settings/types";
+
 export type SourceItem = {
   id: string;
   title: string;
@@ -41,6 +43,12 @@ export type YandexShop = {
   data_flow?: { import_enabled?: boolean; export_enabled?: boolean };
   currency_code?: "RUB" | "USD" | string;
   fulfillment_model?: "FBO" | "FBS" | "DBS" | "EXPRESS" | string;
+};
+
+export type StoreSourceBinding = {
+  cogsSource: CogsSource | null;
+  stockSource: StockSource | null;
+  updatedAt?: string | null;
 };
 
 export type YandexAccount = {

@@ -5,6 +5,7 @@ import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { GoogleSheetsWizardModal } from "./components/GoogleSheetsWizardModal";
 import { OzonWizardModal } from "./components/OzonWizardModal";
 import { YandexWizardModal } from "./components/YandexWizardModal";
+import { CogsSourceModal } from "../../pricing/settings/components/CogsSourceModal";
 import { useSourcesPageController } from "./useSourcesPageController";
 import { DataSourcesDesktop } from "./DataSourcesDesktop";
 import { DataSourcesMobile } from "./DataSourcesMobile";
@@ -67,6 +68,8 @@ export default function DataSourcesPage() {
     ozCheckLoading,
     ymActionBusinessId,
     ozActionClientId,
+    sourceBindingModal,
+    storeSourceBindings,
     deleteRequest,
     deleteBusy,
     deleteError,
@@ -102,6 +105,8 @@ export default function DataSourcesPage() {
     useExistingGoogleAccount,
     closeOzonWizard,
     connectOzon,
+    closeStoreSourceModal,
+    saveStoreSourceBinding,
   } = controller;
 
   const sectionItems: SourcesSectionItem[] = [
@@ -211,6 +216,20 @@ export default function DataSourcesPage() {
         onBackFromSheet={() => setGsStep(2)}
         onChangeWorksheet={setGsWorksheet}
       />
+
+      {sourceBindingModal ? (
+        <CogsSourceModal
+          current={
+            sourceBindingModal.target === "cogs"
+              ? storeSourceBindings[`${sourceBindingModal.platform}:${sourceBindingModal.storeId}`]?.cogsSource ?? null
+              : storeSourceBindings[`${sourceBindingModal.platform}:${sourceBindingModal.storeId}`]?.stockSource ?? null
+          }
+          title={sourceBindingModal.target === "cogs" ? "Источник себестоимости" : "Источник остатка"}
+          valueColumnLabel={sourceBindingModal.target === "cogs" ? "Столбец с себестоимостью" : "Столбец с остатком"}
+          onSave={saveStoreSourceBinding}
+          onClose={closeStoreSourceModal}
+        />
+      ) : null}
     </>
   );
 }

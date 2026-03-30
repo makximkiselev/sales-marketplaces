@@ -1,6 +1,5 @@
 import styles from "./PricingSettingsPage.module.css";
 import { ControlTabs } from "../../../components/page/ControlKit";
-import { GeneralSettingsPanel } from "./components/GeneralSettingsPanel";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
@@ -23,13 +22,8 @@ export function PricingSettingsDesktop({
     storeTabs,
     activeStoreTabKey,
     activeStoreId,
-    earningMode,
-    earningUnit,
-    targetDrr,
     itemsLoading,
     itemsError,
-    cogsSource,
-    stockSource,
     settingsTab,
     salesPlanRows,
     salesPlanLoading,
@@ -59,19 +53,12 @@ export function PricingSettingsDesktop({
     logisticsCellSaving,
     moneySign,
     tableColumns,
-    activeTargetValue,
     setActiveStoreTabKey,
-    setEarningMode,
-    setEarningUnit,
-    setTargetDrr,
-    setCogsModalOpen,
-    setStockModalOpen,
     setSettingsTab,
     setLogisticsPage,
     setLogisticsPageSize,
     setLogisticsSearch,
     setLogisticsImportOpen,
-    setActiveTargetValue,
     saveSalesPlanRows,
     runMonitoringJob,
     getCellKey,
@@ -135,32 +122,6 @@ export function PricingSettingsDesktop({
             ) : null}
           </div>
         </div>
-
-        {settingsTab === "sources" ? (
-          <div className={styles.controlsRow}>
-            <GeneralSettingsPanel
-              earningMode={earningMode}
-              earningUnit={earningUnit}
-              moneySign={moneySign}
-              activeTargetValue={activeTargetValue}
-              targetDrr={targetDrr}
-              cogsSource={cogsSource}
-              stockSource={stockSource}
-              activeStoreId={activeStoreId}
-              showTargets={false}
-              showRelay={false}
-              showSources={true}
-              setEarningMode={setEarningMode}
-              setEarningUnit={setEarningUnit}
-              setActiveTargetValue={setActiveTargetValue}
-              setTargetDrr={setTargetDrr}
-              setCogsModalOpen={setCogsModalOpen}
-              setCogsSource={() => {}}
-              setStockModalOpen={setStockModalOpen}
-              setStockSource={() => {}}
-            />
-          </div>
-        ) : null}
 
         {settingsTab === "logistics" ? (
           <div className={styles.controlsRow}>
@@ -238,7 +199,7 @@ export function PricingSettingsDesktop({
           />
         ) : null}
 
-        {activeStoreId && !isSalesPlanSection && settingsTab !== "sources" ? (
+        {activeStoreId && !isSalesPlanSection ? (
           <div className={`${styles.stickyActionBar} ${styles.stickyActionBarAlways}`}>
             <div className={styles.stickyActionMeta}>
               <div className={styles.stickyActionTitle}>Действия по магазину</div>

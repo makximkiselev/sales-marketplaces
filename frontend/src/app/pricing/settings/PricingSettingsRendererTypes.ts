@@ -1,7 +1,7 @@
 import type { usePricingSettingsController } from "./usePricingSettingsController";
 import type { EditableFieldKey } from "./types";
 
-export type PricingSettingsSectionId = "sales_plan" | "categories" | "sources" | "logistics";
+export type PricingSettingsSectionId = "sales_plan" | "categories" | "logistics";
 
 export type PricingSettingsSectionItem = {
   id: PricingSettingsSectionId;

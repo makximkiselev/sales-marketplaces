@@ -28,6 +28,8 @@ export function DataSourcesDesktop({ controller, sectionItems }: Props) {
     flowSavingKey,
     currencySavingKey,
     fulfillmentSavingKey,
+    sourceBindingSavingKey,
+    storeSourceBindings,
     flowError,
     ymActionBusinessId,
     ozActionClientId,
@@ -46,6 +48,7 @@ export function DataSourcesDesktop({ controller, sectionItems }: Props) {
     updateDataFlow,
     updateStoreCurrency,
     updateStoreFulfillment,
+    openStoreSourceModal,
     openWizard,
     openAddShop,
     openEditAccount,
@@ -127,8 +130,11 @@ export function DataSourcesDesktop({ controller, sectionItems }: Props) {
               flowSavingKey={flowSavingKey}
               currencySavingKey={currencySavingKey}
               fulfillmentSavingKey={fulfillmentSavingKey}
+              sourceBindingSavingKey={sourceBindingSavingKey}
+              storeSourceBindings={storeSourceBindings}
               ymActionBusinessId={ymActionBusinessId}
               setYmActionBusinessId={setYmActionBusinessId}
+              openStoreSourceModal={openStoreSourceModal}
               openWizard={() => openWizard("yandex_market")}
               openEditAccount={openEditAccount}
               openAddShop={openAddShop}
@@ -149,6 +155,9 @@ export function DataSourcesDesktop({ controller, sectionItems }: Props) {
               flowSavingKey={flowSavingKey}
               currencySavingKey={currencySavingKey}
               fulfillmentSavingKey={fulfillmentSavingKey}
+              sourceBindingSavingKey={sourceBindingSavingKey}
+              storeSourceBindings={storeSourceBindings}
+              openStoreSourceModal={openStoreSourceModal}
               openOzonWizard={openOzonWizard}
               openDeleteConfirm={openDeleteConfirm}
               updateStoreFulfillment={updateStoreFulfillment}

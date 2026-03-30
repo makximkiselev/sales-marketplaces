@@ -1,6 +1,6 @@
 import styles from "./PricingSettingsPage.module.css";
 import { ControlTabs } from "../../../components/page/ControlKit";
-import { GeneralSettingsPanel } from "./components/GeneralSettingsPanel";
+import { MobileDockLayout } from "../../../components/page/PageKit";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
@@ -25,13 +25,8 @@ export function PricingSettingsMobile({
     storeTabs,
     activeStoreTabKey,
     activeStoreId,
-    earningMode,
-    earningUnit,
-    targetDrr,
     itemsLoading,
     itemsError,
-    cogsSource,
-    stockSource,
     settingsTab,
     salesPlanRows,
     salesPlanLoading,
@@ -58,19 +53,12 @@ export function PricingSettingsMobile({
     logisticsCellSaving,
     moneySign,
     tableColumns,
-    activeTargetValue,
     setActiveStoreTabKey,
-    setEarningMode,
-    setEarningUnit,
-    setTargetDrr,
-    setCogsModalOpen,
-    setStockModalOpen,
     setSettingsTab,
     setLogisticsPage,
     setLogisticsPageSize,
     setLogisticsSearch,
     setLogisticsImportOpen,
-    setActiveTargetValue,
     saveSalesPlanRows,
     runMonitoringJob,
     getCellKey,
@@ -90,9 +78,39 @@ export function PricingSettingsMobile({
     setLogisticsCellDrafts,
   } = controller;
 
+  const mobileDockVisible = Boolean(activeStoreId && !isSalesPlanSection && !mobileCatalogOpen);
+  const mobileDock = (
+    <div className={styles.mobileActionDockPanel}>
+      <div className={styles.stickyActionMeta}>
+        <div className={styles.stickyActionTitle}>Действия по магазину</div>
+        <div className={styles.stickyActionHint}>{currentSaveState}</div>
+      </div>
+      <div className={styles.stickyActionButtons}>
+        {settingsTab === "categories" ? (
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={() => setBulkFillOpen(true)}
+          >
+            Заполнить всем
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className={`btn ${styles.recalculateButton}`}
+          disabled={Boolean(monitoringRunning.strategy_refresh)}
+          onClick={() => void runMonitoringJob("strategy_refresh")}
+        >
+          {monitoringRunning.strategy_refresh ? "Пересчет..." : "Пересчитать цены"}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className={`${styles.settingsShell} ${styles.mobileSettingsShell}`}>
       <div className={`${styles.settingsMain} ${styles.mobileSettingsMain}`}>
+        <MobileDockLayout dock={mobileDock} dockVisible={mobileDockVisible} dockHeight={210} dockOffset={82}>
         <div className={styles.mobileNavStack}>
           <ControlTabs
             className={styles.mobileSectionTabsRow}
@@ -132,32 +150,6 @@ export function PricingSettingsMobile({
             </div>
           ) : null}
         </div>
-
-        {settingsTab === "sources" ? (
-          <div className={styles.controlsRow}>
-            <GeneralSettingsPanel
-              earningMode={earningMode}
-              earningUnit={earningUnit}
-              moneySign={moneySign}
-              activeTargetValue={activeTargetValue}
-              targetDrr={targetDrr}
-              cogsSource={cogsSource}
-              stockSource={stockSource}
-              activeStoreId={activeStoreId}
-              showTargets={false}
-              showRelay={false}
-              showSources={true}
-              setEarningMode={setEarningMode}
-              setEarningUnit={setEarningUnit}
-              setActiveTargetValue={setActiveTargetValue}
-              setTargetDrr={setTargetDrr}
-              setCogsModalOpen={setCogsModalOpen}
-              setCogsSource={() => {}}
-              setStockModalOpen={setStockModalOpen}
-              setStockSource={() => {}}
-            />
-          </div>
-        ) : null}
 
         {settingsTab === "sales_plan" ? (
           <SalesPlanSection
@@ -238,42 +230,7 @@ export function PricingSettingsMobile({
           </>
         ) : null}
 
-        {activeStoreId && !isSalesPlanSection && settingsTab !== "sources" ? (
-          <div className={`${styles.stickyActionBar} ${styles.mobileStickyActionBar}`}>
-            <div className={styles.stickyActionMeta}>
-              <div className={styles.stickyActionTitle}>Действия по магазину</div>
-              <div className={styles.stickyActionHint}>{currentSaveState}</div>
-            </div>
-            <div className={styles.stickyActionButtons}>
-              {settingsTab === "categories" ? (
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() => setMobileCatalogOpen(true)}
-                >
-                  Каталог
-                </button>
-              ) : null}
-              {settingsTab === "categories" ? (
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() => setBulkFillOpen(true)}
-                >
-                  Заполнить всем
-                </button>
-              ) : null}
-              <button
-                type="button"
-                className={`btn ${styles.recalculateButton}`}
-                disabled={Boolean(monitoringRunning.strategy_refresh)}
-                onClick={() => void runMonitoringJob("strategy_refresh")}
-              >
-                {monitoringRunning.strategy_refresh ? "Пересчет..." : "Пересчитать цены"}
-              </button>
-            </div>
-          </div>
-        ) : null}
+        </MobileDockLayout>
       </div>
     </div>
   );

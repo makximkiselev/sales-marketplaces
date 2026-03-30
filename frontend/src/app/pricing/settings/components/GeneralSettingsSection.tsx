@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { SectionBlock } from "../../../../components/page/SectionKit";
 import styles from "../PricingSettingsPage.module.css";
 import type { EditableFieldKey, PricingCategoryRow, PricingTableColumn } from "../types";
@@ -125,6 +126,7 @@ export function GeneralSettingsSection({
   onOpenMobileCatalog,
   onCloseMobileCatalog,
 }: Props) {
+  const [mounted, setMounted] = useState(false);
   const [selectedKey, setSelectedKey] = useState("");
   const [expandedPaths, setExpandedPaths] = useState<string[]>([]);
   const [treeQuery, setTreeQuery] = useState("");
@@ -134,6 +136,24 @@ export function GeneralSettingsSection({
   const selectedRow = categoryRows.find((row) => row.key === selectedKey) ?? fallbackRow;
   const inputColumns = tableColumns.filter((col) => col.kind === "input" && col.field);
   const normalizedTreeQuery = treeQuery.trim().toLowerCase();
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || !mobileMode || typeof document === "undefined") return;
+    const previousOverflow = document.body.style.overflow;
+    if (mobileCatalogOpen) {
+      document.body.style.overflow = "hidden";
+      document.body.classList.add("pricing-mobile-catalog-open");
+    }
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.classList.remove("pricing-mobile-catalog-open");
+    };
+  }, [mounted, mobileMode, mobileCatalogOpen]);
 
   useEffect(() => {
     if (!categoryRows.length) {
@@ -274,6 +294,7 @@ export function GeneralSettingsSection({
   }
 
   return (
+    <>
     <SectionBlock>
         {loading ? <div className="status">Загрузка контекста...</div> : null}
         {!loading && error ? <div className="status error">{error}</div> : null}
@@ -344,25 +365,29 @@ export function GeneralSettingsSection({
                     </div>
                   </div>
                 ) : null}
-                {mobileCatalogOpen ? (
-                  <div className={styles.mobileSheetBackdrop} onClick={() => onCloseMobileCatalog?.()}>
-                    <div className={styles.mobileSheet} onClick={(e) => e.stopPropagation()}>
-                      <div className={styles.mobileSheetHead}>
-                        <div className={styles.mobileSheetTitle}>Каталог</div>
-                        <button type="button" className="btn ghost" onClick={() => onCloseMobileCatalog?.()}>
-                          Закрыть
-                        </button>
-                      </div>
-                      <aside className={`${styles.categorySidebar} ${styles.categorySidebarMobile}`}>
-                        {renderSidebarContent()}
-                      </aside>
-                    </div>
-                  </div>
-                ) : null}
               </>
             )}
           </>
         ) : null}
     </SectionBlock>
+    {mounted && mobileCatalogOpen
+      ? createPortal(
+          <div className={styles.mobileSheetBackdrop} onClick={() => onCloseMobileCatalog?.()}>
+            <div className={styles.mobileSheet} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.mobileSheetHead}>
+                <div className={styles.mobileSheetTitle}>Каталог</div>
+                <button type="button" className="btn ghost" onClick={() => onCloseMobileCatalog?.()}>
+                  Закрыть
+                </button>
+              </div>
+              <aside className={`${styles.categorySidebar} ${styles.categorySidebarMobile}`}>
+                {renderSidebarContent()}
+              </aside>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null}
+    </>
   );
 }

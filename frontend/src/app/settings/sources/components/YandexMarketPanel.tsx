@@ -1,6 +1,6 @@
 import { PanelCard } from "../../../../components/page/SectionKit";
 import styles from "../DataSourcesPage.module.css";
-import type { DeleteRequest, YandexAccount } from "../types";
+import type { DeleteRequest, StoreSourceBinding, YandexAccount } from "../types";
 
 type Props = {
   accounts: YandexAccount[];
@@ -10,8 +10,16 @@ type Props = {
   flowSavingKey: string | null;
   currencySavingKey: string | null;
   fulfillmentSavingKey: string | null;
+  sourceBindingSavingKey: string | null;
+  storeSourceBindings: Record<string, StoreSourceBinding>;
   ymActionBusinessId: string;
   setYmActionBusinessId: (value: string) => void;
+  openStoreSourceModal: (params: {
+    target: "cogs" | "stock";
+    platform: "yandex_market";
+    storeId: string;
+    storeName: string;
+  }) => void;
   openWizard: () => void;
   openEditAccount: (account: YandexAccount) => void;
   openAddShop: (account: YandexAccount) => void;
@@ -52,8 +60,11 @@ export function YandexMarketPanel({
   flowSavingKey,
   currencySavingKey,
   fulfillmentSavingKey,
+  sourceBindingSavingKey,
+  storeSourceBindings,
   ymActionBusinessId,
   setYmActionBusinessId,
+  openStoreSourceModal,
   openWizard,
   openEditAccount,
   openAddShop,
@@ -86,6 +97,8 @@ export function YandexMarketPanel({
                   <col className={styles.ymColName} />
                   <col className={styles.ymColModel} />
                   <col className={styles.ymColCurrency} />
+                  <col className={styles.ymColSource} />
+                  <col className={styles.ymColSource} />
                   <col className={styles.ymColToggle} />
                   <col className={styles.ymColToggle} />
                   <col className={styles.ymColStatus} />
@@ -98,6 +111,8 @@ export function YandexMarketPanel({
                     <th>Наименование</th>
                     <th>Модель</th>
                     <th>Валюта</th>
+                    <th>Себестоимость</th>
+                    <th>Остаток</th>
                     <th className={styles.ymToggleHead}>Импорт</th>
                     <th className={styles.ymToggleHead}>Экспорт</th>
                     <th className={styles.ymStatusHead}>Статус</th>
@@ -124,6 +139,8 @@ export function YandexMarketPanel({
                     }
                     return shops.map((shop, idx) => {
                       const checkKey = `${acc.business_id}:${shop.campaign_id}`;
+                      const sourceKey = `yandex_market:${shop.campaign_id}`;
+                      const sourceBinding = storeSourceBindings[sourceKey];
                       const isChecking = Boolean(shopCheckLoading[checkKey]);
                       const statusClass =
                         shop.health_status === "error" ? "err" : shop.health_status === "ok" ? "ok" : "warn";
@@ -189,6 +206,70 @@ export function YandexMarketPanel({
                               <option value="RUB">RUB</option>
                               <option value="USD">USD</option>
                             </select>
+                          </td>
+                          <td className={styles.ymSourceCell}>
+                            <div className={styles.storeSourceCell}>
+                              <div className={styles.storeSourceName}>
+                                {sourceBinding?.cogsSource?.sourceName || "Не выбран"}
+                              </div>
+                              <div className={styles.storeSourceMeta}>
+                                {sourceBinding?.cogsSource ? (
+                                  <>
+                                    <span>SKU: {sourceBinding.cogsSource.skuColumn}</span>
+                                    <span>Значение: {sourceBinding.cogsSource.valueColumn}</span>
+                                  </>
+                                ) : (
+                                  <span>Источник не настроен</span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                className={`btn inline ${styles.storeSourceButton}`}
+                                disabled={sourceBindingSavingKey === `cogs:yandex_market:${shop.campaign_id}`}
+                                onClick={() =>
+                                  openStoreSourceModal({
+                                    target: "cogs",
+                                    platform: "yandex_market",
+                                    storeId: shop.campaign_id,
+                                    storeName: shop.campaign_name || `Магазин ${shop.campaign_id}`,
+                                  })
+                                }
+                              >
+                                {sourceBinding?.cogsSource ? "Изменить" : "Выбрать"}
+                              </button>
+                            </div>
+                          </td>
+                          <td className={styles.ymSourceCell}>
+                            <div className={styles.storeSourceCell}>
+                              <div className={styles.storeSourceName}>
+                                {sourceBinding?.stockSource?.sourceName || "Не выбран"}
+                              </div>
+                              <div className={styles.storeSourceMeta}>
+                                {sourceBinding?.stockSource ? (
+                                  <>
+                                    <span>SKU: {sourceBinding.stockSource.skuColumn}</span>
+                                    <span>Значение: {sourceBinding.stockSource.valueColumn}</span>
+                                  </>
+                                ) : (
+                                  <span>Источник не настроен</span>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                className={`btn inline ${styles.storeSourceButton}`}
+                                disabled={sourceBindingSavingKey === `stock:yandex_market:${shop.campaign_id}`}
+                                onClick={() =>
+                                  openStoreSourceModal({
+                                    target: "stock",
+                                    platform: "yandex_market",
+                                    storeId: shop.campaign_id,
+                                    storeName: shop.campaign_name || `Магазин ${shop.campaign_id}`,
+                                  })
+                                }
+                              >
+                                {sourceBinding?.stockSource ? "Изменить" : "Выбрать"}
+                              </button>
+                            </div>
                           </td>
                           <td className={styles.ymToggleCell}>
                             <div className={styles.ymToggleWrap}>

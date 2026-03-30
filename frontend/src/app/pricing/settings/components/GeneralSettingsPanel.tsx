@@ -131,19 +131,8 @@ export function GeneralSettingsPanel({
                 onClick={() => setCogsModalOpen(true)}
                 disabled={earningMode !== "profit" || !activeStoreId}
               >
-                Выбрать
+                {cogsSource ? "Изменить" : "Выбрать"}
               </button>
-              {cogsSource ? (
-                <button
-                  type="button"
-                  className={`btn inline ${styles.cogsClearButton}`}
-                  onClick={() => setCogsSource(null)}
-                  title="Сбросить источник"
-                  disabled={earningMode !== "profit" || !activeStoreId}
-                >
-                  ✕
-                </button>
-              ) : null}
             </div>
             {earningMode !== "profit" ? (
               <div className={styles.cogsSourceMeta}>Доступно только в режиме «Прибыль».</div>
@@ -170,19 +159,8 @@ export function GeneralSettingsPanel({
                 onClick={() => setStockModalOpen(true)}
                 disabled={!activeStoreId}
               >
-                Выбрать
+                {stockSource ? "Изменить" : "Выбрать"}
               </button>
-              {stockSource ? (
-                <button
-                  type="button"
-                  className={`btn inline ${styles.cogsClearButton}`}
-                  onClick={() => setStockSource(null)}
-                  title="Сбросить источник"
-                  disabled={!activeStoreId}
-                >
-                  ✕
-                </button>
-              ) : null}
             </div>
             {stockSource ? (
               <div className={styles.cogsSourceMeta}>
