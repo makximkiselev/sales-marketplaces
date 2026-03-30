@@ -1,6 +1,6 @@
 import styles from "./PricingSettingsPage.module.css";
-import { ControlTabs } from "../../../components/page/ControlKit";
 import { MobileDockLayout } from "../../../components/page/PageKit";
+import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
@@ -114,47 +114,46 @@ export function PricingSettingsMobile({
     <div className={`${styles.settingsShell} ${styles.mobileSettingsShell}`}>
       <div className={`${styles.settingsMain} ${styles.mobileSettingsMain}`}>
         <MobileDockLayout dock={mobileDock} dockVisible={mobileDockVisible} dockHeight={210} dockOffset={82}>
-        <div className={styles.mobileNavStack}>
-          <ControlTabs
-            className={styles.mobileSectionTabsRow}
-            variant="underline"
-            items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
-            activeId={settingsTab}
-            onChange={(id) => setSettingsTab(id)}
-          />
-          {!isSalesPlanSection ? (
-            <ControlTabs
-              className={styles.mobileStoreTabsRow}
-              variant="underline"
-              items={storeTabs.map((store) => ({
-                id: store.key,
-                label: store.storeName,
-                badge: store.platformLabel,
-              }))}
-              activeId={activeStoreTabKey}
-              onChange={setActiveStoreTabKey}
+        <WorkspaceSurface className={styles.mobileWorkspaceSurface}>
+          <div className={styles.mobileNavStack}>
+            <WorkspaceTabs
+              className={styles.mobileWorkspaceTabs}
+              items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
+              activeId={settingsTab}
+              onChange={(id) => setSettingsTab(id)}
             />
-          ) : null}
-        </div>
-
-        <div className={styles.mobileSectionHero}>
-          <div className={styles.workspaceTitleRow}>
-            <h2 className={styles.workspaceTitle}>{activeSection.title}</h2>
-            {isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : null}
+            {!isSalesPlanSection ? (
+              <WorkspaceTabs
+                className={styles.mobileWorkspaceTabs}
+                items={storeTabs.map((store) => ({
+                  id: store.key,
+                  label: store.storeName,
+                  meta: store.platformLabel,
+                }))}
+                activeId={activeStoreTabKey}
+                onChange={setActiveStoreTabKey}
+              />
+            ) : null}
           </div>
-          <p className={styles.workspaceSubtitle}>
-            {isSalesPlanSection
-              ? "Store-level цели, режимы прибыли и стратегия для всех магазинов."
-              : activeSection.description}
-          </p>
-          {!isSalesPlanSection && activeStore ? (
-            <div className={styles.workspaceHeroChips}>
-              <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
-              <span className={styles.workspaceHeroChip}>{activeStore.storeName}</span>
-              <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
-            </div>
-          ) : null}
-        </div>
+
+          <WorkspaceHeader
+            title={activeSection.title}
+            subtitle={
+              isSalesPlanSection
+                ? "Store-level цели, режимы прибыли и стратегия для всех магазинов."
+                : activeSection.description
+            }
+            meta={
+              !isSalesPlanSection && activeStore ? (
+                <div className={styles.workspaceHeroChips}>
+                  <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
+                  <span className={styles.workspaceHeroChip}>{activeStore.storeName}</span>
+                  <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
+                </div>
+              ) : isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : undefined
+            }
+          />
+        </WorkspaceSurface>
 
         {settingsTab === "sales_plan" ? (
           <SalesPlanSection

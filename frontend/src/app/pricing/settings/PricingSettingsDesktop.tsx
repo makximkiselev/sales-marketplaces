@@ -1,5 +1,5 @@
 import styles from "./PricingSettingsPage.module.css";
-import { ControlTabs } from "../../../components/page/ControlKit";
+import { WorkspaceHeader, WorkspaceStack, WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
@@ -84,156 +84,151 @@ export function PricingSettingsDesktop({
   return (
     <div className={`${styles.settingsShell} ${isSalesPlanSection ? styles.settingsShellFull : ""}`}>
       <div className={`${styles.settingsMain} ${isSalesPlanSection ? styles.settingsMainCompact : ""}`}>
-        <div className={`${styles.workspaceHero} ${isSalesPlanSection ? styles.workspaceHeroCompact : ""}`}>
-          <div className={styles.desktopSectionTabs}>
-            <ControlTabs
-              className={styles.desktopSectionTabsRow}
-              variant="underline"
+        <WorkspaceStack className={`${styles.pricingWorkspace} ${isSalesPlanSection ? styles.workspaceHeroCompact : ""}`}>
+          <WorkspaceSurface className={styles.pricingHeroSurface}>
+            <WorkspaceTabs
+              className={styles.pricingPrimaryTabs}
               items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
               activeId={settingsTab}
               onChange={(id) => setSettingsTab(id)}
             />
-          </div>
-          {!isSalesPlanSection ? (
-            <div className={styles.desktopStoreTabs}>
-              <ControlTabs
-                className={styles.storeTabsBar}
-                variant="underline"
+            {!isSalesPlanSection ? (
+              <WorkspaceTabs
+                className={styles.pricingStoreTabs}
                 items={storeTabs.map((store) => ({
                   id: store.key,
                   label: store.storeName,
-                  badge: store.platformLabel,
+                  meta: store.platformLabel,
                 }))}
                 activeId={activeStoreTabKey}
                 onChange={setActiveStoreTabKey}
               />
+            ) : null}
+            <WorkspaceHeader
+              title={activeSection.title}
+              subtitle={
+                isSalesPlanSection
+                  ? "Store-level цели, режимы прибыли и стратегия для всех магазинов в одном рабочем пространстве."
+                  : activeSection.description
+              }
+              meta={
+                !isSalesPlanSection && activeStore ? (
+                  <div className={styles.workspaceHeroChips}>
+                    <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
+                    <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
+                  </div>
+                ) : isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : undefined
+              }
+            />
+          </WorkspaceSurface>
+
+          {settingsTab === "logistics" ? (
+            <div className={styles.controlsRow}>
+              <LogisticsSettingsPanel
+                moneySign={moneySign}
+                logisticsStoreSettings={logisticsStoreSettings}
+                logisticsFieldErrors={logisticsFieldErrors}
+                logisticsStoreSaving={logisticsStoreSaving}
+                logisticsStoreError={logisticsStoreError}
+                logisticsStoreSavedAt={logisticsStoreSavedAt}
+                getLogisticsNumericValue={getLogisticsNumericValue}
+                setLogisticsField={setLogisticsField}
+                setLogisticsNumericField={setLogisticsNumericField}
+                onLogisticsNumericBlur={onLogisticsNumericBlur}
+              />
             </div>
           ) : null}
-          <div className={styles.workspaceHeroMain}>
-            <div className={styles.workspaceTitleRow}>
-              <h2 className={styles.workspaceTitle}>{activeSection.title}</h2>
-              {isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : null}
-            </div>
-            <p className={styles.workspaceSubtitle}>
-              {isSalesPlanSection
-                ? "Store-level цели, режимы прибыли и стратегия для всех магазинов в одном рабочем пространстве."
-                : activeSection.description}
-            </p>
-            {!isSalesPlanSection && activeStore ? (
-              <div className={styles.workspaceHeroChips}>
-                <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
-                <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
-              </div>
-            ) : null}
-          </div>
-        </div>
 
-        {settingsTab === "logistics" ? (
-          <div className={styles.controlsRow}>
-            <LogisticsSettingsPanel
-              moneySign={moneySign}
-              logisticsStoreSettings={logisticsStoreSettings}
-              logisticsFieldErrors={logisticsFieldErrors}
-              logisticsStoreSaving={logisticsStoreSaving}
-              logisticsStoreError={logisticsStoreError}
-              logisticsStoreSavedAt={logisticsStoreSavedAt}
-              getLogisticsNumericValue={getLogisticsNumericValue}
-              setLogisticsField={setLogisticsField}
-              setLogisticsNumericField={setLogisticsNumericField}
-              onLogisticsNumericBlur={onLogisticsNumericBlur}
+          {settingsTab === "sales_plan" ? (
+            <SalesPlanSection
+              loading={salesPlanLoading}
+              error={error || salesPlanError}
+              rows={salesPlanRows}
+              savingMap={salesPlanSaving}
+              saveError={salesPlanError}
+              onSaveRows={saveSalesPlanRows}
             />
-          </div>
-        ) : null}
+          ) : null}
 
-        {settingsTab === "sales_plan" ? (
-          <SalesPlanSection
-            loading={salesPlanLoading}
-            error={error || salesPlanError}
-            rows={salesPlanRows}
-            savingMap={salesPlanSaving}
-            saveError={salesPlanError}
-            onSaveRows={saveSalesPlanRows}
-          />
-        ) : null}
+          {settingsTab === "categories" ? (
+            <GeneralSettingsSection
+              loading={loading}
+              error={error}
+              itemsError={itemsError}
+              itemsLoading={itemsLoading}
+              categoryRows={categoryRows}
+              tableColumns={tableColumns}
+              cellDrafts={cellDrafts}
+              cellSaving={cellSaving}
+              getCellKey={getCellKey}
+              defaultFieldValue={defaultFieldValue}
+              formatNum={formatNum}
+              queueSaveCell={queueSaveCell}
+              flushSaveCell={flushSaveCell}
+            />
+          ) : null}
 
-        {settingsTab === "categories" ? (
-          <GeneralSettingsSection
-            loading={loading}
-            error={error}
-            itemsError={itemsError}
-            itemsLoading={itemsLoading}
-            categoryRows={categoryRows}
-            tableColumns={tableColumns}
-            cellDrafts={cellDrafts}
-            cellSaving={cellSaving}
-            getCellKey={getCellKey}
-            defaultFieldValue={defaultFieldValue}
-            formatNum={formatNum}
-            queueSaveCell={queueSaveCell}
-            flushSaveCell={flushSaveCell}
-          />
-        ) : null}
+          {settingsTab === "logistics" ? (
+            <LogisticsSettingsSection
+              moneySign={moneySign}
+              loading={loading}
+              error={error}
+              logisticsError={logisticsError}
+              logisticsLoading={logisticsLoading}
+              logisticsRows={logisticsRows}
+              logisticsTreeRoots={logisticsTreeRoots}
+              logisticsTreePath={logisticsTreePath}
+              logisticsSearch={logisticsSearch}
+              logisticsPage={logisticsPage}
+              logisticsPageSize={logisticsPageSize}
+              logisticsTotal={logisticsTotal}
+              logisticsPageSizeOptions={logisticsPageSizeOptions}
+              activePlatform={activePlatform}
+              activeStoreId={activeStoreId}
+              logisticsCellDrafts={logisticsCellDrafts}
+              logisticsCellSaving={logisticsCellSaving}
+              setLogisticsPage={setLogisticsPage}
+              setLogisticsPageSize={setLogisticsPageSize}
+              setLogisticsSearch={setLogisticsSearch}
+              setLogisticsTreePath={setLogisticsTreePath}
+              setLogisticsImportOpen={setLogisticsImportOpen}
+              toLiveLogisticsRow={toLiveLogisticsRow}
+              fmtCell={fmtCell}
+              getLogisticsCellKey={getLogisticsCellKey}
+              setLogisticsCellDraftByKey={setLogisticsCellDraftByKey}
+              commitLogisticsCell={commitLogisticsCell}
+              setLogisticsCellDrafts={setLogisticsCellDrafts}
+            />
+          ) : null}
 
-        {settingsTab === "logistics" ? (
-          <LogisticsSettingsSection
-            moneySign={moneySign}
-            loading={loading}
-            error={error}
-            logisticsError={logisticsError}
-            logisticsLoading={logisticsLoading}
-            logisticsRows={logisticsRows}
-            logisticsTreeRoots={logisticsTreeRoots}
-            logisticsTreePath={logisticsTreePath}
-            logisticsSearch={logisticsSearch}
-            logisticsPage={logisticsPage}
-            logisticsPageSize={logisticsPageSize}
-            logisticsTotal={logisticsTotal}
-            logisticsPageSizeOptions={logisticsPageSizeOptions}
-            activePlatform={activePlatform}
-            activeStoreId={activeStoreId}
-            logisticsCellDrafts={logisticsCellDrafts}
-            logisticsCellSaving={logisticsCellSaving}
-            setLogisticsPage={setLogisticsPage}
-            setLogisticsPageSize={setLogisticsPageSize}
-            setLogisticsSearch={setLogisticsSearch}
-            setLogisticsTreePath={setLogisticsTreePath}
-            setLogisticsImportOpen={setLogisticsImportOpen}
-            toLiveLogisticsRow={toLiveLogisticsRow}
-            fmtCell={fmtCell}
-            getLogisticsCellKey={getLogisticsCellKey}
-            setLogisticsCellDraftByKey={setLogisticsCellDraftByKey}
-            commitLogisticsCell={commitLogisticsCell}
-            setLogisticsCellDrafts={setLogisticsCellDrafts}
-          />
-        ) : null}
-
-        {activeStoreId && !isSalesPlanSection ? (
-          <div className={`${styles.stickyActionBar} ${styles.stickyActionBarAlways}`}>
-            <div className={styles.stickyActionMeta}>
-              <div className={styles.stickyActionTitle}>Действия по магазину</div>
-              <div className={styles.stickyActionHint}>{currentSaveState}</div>
-            </div>
-            <div className={styles.stickyActionButtons}>
-              {settingsTab === "categories" ? (
+          {activeStoreId && !isSalesPlanSection ? (
+            <div className={`${styles.stickyActionBar} ${styles.stickyActionBarAlways}`}>
+              <div className={styles.stickyActionMeta}>
+                <div className={styles.stickyActionTitle}>Действия по магазину</div>
+                <div className={styles.stickyActionHint}>{currentSaveState}</div>
+              </div>
+              <div className={styles.stickyActionButtons}>
+                {settingsTab === "categories" ? (
+                  <button
+                    type="button"
+                    className={`btn ghost ${styles.categoryBulkAction}`}
+                    onClick={() => setBulkFillOpen(true)}
+                  >
+                    Заполнить всем
+                  </button>
+                ) : null}
                 <button
                   type="button"
-                  className={`btn ghost ${styles.categoryBulkAction}`}
-                  onClick={() => setBulkFillOpen(true)}
+                  className={`btn ${styles.recalculateButton}`}
+                  disabled={Boolean(monitoringRunning.strategy_refresh)}
+                  onClick={() => void runMonitoringJob("strategy_refresh")}
                 >
-                  Заполнить всем
+                  {monitoringRunning.strategy_refresh ? "Пересчет..." : "Пересчитать цены"}
                 </button>
-              ) : null}
-              <button
-                type="button"
-                className={`btn ${styles.recalculateButton}`}
-                disabled={Boolean(monitoringRunning.strategy_refresh)}
-                onClick={() => void runMonitoringJob("strategy_refresh")}
-              >
-                {monitoringRunning.strategy_refresh ? "Пересчет..." : "Пересчитать цены"}
-              </button>
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </WorkspaceStack>
       </div>
     </div>
   );

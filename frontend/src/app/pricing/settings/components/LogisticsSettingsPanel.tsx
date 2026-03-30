@@ -72,7 +72,7 @@ export function LogisticsSettingsPanel({
             </div>
           </div>
           {isPercentMode ? (
-            <div className={styles.logisticsStoreCardGrid}>
+            <div className={`${styles.logisticsStoreCardGrid} ${styles.logisticsStoreCardGridTight}`}>
               <div className={styles.logisticsMetricField}>
                 <label className={styles.logisticsMetricLabel}>Ставка, %</label>
                 <input
@@ -108,7 +108,7 @@ export function LogisticsSettingsPanel({
               </div>
             </div>
           ) : (
-            <div className={styles.logisticsMetricField}>
+            <div className={`${styles.logisticsMetricField} ${styles.logisticsMetricFieldInline}`}>
               <label className={styles.logisticsMetricLabel}>Стоимость обработки, {moneySign}</label>
               <input
                 className={`input ${styles.settingInput}`}

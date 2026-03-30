@@ -1,0 +1,167 @@
+.stack {
+  display: grid;
+  gap: 16px;
+}
+
+.surface {
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(14, 24, 42, 0.92), rgba(9, 17, 31, 0.9));
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.headerMain {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.headerAside {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.title {
+  margin: 0;
+  color: #f1f6ff;
+  font-size: 18px;
+  line-height: 1.12;
+  font-weight: 800;
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 780px;
+  color: #9bb1d0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.meta {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  border-radius: 14px;
+  background: rgba(10, 18, 33, 0.62);
+  color: #a8bdd9;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
+}
+
+.tab:hover {
+  color: #e7f0ff;
+  border-color: rgba(76, 201, 240, 0.34);
+  background: rgba(19, 32, 54, 0.82);
+  transform: translateY(-1px);
+}
+
+.tabActive {
+  color: #f4f8ff;
+  border-color: rgba(76, 201, 240, 0.42);
+  background:
+    linear-gradient(180deg, rgba(33, 72, 112, 0.5), rgba(18, 34, 56, 0.94)),
+    radial-gradient(circle at top left, rgba(76, 201, 240, 0.18), transparent 45%);
+  box-shadow: 0 0 0 1px rgba(76, 201, 240, 0.1) inset;
+}
+
+.tabLabel {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.tabMeta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: #c7d8f3;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 960px) {
+  .surface {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .headerAside {
+    justify-content: flex-start;
+  }
+
+  .title {
+    font-size: 16px;
+  }
+
+  .subtitle {
+    font-size: 12px;
+  }
+
+  .tabs {
+    gap: 10px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    white-space: nowrap;
+    min-height: 38px;
+    padding-inline: 12px;
+  }
+}
