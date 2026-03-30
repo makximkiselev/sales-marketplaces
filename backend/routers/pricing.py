@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import io
 import logging
+import re
 
 import openpyxl
 from fastapi import APIRouter, File, Form, UploadFile
@@ -783,6 +784,7 @@ async def pricing_settings_logistics(
     platform: str,
     store_id: str,
     search: str = "",
+    category_path: str = "",
     page: int = 1,
     page_size: int = 50,
 ):
@@ -818,16 +820,48 @@ async def pricing_settings_logistics(
         return JSONResponse({"ok": False, "message": f"Не удалось прочитать raw-товары магазина: {e}"}, status_code=500)
 
     q = str(search or "").strip().lower()
+    category_path_raw = str(category_path or "").strip()
+
+    def _row_tree_path(row: dict) -> list[str]:
+        category = str(row.get("category") or "").strip()
+        subcategory_raw = str(row.get("subcategory") or "").strip()
+        sub_parts = [part.strip() for part in re.split(r"\s*/\s*", subcategory_raw) if part.strip()]
+        parts = [part for part in [category, *sub_parts] if part]
+        return parts or ["Не определено"]
+
+    def _build_tree(paths: list[list[str]]) -> list[dict]:
+        root: dict[str, dict] = {}
+        for path_parts in paths:
+            level = root
+            for part in path_parts:
+                node = level.setdefault(part, {"name": part, "children": {}})
+                level = node["children"]
+
+        def _normalize(level: dict[str, dict]) -> list[dict]:
+            return [
+                {
+                    "name": key,
+                    "children": _normalize(node["children"]),
+                }
+                for key, node in sorted(level.items(), key=lambda item: item[0].lower())
+            ]
+
+        return _normalize(root)
+
     filtered: list[dict] = []
     for r in raw_rows:
         sku = str(r.get("sku") or "").strip()
         if not sku:
             continue
         name = str(r.get("name") or "").strip()
+        tree_path_parts = _row_tree_path(r)
         if q and q not in f"{sku} {name}".lower():
+            continue
+        if category_path_raw and " / ".join(tree_path_parts) != category_path_raw:
             continue
         filtered.append(r)
     filtered.sort(key=lambda r: str(r.get("sku") or ""))
+    tree_roots = _build_tree([_row_tree_path(r) for r in filtered])
 
     page_size_n = max(1, min(int(page_size or 50), 500))
     page_n = max(1, int(page or 1))
@@ -946,6 +980,7 @@ async def pricing_settings_logistics(
             {
                 "sku": sku,
                 "name": name,
+                "tree_path": _row_tree_path(r),
                 "logistics_cost_display": _round(logistics_total, 4),
                 "width_cm": _round(width, 3),
                 "length_cm": _round(length, 3),
@@ -969,6 +1004,7 @@ async def pricing_settings_logistics(
         "store_uid": store_uid,
         "store": target_store,
         "store_settings": store_settings,
+        "tree_roots": tree_roots,
         "rows": rows_out,
         "total_count": len(filtered),
         "page": page_n,

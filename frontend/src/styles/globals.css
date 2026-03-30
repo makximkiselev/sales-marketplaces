@@ -217,6 +217,16 @@ a {
   color: #ffe8e8;
 }
 
+.auth-loading-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--text-main);
+  font-size: 18px;
+  font-weight: 700;
+}
+
 .mobile-route-progress {
   display: none;
 }

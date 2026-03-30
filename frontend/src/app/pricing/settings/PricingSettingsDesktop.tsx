@@ -38,6 +38,8 @@ export function PricingSettingsDesktop({
     storeSettingsSavedAt,
     logisticsStoreSettings,
     logisticsRows,
+    logisticsTreeRoots,
+    logisticsTreePath,
     logisticsLoading,
     logisticsError,
     logisticsSearch,
@@ -58,6 +60,7 @@ export function PricingSettingsDesktop({
     setLogisticsPage,
     setLogisticsPageSize,
     setLogisticsSearch,
+    setLogisticsTreePath,
     setLogisticsImportOpen,
     saveSalesPlanRows,
     runMonitoringJob,
@@ -177,6 +180,8 @@ export function PricingSettingsDesktop({
             logisticsError={logisticsError}
             logisticsLoading={logisticsLoading}
             logisticsRows={logisticsRows}
+            logisticsTreeRoots={logisticsTreeRoots}
+            logisticsTreePath={logisticsTreePath}
             logisticsSearch={logisticsSearch}
             logisticsPage={logisticsPage}
             logisticsPageSize={logisticsPageSize}
@@ -189,6 +194,7 @@ export function PricingSettingsDesktop({
             setLogisticsPage={setLogisticsPage}
             setLogisticsPageSize={setLogisticsPageSize}
             setLogisticsSearch={setLogisticsSearch}
+            setLogisticsTreePath={setLogisticsTreePath}
             setLogisticsImportOpen={setLogisticsImportOpen}
             toLiveLogisticsRow={toLiveLogisticsRow}
             fmtCell={fmtCell}

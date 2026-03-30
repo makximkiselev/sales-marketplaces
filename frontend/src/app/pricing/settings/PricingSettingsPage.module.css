@@ -1127,6 +1127,282 @@
   grid-template-columns: minmax(520px, 1.7fr) minmax(300px, 1fr) minmax(300px, 1fr) minmax(260px, 0.85fr);
 }
 
+.logisticsPanelShell {
+  display: grid;
+  gap: 8px;
+}
+
+.logisticsPanelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.logisticsPanelTitle {
+  color: #eef5ff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.logisticsPanelMeta {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: right;
+}
+
+.logisticsStoreGrid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.25fr) repeat(3, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.logisticsStoreCard {
+  min-height: 0;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 16px;
+  background: rgba(9, 17, 31, 0.5);
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.logisticsStoreCardWide {
+  grid-column: span 1;
+}
+
+.logisticsStoreCardHead {
+  display: grid;
+  gap: 6px;
+}
+
+.logisticsStoreCardTitle {
+  color: #eaf3ff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.logisticsModeTabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  padding: 4px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 14px;
+  background: rgba(7, 14, 27, 0.58);
+}
+
+.logisticsModeTab {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #98add0;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.logisticsModeTabActive {
+  background: linear-gradient(180deg, rgba(61, 122, 186, 0.86), rgba(36, 78, 124, 0.92));
+  color: #eef5ff;
+}
+
+.logisticsStoreCardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.logisticsMetricField {
+  display: grid;
+  gap: 4px;
+}
+
+.logisticsMetricLabel {
+  color: #c7d8f3;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.logisticsWorkspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(280px, 340px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.logisticsCatalogPane,
+.logisticsSidebar,
+.logisticsEditor {
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(12, 23, 41, 0.88), rgba(8, 16, 30, 0.84));
+  padding: 14px;
+}
+
+.logisticsCatalogPane {
+  display: grid;
+  align-content: start;
+}
+
+.logisticsSidebar {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.logisticsSidebarControls {
+  display: grid;
+  gap: 10px;
+}
+
+.logisticsSidebarPanelHead {
+  display: grid;
+  gap: 6px;
+}
+
+.logisticsSidebarActionRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.logisticsImportButton {
+  min-height: 38px;
+  align-self: end;
+}
+
+.logisticsSidebarList {
+  display: grid;
+  gap: 8px;
+  max-height: 520px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.logisticsSidebarItem {
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 14px;
+  background: rgba(7, 14, 27, 0.42);
+  text-align: left;
+  color: inherit;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.logisticsSidebarItem:hover {
+  border-color: rgba(76, 201, 240, 0.32);
+  background: rgba(12, 24, 44, 0.78);
+  transform: translateY(-1px);
+}
+
+.logisticsSidebarItemActive {
+  border-color: rgba(76, 201, 240, 0.4);
+  background:
+    linear-gradient(180deg, rgba(28, 66, 98, 0.42), rgba(16, 30, 53, 0.88));
+}
+
+.logisticsSidebarItemHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.logisticsSidebarSku {
+  color: #edf4ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.logisticsSidebarCost {
+  color: #c7dbfb;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.logisticsSidebarName {
+  color: #edf4ff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.32;
+}
+
+.logisticsSidebarMetaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.logisticsSidebarMeta {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.logisticsEditor {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.logisticsEditorIntro {
+  display: grid;
+  gap: 2px;
+}
+
+.logisticsEditorGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.logisticsReadOnlyValue {
+  min-height: 36px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 12px;
+  background: rgba(6, 13, 25, 0.58);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e8f1ff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.logisticsMetricCard {
+  min-height: 62px;
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 14px;
+  background: rgba(12, 22, 39, 0.48);
+  padding: 8px 10px;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
 .logisticsPlaceholder {
   border: 1px solid rgba(132, 161, 214, 0.2);
   border-radius: 14px;

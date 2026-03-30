@@ -12,9 +12,9 @@ from apscheduler.executors.pool import ThreadPoolExecutor as APSchedulerThreadPo
 from apscheduler.schedulers.background import BackgroundScheduler
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 LOCAL_PG_HOST = "127.0.0.1:5433"
@@ -25,6 +25,7 @@ os.environ.setdefault("APP_HISTORY_DATABASE_URL", f"postgresql://maksimkiselev@{
 
 from backend.routers import (
     data_sources,
+    auth as auth_router,
     integrations as integrations_router,
     pricing as pricing_router,
     catalog as catalog_router,
@@ -38,6 +39,7 @@ from backend.routers import (
     sales_elasticity as sales_elasticity_router,
     sales_overview as sales_overview_router,
 )
+from backend.services.auth_service import AUTH_COOKIE_NAME, get_user_by_session_token
 from backend.services.db import init_db
 from backend.services.store_data_model import abandon_incomplete_refresh_job_runs, init_store_data_model
 from backend.services.source_tables import init_source_registry
@@ -167,6 +169,7 @@ if (BASE_DIR / "static").exists():
     app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 app.include_router(data_sources.router)
+app.include_router(auth_router.router)
 app.include_router(integrations_router.router)
 app.include_router(pricing_router.router)
 app.include_router(catalog_router.router)
@@ -183,6 +186,31 @@ app.include_router(sales_overview_router.router)
 @app.get("/api/health")
 async def health() -> dict[str, bool]:
     return {"ok": True}
+
+
+_AUTH_EXEMPT_API_PATHS = {
+    "/api/health",
+    "/api/auth/me",
+    "/api/auth/session",
+    "/api/auth/logout",
+}
+
+
+@app.middleware("http")
+async def auth_guard(request: Request, call_next):
+    path = str(request.url.path or "")
+    if path.startswith("/api/") and path not in _AUTH_EXEMPT_API_PATHS:
+        token = request.cookies.get(AUTH_COOKIE_NAME)
+        user = get_user_by_session_token(token)
+        if not user:
+            return JSONResponse({"detail": "Unauthorized"}, status_code=401)
+        request.state.auth_user = user
+    elif path == "/api/auth/me":
+        token = request.cookies.get(AUTH_COOKIE_NAME)
+        user = get_user_by_session_token(token)
+        if user:
+            request.state.auth_user = user
+    return await call_next(request)
 
 
 @app.get("/")

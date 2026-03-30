@@ -1,0 +1,146 @@
+.browserShell {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.browserHead {
+  display: grid;
+  gap: 4px;
+}
+
+.browserTitle {
+  color: #edf4ff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.browserSubtitle {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.browserControls {
+  display: grid;
+  gap: 8px;
+}
+
+.browserSearch {
+  height: 38px;
+}
+
+.browserAction {
+  justify-self: start;
+}
+
+.browserList {
+  display: grid;
+  gap: 6px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+  align-content: start;
+}
+
+.browserRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.browserExpand {
+  flex: 0 0 28px;
+  height: 28px;
+  margin-top: 4px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 10px;
+  background: rgba(8, 16, 30, 0.52);
+  color: #dbe9ff;
+  cursor: pointer;
+}
+
+.browserExpandGhost {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.browserNode {
+  flex: 1 1 auto;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 12px;
+  background: rgba(7, 14, 27, 0.42);
+  color: inherit;
+  text-align: left;
+  padding: 10px 12px;
+  display: grid;
+  gap: 6px;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.browserNode:hover {
+  border-color: rgba(76, 201, 240, 0.32);
+  background: rgba(12, 24, 44, 0.78);
+  transform: translateY(-1px);
+}
+
+.browserNodeActive {
+  border-color: rgba(76, 201, 240, 0.42);
+  background:
+    linear-gradient(180deg, rgba(28, 66, 98, 0.42), rgba(16, 30, 53, 0.88));
+}
+
+.browserLabel {
+  color: #edf4ff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.browserMetaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.browserMeta {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.browserBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.browserBadgeMuted {
+  color: #c7d9f4;
+  background: rgba(23, 35, 56, 0.44);
+  border: 1px solid rgba(132, 161, 214, 0.2);
+}
+
+.browserBadgeSuccess {
+  color: #9ff4bf;
+  background: rgba(15, 83, 49, 0.3);
+  border: 1px solid rgba(58, 206, 129, 0.3);
+}
+
+.browserEmpty {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 8px 0;
+}

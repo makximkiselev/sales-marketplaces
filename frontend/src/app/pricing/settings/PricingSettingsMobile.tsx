@@ -38,6 +38,8 @@ export function PricingSettingsMobile({
     cellSaving,
     logisticsStoreSettings,
     logisticsRows,
+    logisticsTreeRoots,
+    logisticsTreePath,
     logisticsLoading,
     logisticsError,
     logisticsSearch,
@@ -58,6 +60,7 @@ export function PricingSettingsMobile({
     setLogisticsPage,
     setLogisticsPageSize,
     setLogisticsSearch,
+    setLogisticsTreePath,
     setLogisticsImportOpen,
     saveSalesPlanRows,
     runMonitoringJob,
@@ -207,6 +210,8 @@ export function PricingSettingsMobile({
               logisticsError={logisticsError}
               logisticsLoading={logisticsLoading}
               logisticsRows={logisticsRows}
+              logisticsTreeRoots={logisticsTreeRoots}
+              logisticsTreePath={logisticsTreePath}
               logisticsSearch={logisticsSearch}
               logisticsPage={logisticsPage}
               logisticsPageSize={logisticsPageSize}
@@ -219,6 +224,7 @@ export function PricingSettingsMobile({
               setLogisticsPage={setLogisticsPage}
               setLogisticsPageSize={setLogisticsPageSize}
               setLogisticsSearch={setLogisticsSearch}
+              setLogisticsTreePath={setLogisticsTreePath}
               setLogisticsImportOpen={setLogisticsImportOpen}
               toLiveLogisticsRow={toLiveLogisticsRow}
               fmtCell={fmtCell}

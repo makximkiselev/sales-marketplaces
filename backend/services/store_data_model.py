@@ -1103,6 +1103,62 @@ def _init_system_store_tables() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_users (
+                user_id TEXT PRIMARY KEY,
+                identifier TEXT NOT NULL UNIQUE,
+                display_name TEXT NOT NULL DEFAULT '',
+                password_hash TEXT NOT NULL DEFAULT '',
+                role TEXT NOT NULL DEFAULT 'viewer',
+                is_active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_app_users_role ON app_users(role)")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_access_links (
+                link_id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                label TEXT NOT NULL DEFAULT '',
+                token_hash TEXT NOT NULL UNIQUE,
+                created_by TEXT NOT NULL DEFAULT '',
+                use_count INTEGER NOT NULL DEFAULT 0,
+                last_used_at TEXT NULL,
+                expires_at TEXT NULL,
+                revoked_at TEXT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES app_users(user_id) ON DELETE CASCADE
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_app_access_links_user_id ON app_access_links(user_id)")
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_sessions (
+                session_id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                token_hash TEXT NOT NULL UNIQUE,
+                user_agent TEXT NOT NULL DEFAULT '',
+                ip_address TEXT NOT NULL DEFAULT '',
+                last_seen_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                revoked_at TEXT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES app_users(user_id) ON DELETE CASCADE
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_app_sessions_user_id ON app_sessions(user_id)")
+        if not is_postgres_backend():
+            user_cols = {row[1] for row in conn.execute("PRAGMA table_info(app_users)").fetchall()}
+            if "password_hash" not in user_cols:
+                conn.execute("ALTER TABLE app_users ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''")
         conn.commit()
 
 

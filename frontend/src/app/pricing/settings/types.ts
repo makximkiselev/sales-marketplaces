@@ -281,6 +281,7 @@ export type LogisticsStoreSettingsApi = {
 export type LogisticsRow = {
   sku: string;
   name: string;
+  tree_path?: string[];
   logistics_cost_display?: number | string | null;
   width_cm?: number | null;
   length_cm?: number | null;

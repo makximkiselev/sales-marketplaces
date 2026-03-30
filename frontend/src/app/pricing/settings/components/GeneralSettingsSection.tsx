@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { CatalogBrowser } from "../../../../components/page/CatalogBrowser";
 import { SectionBlock } from "../../../../components/page/SectionKit";
 import styles from "../PricingSettingsPage.module.css";
 import type { EditableFieldKey, PricingCategoryRow, PricingTableColumn } from "../types";
+import type { TreeNode } from "../../../_shared/catalogState";
 
 type CategoryTreeNode = {
   id: string;
@@ -87,6 +89,22 @@ function collectExpandableNodeIds(nodes: CategoryTreeNode[]): string[] {
   return ids;
 }
 
+function toCatalogRoots(nodes: CategoryTreeNode[]): TreeNode[] {
+  return nodes.map((node) => ({
+    name: node.label,
+    children: toCatalogRoots(node.children),
+  }));
+}
+
+function findNodeById(nodes: CategoryTreeNode[], id: string): CategoryTreeNode | null {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    const nested = findNodeById(node.children, id);
+    if (nested) return nested;
+  }
+  return null;
+}
+
 type Props = {
   loading: boolean;
   error: string;
@@ -131,11 +149,11 @@ export function GeneralSettingsSection({
   const [expandedPaths, setExpandedPaths] = useState<string[]>([]);
   const [treeQuery, setTreeQuery] = useState("");
   const categoryTree = buildCategoryTree(categoryRows);
+  const catalogRoots = toCatalogRoots(categoryTree);
   const expandableNodeIds = collectExpandableNodeIds(categoryTree);
   const fallbackRow = findFirstLeaf(categoryTree);
   const selectedRow = categoryRows.find((row) => row.key === selectedKey) ?? fallbackRow;
   const inputColumns = tableColumns.filter((col) => col.kind === "input" && col.field);
-  const normalizedTreeQuery = treeQuery.trim().toLowerCase();
 
   useEffect(() => {
     setMounted(true);
@@ -195,101 +213,42 @@ export function GeneralSettingsSection({
     });
   }
 
-  function filterTree(nodes: CategoryTreeNode[]): CategoryTreeNode[] {
-    if (!normalizedTreeQuery) return nodes;
-    const walk = (items: CategoryTreeNode[]): CategoryTreeNode[] =>
-      items.flatMap((node) => {
-        const filteredChildren = walk(node.children);
-        const selfMatch = node.pathLabel.toLowerCase().includes(normalizedTreeQuery);
-        if (!selfMatch && !filteredChildren.length) return [];
-        return [{ ...node, children: filteredChildren }];
-      });
-    return walk(nodes);
-  }
-
-  function renderTree(nodes: CategoryTreeNode[]) {
-    return nodes.map((node) => {
-      const expanded = expandedPaths.includes(node.id);
-      const selectableRow = node.row;
-      const isSelected = selectableRow ? selectedRow?.key === selectableRow.key : false;
-      const hasOverrides = rowHasOverrides(selectableRow);
-      return (
-        <div key={node.id} className={styles.categoryTreeNode}>
-          <div
-            className={`${styles.categoryTreeRow} ${isSelected ? styles.categoryTreeRowActive : ""}`}
-            style={{ paddingLeft: `${12 + node.depth * 14}px` }}
-          >
-            <button
-              type="button"
-              className={`${styles.categoryTreeToggle} ${!node.children.length ? styles.categoryTreeToggleGhost : ""}`}
-              onClick={() => {
-                if (node.children.length) {
-                  toggleNode(node.id);
-                } else if (selectableRow) {
-                  setSelectedKey(selectableRow.key);
-                }
-              }}
-              aria-label={expanded ? "Свернуть категорию" : "Раскрыть категорию"}
-            >
-              {node.children.length ? (expanded ? "−" : "+") : "•"}
-            </button>
-            <button
-              type="button"
-              className={`${styles.categoryTreeSelect} ${isSelected ? styles.categoryTreeSelectActive : ""}`}
-              onClick={() => {
-                if (selectableRow) {
-                  setSelectedKey(selectableRow.key);
-                  onCloseMobileCatalog?.();
-                } else if (node.children.length) {
-                  toggleNode(node.id);
-                }
-              }}
-            >
-              <span className={styles.categoryTreeLabel}>{node.label}</span>
-              <span className={styles.categoryTreeMetaRow}>
-                {selectableRow ? (
-                  <span className={styles.categoryTreeMeta}>{selectableRow.itemsCount} SKU</span>
-                ) : (
-                  <span className={styles.categoryTreeMeta}>{node.children.length} веток</span>
-                )}
-                <span className={`${styles.categoryTreeStatus} ${hasOverrides ? styles.categoryTreeStatusCustom : styles.categoryTreeStatusInherited}`}>
-                  {hasOverrides ? "Свои настройки" : "Общие настройки"}
-                </span>
-              </span>
-            </button>
-          </div>
-          {node.children.length && expanded ? (
-            <div className={styles.categoryTreeChildren}>{renderTree(node.children)}</div>
-          ) : null}
-        </div>
-      );
-    });
-  }
-
   function renderSidebarContent() {
+    const selectedPath = selectedRow?.leafPath || "";
     return (
-      <>
-        <div className={styles.categorySidebarHead}>
-          <div>
-            <div className={styles.categorySidebarTitle}>Каталог категорий</div>
-            <div className={styles.categorySidebarMeta}>Выбери нужную ветку и редактируй только её параметры.</div>
-          </div>
-        </div>
-        <div className={styles.categorySidebarSearch}>
-          <input
-            className={`input ${styles.categorySidebarSearchInput}`}
-            value={treeQuery}
-            onChange={(e) => setTreeQuery(e.target.value)}
-            placeholder="Поиск по категории или ветке"
-          />
-          <button type="button" className={`btn ghost ${styles.categorySidebarAction}`} onClick={toggleAllNodes}>
-            {expandedPaths.length ? "Свернуть все" : "Развернуть все"}
-          </button>
-        </div>
-        <div className={styles.categorySidebarList}>
-          {renderTree(filterTree(categoryTree))}
-        </div>
-      </>
+      <CatalogBrowser
+        title="Каталог категорий"
+        subtitle="Выбери нужную ветку и редактируй только её параметры."
+        roots={catalogRoots}
+        selectedPath={selectedPath}
+        expandedPaths={expandedPaths}
+        query={treeQuery}
+        onQueryChange={setTreeQuery}
+        onToggleExpand={toggleNode}
+        onToggleExpandAll={toggleAllNodes}
+        onSelectPath={(path) => {
+          const node = findNodeById(categoryTree, path);
+          if (!node) return;
+          const nextRow = node.row ?? findFirstLeaf(node.children);
+          if (nextRow) {
+            setSelectedKey(nextRow.key);
+            onCloseMobileCatalog?.();
+          } else if (node.children.length) {
+            toggleNode(node.id);
+          }
+        }}
+        getNodeMeta={(path) => {
+          const node = findNodeById(categoryTree, path);
+          if (!node) return {};
+          const selectableRow = node.row;
+          const hasOverrides = rowHasOverrides(selectableRow);
+          return {
+            secondary: selectableRow ? `${selectableRow.itemsCount} SKU` : `${node.children.length} веток`,
+            badge: hasOverrides ? "Свои настройки" : "Общие настройки",
+            badgeTone: hasOverrides ? "success" : "muted",
+          };
+        }}
+      />
     );
   }
 

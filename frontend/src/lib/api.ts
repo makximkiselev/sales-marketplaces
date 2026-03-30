@@ -19,7 +19,8 @@ export function buildApiUrl(path: string): string {
 
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(buildApiUrl(path), {
-    cache: "no-store"
+    cache: "no-store",
+    credentials: "include",
   });
   if (!res.ok) {
     const text = await res.text();
@@ -33,7 +34,8 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
-    cache: "no-store"
+    cache: "no-store",
+    credentials: "include",
   });
   if (!res.ok) {
     const text = await res.text();

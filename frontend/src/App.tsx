@@ -1,5 +1,7 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Shell } from "./components/Shell";
+import AuthPage from "./app/auth/AuthPage";
 import HomePage from "./app/page";
 import CatalogPage from "./app/catalog/CatalogPage";
 import CatalogContentRatingPage from "./app/catalog/content-rating/page";
@@ -18,11 +20,60 @@ import SalesElasticityPage from "./app/sales/elasticity/SalesElasticityPage";
 import SalesOverviewPage from "./app/sales/overview/SalesOverviewPage";
 import SettingsMonitoringPage from "./app/settings/monitoring/MonitoringPage";
 import SettingsSourcesPage from "./app/settings/sources/DataSourcesPage";
+import { buildApiUrl } from "./lib/api";
+
+type AuthUser = {
+  user_id: string;
+  identifier: string;
+  display_name: string;
+  role: string;
+  is_active: boolean;
+};
+
+function ProtectedLayout() {
+  return (
+    <Shell>
+      <Outlet />
+    </Shell>
+  );
+}
+
+function RequireAuth() {
+  const location = useLocation();
+  const [status, setStatus] = useState<"loading" | "ready" | "unauthorized">("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(buildApiUrl("/api/auth/me"), { cache: "no-store", credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { ok?: boolean; user?: AuthUser } | null) => {
+        if (cancelled) return;
+        setStatus(data?.ok && data.user ? "ready" : "unauthorized");
+      })
+      .catch(() => {
+        if (!cancelled) setStatus("unauthorized");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, location.search]);
+
+  if (status === "loading") {
+    return <div className="auth-loading-screen">Проверяем доступ…</div>;
+  }
+  if (status === "unauthorized") {
+    const next = encodeURIComponent(`${location.pathname}${location.search}${location.hash}`);
+    return <Navigate to={`/auth?next=${next}`} replace />;
+  }
+  return <Outlet />;
+}
 
 export default function App() {
   return (
-    <Shell>
-      <Routes>
+    <Routes>
+      <Route path="/auth" element={<AuthPage />} />
+      <Route element={<RequireAuth />}>
+        <Route element={<ProtectedLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/catalog" element={<CatalogPage />} />
         <Route path="/catalog/content-rating" element={<CatalogContentRatingPage />} />
@@ -47,8 +98,9 @@ export default function App() {
         <Route path="/settings/monitoring" element={<SettingsMonitoringPage />} />
         <Route path="/settings/pricing" element={<PricingSettingsPage />} />
         <Route path="/settings/sources" element={<SettingsSourcesPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Shell>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Route>
+    </Routes>
   );
 }

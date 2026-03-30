@@ -4,6 +4,7 @@ import { clearPricingSettingsCache, PRICING_SETTINGS_LOGISTICS_CACHE_PREFIX, saf
 import { fmtCell, fmtInputNum, getLogisticsCellKey, numFromAny, toLiveLogisticsRow } from "./controllerUtils";
 import type { LogisticsEditableFieldKey, LogisticsNumericKey, LogisticsRow, LogisticsStoreSettingsApi } from "./types";
 import { showAppToast } from "../../../components/ui/toastBus";
+import type { TreeNode } from "../../_shared/catalogState";
 
 export function usePricingLogisticsController(params: {
   activePlatform: string;
@@ -24,6 +25,8 @@ export function usePricingLogisticsController(params: {
   const [logisticsPageSize, setLogisticsPageSize] = useState(50);
   const [logisticsTotal, setLogisticsTotal] = useState(0);
   const [logisticsPageSizeOptions, setLogisticsPageSizeOptions] = useState<number[]>([25, 50, 100, 200]);
+  const [logisticsTreePath, setLogisticsTreePath] = useState("");
+  const [logisticsTreeRoots, setLogisticsTreeRoots] = useState<TreeNode[]>([]);
   const [logisticsStoreSaving, setLogisticsStoreSaving] = useState(false);
   const [logisticsStoreSavedAt, setLogisticsStoreSavedAt] = useState("");
   const [logisticsStoreError, setLogisticsStoreError] = useState("");
@@ -41,7 +44,7 @@ export function usePricingLogisticsController(params: {
   const logisticsStoreSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logisticsSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function loadLogisticsData(opts?: { page?: number; pageSize?: number; search?: string }) {
+  async function loadLogisticsData(opts?: { page?: number; pageSize?: number; search?: string; categoryPath?: string }) {
     if (!activePlatform || !activeStoreId || (activePlatform !== "yandex_market" && activePlatform !== "ozon")) {
       setLogisticsRows([]);
       setLogisticsError("");
@@ -50,15 +53,17 @@ export function usePricingLogisticsController(params: {
     const pageValue = opts?.page ?? logisticsPage;
     const pageSizeValue = opts?.pageSize ?? logisticsPageSize;
     const searchValue = opts?.search ?? logisticsSearch;
+    const categoryPathValue = opts?.categoryPath ?? logisticsTreePath;
     setLogisticsLoading(true);
     setLogisticsError("");
     try {
-      const logisticsParams = { platform: activePlatform, store_id: activeStoreId, page: String(pageValue), page_size: String(pageSizeValue), search: searchValue };
+      const logisticsParams = { platform: activePlatform, store_id: activeStoreId, page: String(pageValue), page_size: String(pageSizeValue), search: searchValue, category_path: categoryPathValue };
       const cacheKey = `${PRICING_SETTINGS_LOGISTICS_CACHE_PREFIX}${JSON.stringify(logisticsParams)}`;
       const cached = safeReadJson<any>(cacheKey);
       if (cached?.ok) {
         setLogisticsStoreSettings((prev) => ({ ...prev, ...(cached.store_settings || {}) }));
         setLogisticsRows(Array.isArray(cached.rows) ? (cached.rows as LogisticsRow[]) : []);
+        setLogisticsTreeRoots(Array.isArray(cached.tree_roots) ? (cached.tree_roots as TreeNode[]) : []);
         setLogisticsTotal(Number(cached.total_count || 0));
         setLogisticsPage(Number(cached.page || pageValue || 1));
         setLogisticsPageSize(Number(cached.page_size || pageSizeValue || 50));
@@ -74,6 +79,7 @@ export function usePricingLogisticsController(params: {
       safeWriteJson(cacheKey, data);
       setLogisticsStoreSettings((prev) => ({ ...prev, ...(data.store_settings || {}) }));
       setLogisticsRows(Array.isArray(data.rows) ? (data.rows as LogisticsRow[]) : []);
+      setLogisticsTreeRoots(Array.isArray(data.tree_roots) ? (data.tree_roots as TreeNode[]) : []);
       setLogisticsTotal(Number(data.total_count || 0));
       setLogisticsPage(Number(data.page || pageValue || 1));
       setLogisticsPageSize(Number(data.page_size || pageSizeValue || 50));
@@ -99,14 +105,14 @@ export function usePricingLogisticsController(params: {
     if (settingsTab !== "logistics") return;
     if (logisticsSearchTimerRef.current) clearTimeout(logisticsSearchTimerRef.current);
     logisticsSearchTimerRef.current = setTimeout(() => {
-      void loadLogisticsData({ page: 1, pageSize: logisticsPageSize, search: logisticsSearch });
+      void loadLogisticsData({ page: 1, pageSize: logisticsPageSize, search: logisticsSearch, categoryPath: logisticsTreePath });
     }, 350);
-  }, [settingsTab, activePlatform, activeStoreId, logisticsSearch, logisticsPageSize]);
+  }, [settingsTab, activePlatform, activeStoreId, logisticsSearch, logisticsPageSize, logisticsTreePath]);
 
   useEffect(() => {
     if (settingsTab !== "logistics") return;
     void loadLogisticsData();
-  }, [settingsTab, activePlatform, activeStoreId, logisticsPage, logisticsPageSize]);
+  }, [settingsTab, activePlatform, activeStoreId, logisticsPage, logisticsPageSize, logisticsTreePath]);
 
   useEffect(() => {
     if (settingsTab !== "logistics" || !activePlatform || !activeStoreId || logisticsLoading || (activePlatform !== "yandex_market" && activePlatform !== "ozon")) return;
@@ -256,6 +262,8 @@ export function usePricingLogisticsController(params: {
   return {
     logisticsStoreSettings,
     logisticsRows,
+    logisticsTreeRoots,
+    logisticsTreePath,
     logisticsLoading,
     logisticsError,
     logisticsSearch,
@@ -274,6 +282,7 @@ export function usePricingLogisticsController(params: {
     setLogisticsPage,
     setLogisticsPageSize,
     setLogisticsSearch,
+    setLogisticsTreePath,
     setLogisticsImportOpen,
     setLogisticsEditingCell,
     setLogisticsCellDrafts,

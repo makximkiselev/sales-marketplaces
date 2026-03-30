@@ -28,27 +28,51 @@ export function LogisticsSettingsPanel({
   setLogisticsNumericField,
   onLogisticsNumericBlur,
 }: Props) {
+  const isPercentMode = logisticsStoreSettings.handling_mode === "percent";
+
   return (
-    <div className={`${styles.globalSettingsGrid} ${styles.logisticsSettingsGrid}`}>
-      <div className={`${styles.settingField} ${logisticsFieldErrors.handling ? styles.settingFieldError : ""}`}>
-        <div className={styles.settingLabel}>Стоимость обработки заказа</div>
-        <div className={styles.handlingInlineRow}>
-          <div className={styles.modeToggleWrap}>
-            <span className={styles.modeToggleText}>{moneySign}</span>
-            <button
-              type="button"
-              className={`toggle sm ${styles.selectorToggle} ${logisticsStoreSettings.handling_mode === "percent" ? "on" : ""}`}
-              role="switch"
-              aria-checked={logisticsStoreSettings.handling_mode === "percent"}
-              onClick={() => setLogisticsField("handling_mode", logisticsStoreSettings.handling_mode === "percent" ? "fixed" : "percent")}
-            >
-              <span className="toggle-track"><span className="toggle-thumb" /></span>
-            </button>
-            <span className={styles.modeToggleText}>%</span>
+    <div className={styles.logisticsPanelShell}>
+      <div className={styles.logisticsPanelHead}>
+        <div>
+          <div className={styles.categoryEditorEyebrow}>Правила магазина</div>
+          <div className={styles.logisticsPanelTitle}>Логистические коэффициенты</div>
+        </div>
+        <div className={styles.logisticsPanelMeta}>
+          {logisticsStoreSaving
+            ? "Сохраняем логистику..."
+            : logisticsStoreError
+              ? `Ошибка: ${logisticsStoreError}`
+              : logisticsStoreSavedAt
+                ? `Сохранено: ${new Date(logisticsStoreSavedAt).toLocaleString("ru-RU")}`
+                : "Автосохранение"}
+        </div>
+      </div>
+
+      <div className={styles.logisticsStoreGrid}>
+        <div className={`${styles.logisticsStoreCard} ${styles.logisticsStoreCardWide} ${logisticsFieldErrors.handling ? styles.settingFieldError : ""}`}>
+          <div className={styles.logisticsStoreCardHead}>
+            <div className={styles.logisticsStoreCardTitle}>Обработка заказа</div>
+            <div className={styles.logisticsModeTabs}>
+              <button
+                type="button"
+                className={`${styles.logisticsModeTab} ${!isPercentMode ? styles.logisticsModeTabActive : ""}`}
+                onClick={() => setLogisticsField("handling_mode", "fixed")}
+              >
+                Фикс, {moneySign}
+              </button>
+              <button
+                type="button"
+                className={`${styles.logisticsModeTab} ${isPercentMode ? styles.logisticsModeTabActive : ""}`}
+                onClick={() => setLogisticsField("handling_mode", "percent")}
+              >
+                Процент
+              </button>
+            </div>
           </div>
-          {logisticsStoreSettings.handling_mode === "percent" ? (
-            <div className={`${styles.inlineThreeInputs} ${styles.inlineThreeInputsCompact}`}>
-              <div className={styles.inputWithSuffix}>
+          {isPercentMode ? (
+            <div className={styles.logisticsStoreCardGrid}>
+              <div className={styles.logisticsMetricField}>
+                <label className={styles.logisticsMetricLabel}>Ставка, %</label>
                 <input
                   className={`input ${styles.settingInput}`}
                   value={getLogisticsNumericValue("handling_percent", logisticsStoreSettings.handling_percent)}
@@ -57,9 +81,9 @@ export function LogisticsSettingsPanel({
                   placeholder="Процент"
                   inputMode="decimal"
                 />
-                <span className={styles.inputSuffix}>%</span>
               </div>
-              <div className={styles.inputWithSuffix}>
+              <div className={styles.logisticsMetricField}>
+                <label className={styles.logisticsMetricLabel}>Минимум, {moneySign}</label>
                 <input
                   className={`input ${styles.settingInput}`}
                   value={getLogisticsNumericValue("handling_min_amount", logisticsStoreSettings.handling_min_amount)}
@@ -68,9 +92,9 @@ export function LogisticsSettingsPanel({
                   placeholder="Мин"
                   inputMode="decimal"
                 />
-                <span className={styles.inputSuffix}>{moneySign}</span>
               </div>
-              <div className={styles.inputWithSuffix}>
+              <div className={styles.logisticsMetricField}>
+                <label className={styles.logisticsMetricLabel}>Максимум, {moneySign}</label>
                 <input
                   className={`input ${styles.settingInput}`}
                   value={getLogisticsNumericValue("handling_max_amount", logisticsStoreSettings.handling_max_amount)}
@@ -79,11 +103,11 @@ export function LogisticsSettingsPanel({
                   placeholder="Макс"
                   inputMode="decimal"
                 />
-                <span className={styles.inputSuffix}>{moneySign}</span>
               </div>
             </div>
           ) : (
-            <div className={`${styles.inputWithSuffix} ${styles.handlingFixedWrap}`}>
+            <div className={styles.logisticsMetricField}>
+              <label className={styles.logisticsMetricLabel}>Стоимость обработки, {moneySign}</label>
               <input
                 className={`input ${styles.settingInput}`}
                 value={getLogisticsNumericValue("handling_fixed_amount", logisticsStoreSettings.handling_fixed_amount)}
@@ -92,67 +116,54 @@ export function LogisticsSettingsPanel({
                 placeholder="Фиксированный платеж"
                 inputMode="decimal"
               />
-              <span className={styles.inputSuffix}>{moneySign}</span>
             </div>
           )}
+          {logisticsFieldErrors.handling ? <div className={styles.fieldErrorText}>{logisticsFieldErrors.handling}</div> : null}
         </div>
-        {logisticsFieldErrors.handling ? <div className={styles.fieldErrorText}>{logisticsFieldErrors.handling}</div> : null}
-      </div>
 
-      <div className={`${styles.settingField} ${logisticsFieldErrors.delivery ? styles.settingFieldError : ""}`}>
-        <label className={styles.settingLabel}>Стоимость доставки до клиента за 1кг</label>
-        <div className={styles.inputWithSuffix}>
-          <input
-            className={`input ${styles.settingInput}`}
-            value={getLogisticsNumericValue("delivery_cost_per_kg", logisticsStoreSettings.delivery_cost_per_kg)}
-            onChange={(e) => setLogisticsNumericField("delivery_cost_per_kg", e.target.value)}
-            onBlur={() => onLogisticsNumericBlur("delivery_cost_per_kg")}
-            inputMode="decimal"
-            placeholder="например 4"
-          />
-          <span className={styles.inputSuffix}>{moneySign}</span>
+        <div className={`${styles.logisticsStoreCard} ${logisticsFieldErrors.delivery ? styles.settingFieldError : ""}`}>
+          <div className={styles.logisticsStoreCardTitle}>Доставка до клиента, {moneySign}/кг</div>
+          <div className={styles.logisticsMetricField}>
+            <input
+              className={`input ${styles.settingInput}`}
+              value={getLogisticsNumericValue("delivery_cost_per_kg", logisticsStoreSettings.delivery_cost_per_kg)}
+              onChange={(e) => setLogisticsNumericField("delivery_cost_per_kg", e.target.value)}
+              onBlur={() => onLogisticsNumericBlur("delivery_cost_per_kg")}
+              inputMode="decimal"
+              placeholder="например 4"
+            />
+          </div>
+          {logisticsFieldErrors.delivery ? <div className={styles.fieldErrorText}>{logisticsFieldErrors.delivery}</div> : null}
         </div>
-        {logisticsFieldErrors.delivery ? <div className={styles.fieldErrorText}>{logisticsFieldErrors.delivery}</div> : null}
-      </div>
 
-      <div className={`${styles.settingField} ${logisticsFieldErrors.return ? styles.settingFieldError : ""}`}>
-        <label className={styles.settingLabel}>Стоимость обработки возврата</label>
-        <div className={styles.inputWithSuffix}>
-          <input
-            className={`input ${styles.settingInput}`}
-            value={getLogisticsNumericValue("return_processing_cost", logisticsStoreSettings.return_processing_cost)}
-            onChange={(e) => setLogisticsNumericField("return_processing_cost", e.target.value)}
-            onBlur={() => onLogisticsNumericBlur("return_processing_cost")}
-            inputMode="decimal"
-            placeholder="например 3"
-          />
-          <span className={styles.inputSuffix}>{moneySign}</span>
+        <div className={`${styles.logisticsStoreCard} ${logisticsFieldErrors.return ? styles.settingFieldError : ""}`}>
+          <div className={styles.logisticsStoreCardTitle}>Обработка возврата, {moneySign}</div>
+          <div className={styles.logisticsMetricField}>
+            <input
+              className={`input ${styles.settingInput}`}
+              value={getLogisticsNumericValue("return_processing_cost", logisticsStoreSettings.return_processing_cost)}
+              onChange={(e) => setLogisticsNumericField("return_processing_cost", e.target.value)}
+              onBlur={() => onLogisticsNumericBlur("return_processing_cost")}
+              inputMode="decimal"
+              placeholder="например 3"
+            />
+          </div>
+          {logisticsFieldErrors.return ? <div className={styles.fieldErrorText}>{logisticsFieldErrors.return}</div> : null}
         </div>
-        {logisticsFieldErrors.return ? <div className={styles.fieldErrorText}>{logisticsFieldErrors.return}</div> : null}
-      </div>
 
-      <div className={`${styles.settingField} ${logisticsFieldErrors.disposal ? styles.settingFieldError : ""}`}>
-        <label className={styles.settingLabel}>Стоимость утилизации</label>
-        <div className={styles.inputWithSuffix}>
-          <input
-            className={`input ${styles.settingInput}`}
-            value={getLogisticsNumericValue("disposal_cost", logisticsStoreSettings.disposal_cost)}
-            onChange={(e) => setLogisticsNumericField("disposal_cost", e.target.value)}
-            onBlur={() => onLogisticsNumericBlur("disposal_cost")}
-            inputMode="decimal"
-            placeholder="например 0"
-          />
-          <span className={styles.inputSuffix}>{moneySign}</span>
-        </div>
-        {logisticsFieldErrors.disposal ? <div className={styles.fieldErrorText}>{logisticsFieldErrors.disposal}</div> : null}
-        <div className={styles.cogsSourceMeta}>
-          {logisticsStoreSaving
-            ? "Сохраняем логистику..."
-            : logisticsStoreError
-              ? `Ошибка: ${logisticsStoreError}`
-              : logisticsStoreSavedAt
-                ? `Сохранено: ${new Date(logisticsStoreSavedAt).toLocaleString("ru-RU")}`
-                : "Настройки логистики еще не сохранены"}
+        <div className={`${styles.logisticsStoreCard} ${logisticsFieldErrors.disposal ? styles.settingFieldError : ""}`}>
+          <div className={styles.logisticsStoreCardTitle}>Утилизация, {moneySign}</div>
+          <div className={styles.logisticsMetricField}>
+            <input
+              className={`input ${styles.settingInput}`}
+              value={getLogisticsNumericValue("disposal_cost", logisticsStoreSettings.disposal_cost)}
+              onChange={(e) => setLogisticsNumericField("disposal_cost", e.target.value)}
+              onBlur={() => onLogisticsNumericBlur("disposal_cost")}
+              inputMode="decimal"
+              placeholder="например 0"
+            />
+          </div>
+          {logisticsFieldErrors.disposal ? <div className={styles.fieldErrorText}>{logisticsFieldErrors.disposal}</div> : null}
         </div>
       </div>
     </div>

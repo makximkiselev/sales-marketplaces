@@ -113,12 +113,14 @@ export function fetchPricingLogistics(params: {
   page: string;
   page_size: string;
   search: string;
+  category_path?: string;
 }) {
   return apiGetParams<{
     ok: boolean;
     message?: string;
     store_settings?: LogisticsStoreSettingsApi;
     rows?: unknown[];
+    tree_roots?: unknown[];
     total_count?: number;
     page?: number;
     page_size?: number;
