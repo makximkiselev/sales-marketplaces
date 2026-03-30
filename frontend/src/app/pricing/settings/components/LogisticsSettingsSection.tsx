@@ -229,7 +229,7 @@ export function LogisticsSettingsSection({
                                 <div className={styles.logisticsProductName}>{row.name || "Без названия"}</div>
                                 <div className={styles.logisticsRowMeta}>
                                   <span className={row.dimensions_inherited ? styles.categoryTreeStatusInherited : styles.categoryTreeStatusCustom}>
-                                    {row.dimensions_inherited ? "Общие габариты" : "Свои габариты"}
+                                    {row.dimensions_inherited ? "Общие" : "Свои"}
                                   </span>
                                   {Array.isArray(row.tree_path) && row.tree_path.length ? (
                                     <span className={styles.logisticsPathHint}>{row.tree_path.join(" / ")}</span>

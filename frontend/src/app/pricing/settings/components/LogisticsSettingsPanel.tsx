@@ -33,11 +33,14 @@ export function LogisticsSettingsPanel({
   return (
     <div className={styles.logisticsPanelShell}>
       <div className={styles.logisticsPanelHead}>
-        <div>
+        <div className={styles.logisticsPanelHeadMain}>
           <div className={styles.categoryEditorEyebrow}>Правила магазина</div>
           <div className={styles.logisticsPanelTitle}>Логистические коэффициенты</div>
+          <div className={styles.logisticsPanelSubtitle}>
+            Эти значения применяются ко всей таблице товаров выбранного магазина и влияют на расчёт логистики в строках.
+          </div>
         </div>
-        <div className={styles.logisticsPanelMeta}>
+        <div className={styles.logisticsPanelMetaChip}>
           {logisticsStoreSaving
             ? "Сохраняем логистику..."
             : logisticsStoreError

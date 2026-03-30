@@ -214,15 +214,13 @@
 }
 
 .desktopSectionTabsRow {
-  gap: 28px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  width: fit-content;
+  gap: 8px;
+  flex-wrap: wrap;
+  overflow: visible;
+  width: 100%;
   max-width: 100%;
-  padding: 0 0 8px;
+  padding: 0;
   border: 0;
-  border-bottom: 1px solid rgba(132, 161, 214, 0.12);
-  border-radius: 0;
   background: transparent;
 }
 
@@ -231,94 +229,56 @@
 }
 
 .storeTabsBar {
-  gap: 22px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  width: fit-content;
+  gap: 8px;
+  flex-wrap: wrap;
+  overflow: visible;
+  width: 100%;
   max-width: 100%;
-  padding: 0 0 8px;
+  padding: 0;
   border: 0;
-  border-bottom: 1px solid rgba(132, 161, 214, 0.12);
-  border-radius: 0;
   background: transparent;
 }
 
 .settingsTabsRow :global(.btn),
 .desktopSectionTabsRow :global(.btn),
 .storeTabsBar :global(.btn) {
-  height: 34px;
+  height: 36px;
   min-height: 0;
-  padding: 0 2px 8px;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent;
+  padding: 0 12px;
+  border: 1px solid rgba(132, 161, 214, 0.16) !important;
+  border-radius: 12px !important;
+  background: rgba(8, 15, 28, 0.62);
   color: #8ea5c4;
   font-size: 13px;
   font-weight: 700;
-  position: relative;
   transition:
     color 0.16s ease,
-    opacity 0.16s ease,
-    background 0.18s ease;
+    border-color 0.16s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .settingsTabsRow :global(.btn:hover),
 .desktopSectionTabsRow :global(.btn:hover),
 .storeTabsBar :global(.btn:hover) {
   color: #dde9fb;
-  background: transparent;
-}
-
-.settingsTabsRow :global(.btn)::after,
-.desktopSectionTabsRow :global(.btn)::after,
-.storeTabsBar :global(.btn)::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -8px;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #55c8ff, #9fe4ff);
-  opacity: 0;
-  transform: scaleX(0.3);
-  transform-origin: center;
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
+  border-color: rgba(76, 201, 240, 0.3) !important;
+  background: rgba(18, 33, 58, 0.82);
 }
 
 .settingsTabsRow :global(button[data-active="true"]),
 .desktopSectionTabsRow :global(button[data-active="true"]),
 .storeTabsBar :global(button[data-active="true"]) {
   color: #eef5ff !important;
-  background: transparent;
-}
-
-.settingsTabsRow :global(button[data-active="true"])::after,
-.desktopSectionTabsRow :global(button[data-active="true"])::after,
-.storeTabsBar :global(button[data-active="true"])::after {
-  opacity: 1;
-  transform: scaleX(1);
+  border-color: rgba(76, 201, 240, 0.38) !important;
+  background:
+    linear-gradient(180deg, rgba(35, 82, 121, 0.56), rgba(17, 33, 57, 0.96));
+  box-shadow: 0 0 0 1px rgba(76, 201, 240, 0.1) inset;
 }
 
 .storeTabsBar :global(.btn) {
-  height: 32px;
-  padding: 0 2px 8px;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent;
-  color: #8ea5c4;
-}
-
-.storeTabsBar :global(.btn)::after {
-  display: block;
-}
-
-.storeTabsBar :global(button[data-active="true"]) {
-  background: transparent !important;
-  border-color: transparent !important;
-  box-shadow: none;
+  height: 34px;
+  padding: 0 10px;
 }
 
 .desktopRailCard {
@@ -1139,6 +1099,11 @@
   gap: 12px;
 }
 
+.logisticsPanelHeadMain {
+  display: grid;
+  gap: 4px;
+}
+
 .logisticsPanelTitle {
   color: #eef5ff;
   font-size: 15px;
@@ -1146,9 +1111,24 @@
   line-height: 1.1;
 }
 
-.logisticsPanelMeta {
+.logisticsPanelSubtitle {
   color: var(--text-soft);
   font-size: 12px;
+  line-height: 1.45;
+  max-width: 760px;
+}
+
+.logisticsPanelMetaChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  background: rgba(8, 15, 28, 0.62);
+  color: #cfe0f8;
+  font-size: 12px;
+  font-weight: 700;
   line-height: 1.2;
   text-align: right;
 }
@@ -1269,6 +1249,10 @@
 .logisticsTableWrap {
   min-height: 0;
   max-height: min(54vh, 660px);
+}
+
+.logisticsTableWrap :global(table) {
+  min-width: 100%;
 }
 
 .logisticsSidebar {
@@ -2544,6 +2528,7 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  margin-top: 4px;
 }
 
 .logisticsPathHint {
