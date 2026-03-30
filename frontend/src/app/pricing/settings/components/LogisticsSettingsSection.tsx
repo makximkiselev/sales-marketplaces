@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { CatalogBrowser } from "../../../../components/page/CatalogBrowser";
 import { ControlField } from "../../../../components/page/ControlKit";
 import { SectionBlock } from "../../../../components/page/SectionKit";
@@ -80,23 +80,8 @@ export function LogisticsSettingsSection({
   setLogisticsCellDrafts,
 }: Props) {
   const totalPages = Math.max(1, Math.ceil(logisticsTotal / Math.max(1, logisticsPageSize)));
-  const [selectedSku, setSelectedSku] = useState("");
-  const selectedRow = useMemo(() => {
-    if (!logisticsRows.length) return null;
-    return logisticsRows.find((row) => row.sku === selectedSku) ?? logisticsRows[0];
-  }, [logisticsRows, selectedSku]);
   const [treeQuery, setTreeQuery] = useState("");
   const [expandedTreePaths, setExpandedTreePaths] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!logisticsRows.length) {
-      setSelectedSku("");
-      return;
-    }
-    if (!logisticsRows.some((row) => row.sku === selectedSku)) {
-      setSelectedSku(logisticsRows[0].sku);
-    }
-  }, [logisticsRows, selectedSku]);
 
   const editableFields: Array<{ field: LogisticsEditableFieldKey; label: string }> = [
     { field: "width_cm", label: "Ширина, см" },
@@ -122,7 +107,7 @@ export function LogisticsSettingsSection({
               <div className={styles.logisticsCatalogPane}>
                 <CatalogBrowser
                   title="Каталог"
-                  subtitle="Выбери ветку каталога, затем SKU в соседнем блоке."
+                  subtitle="Выбери ветку каталога, чтобы сузить таблицу товаров."
                   roots={logisticsTreeRoots}
                   selectedPath={logisticsTreePath}
                   expandedPaths={expandedTreePaths}
@@ -147,15 +132,19 @@ export function LogisticsSettingsSection({
                 />
               </div>
 
-              <div className={styles.logisticsSidebar}>
-                <div className={styles.logisticsSidebarControls}>
-                  <div className={styles.logisticsSidebarPanelHead}>
-                    <div>
-                      <div className={styles.categorySidebarTitle}>Товары</div>
-                      <div className={styles.categorySidebarMeta}>{visibleSkuLabel}</div>
+              <div className={styles.logisticsTablePane}>
+                <div className={styles.logisticsTableHead}>
+                  <div className={styles.logisticsTableIntro}>
+                    <div className={styles.categorySidebarTitle}>Товары</div>
+                    <div className={styles.categorySidebarMeta}>
+                      {visibleSkuLabel}
+                      {logisticsTreePath ? ` • ${logisticsTreePath}` : ""}
                     </div>
-                    {logisticsTreePath ? <div className={styles.logisticsBranchChip}>{logisticsTreePath}</div> : null}
                   </div>
+                  <div className={styles.logisticsTableInfo}>Всего: {logisticsTotal}</div>
+                </div>
+
+                <div className={styles.logisticsTableControls}>
                   <ControlField label="Поиск по SKU" className={styles.logisticsSearchField}>
                     <div className={styles.inputWithSuffix}>
                       <input
@@ -169,156 +158,122 @@ export function LogisticsSettingsSection({
                       />
                     </div>
                   </ControlField>
-                  <div className={styles.logisticsSidebarActionRow}>
-                    <ControlField label="На странице" className={styles.logisticsPageSizeBox}>
-                      <select
-                        className={`input ${styles.logisticsPageSizeSelect}`}
-                        value={String(logisticsPageSize)}
-                        onChange={(e) => {
-                          setLogisticsPageSize(Number(e.target.value));
-                          setLogisticsPage(1);
-                        }}
-                      >
-                        {logisticsPageSizeOptions.map((n) => <option key={n} value={n}>{n}</option>)}
-                      </select>
-                    </ControlField>
-                    <button
-                      type="button"
-                      className={`btn ghost ${styles.logisticsImportButton}`}
-                      onClick={() => setLogisticsImportOpen(true)}
-                      disabled={!activeStoreId || (activePlatform !== "yandex_market" && activePlatform !== "ozon")}
+                  <ControlField label="На странице" className={styles.logisticsPageSizeBox}>
+                    <select
+                      className={`input ${styles.logisticsPageSizeSelect}`}
+                      value={String(logisticsPageSize)}
+                      onChange={(e) => {
+                        setLogisticsPageSize(Number(e.target.value));
+                        setLogisticsPage(1);
+                      }}
                     >
-                      Импорт
-                    </button>
-                  </div>
+                      {logisticsPageSizeOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </ControlField>
+                  <button
+                    type="button"
+                    className={`btn ghost ${styles.logisticsImportButton}`}
+                    onClick={() => setLogisticsImportOpen(true)}
+                    disabled={!activeStoreId || (activePlatform !== "yandex_market" && activePlatform !== "ozon")}
+                  >
+                    Импорт
+                  </button>
                 </div>
-                <div className={styles.logisticsSidebarList}>
-                  {logisticsRows.map((rawRow) => {
-                    const row = toLiveLogisticsRow(rawRow);
-                    const active = selectedRow?.sku === row.sku;
-                    return (
-                      <button
-                        key={row.sku}
-                        type="button"
-                        className={`${styles.logisticsSidebarItem} ${active ? styles.logisticsSidebarItemActive : ""}`}
-                        onClick={() => setSelectedSku(row.sku)}
-                      >
-                        <div className={styles.logisticsSidebarItemHead}>
-                          <span className={styles.logisticsSidebarSku}>{row.sku}</span>
-                          <span className={styles.logisticsSidebarCost}>{fmtCell(row.logistics_cost_display)} {moneySign}</span>
-                        </div>
-                        <div className={styles.logisticsSidebarName}>{row.name || "Без названия"}</div>
-                        <div className={styles.logisticsSidebarMetaRow}>
-                          <span className={styles.logisticsSidebarMeta}>Обработка: {fmtCell(row.handling_cost_display)}</span>
-                          <span className={styles.categoryTreeStatusInherited}>
-                            {row.dimensions_inherited ? "Общие габариты" : "Свои габариты"}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
-                  {!logisticsRows.length ? (
-                    <div className={styles.logisticsEmptyState}>
-                      {logisticsTreePath
-                        ? "В этой ветке пока нет товаров raw-слоя."
-                        : "Нет товаров в raw-слое выбранного магазина."}
-                    </div>
-                  ) : null}
+
+                <div className={`${styles.pricingTableWrap} ${styles.logisticsTableWrap}`}>
+                  <table className={`${styles.pricingTable} ${styles.logisticsTable}`}>
+                    <thead>
+                      <tr>
+                        <th>SKU</th>
+                        <th>Товар</th>
+                        {editableFields.map(({ label }) => <th key={label}>{label}</th>)}
+                        <th>Вес объёмный, кг</th>
+                        <th>Макс. вес, кг</th>
+                        <th>Стоимость за кг, {moneySign}</th>
+                        <th>Обработка, {moneySign}</th>
+                        <th>Доставка, {moneySign}</th>
+                        <th>Возврат, {moneySign}</th>
+                        <th>Утилизация, {moneySign}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logisticsRows.length === 0 ? (
+                        <tr>
+                          <td colSpan={11} className={styles.emptyCell}>
+                            {logisticsTreePath
+                              ? "В выбранной ветке пока нет товаров raw-слоя."
+                              : "Нет товаров в raw-слое выбранного магазина."}
+                          </td>
+                        </tr>
+                      ) : logisticsRows.map((rawRow) => {
+                        const row = toLiveLogisticsRow(rawRow);
+                        return (
+                          <tr key={row.sku}>
+                            <td>{row.sku}</td>
+                            <td className={styles.logisticsNameCell}>
+                              <div className={styles.logisticsNameWrap}>
+                                <div className={styles.logisticsProductName}>{row.name || "Без названия"}</div>
+                                <div className={styles.logisticsRowMeta}>
+                                  <span className={row.dimensions_inherited ? styles.categoryTreeStatusInherited : styles.categoryTreeStatusCustom}>
+                                    {row.dimensions_inherited ? "Общие габариты" : "Свои габариты"}
+                                  </span>
+                                  {Array.isArray(row.tree_path) && row.tree_path.length ? (
+                                    <span className={styles.logisticsPathHint}>{row.tree_path.join(" / ")}</span>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </td>
+                            {editableFields.map(({ field }) => {
+                              const cellKey = getLogisticsCellKey(row.sku, field);
+                              const draft = logisticsCellDrafts[cellKey];
+                              const value = row[field];
+                              return (
+                                <td key={cellKey}>
+                                  <div className={styles.cellInputWrap}>
+                                    <input
+                                      className={`input ${styles.cellInput}`}
+                                      value={draft ?? (value == null ? "" : String(value))}
+                                      onChange={(e) => setLogisticsCellDraftByKey(cellKey, e.target.value)}
+                                      onBlur={() => commitLogisticsCell(row, field)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") e.currentTarget.blur();
+                                        if (e.key === "Escape") {
+                                          setLogisticsCellDrafts((prev) => {
+                                            const next = { ...prev };
+                                            delete next[cellKey];
+                                            return next;
+                                          });
+                                        }
+                                      }}
+                                      inputMode="decimal"
+                                      placeholder="Введите"
+                                    />
+                                    {logisticsCellSaving[cellKey] ? <span className={styles.cellSavingDot} /> : null}
+                                  </div>
+                                </td>
+                              );
+                            })}
+                            <td>{fmtCell(row.volumetric_weight_kg)}</td>
+                            <td>{fmtCell(row.max_weight_kg)}</td>
+                            <td>{fmtCell(row.cost_per_kg)}</td>
+                            <td>{fmtCell(row.handling_cost_display)}</td>
+                            <td>{fmtCell(row.delivery_to_client_cost)}</td>
+                            <td>{fmtCell(row.return_processing_cost)}</td>
+                            <td>{fmtCell(row.disposal_cost)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
+
                 <div className={styles.logisticsPager}>
-                  <div className={styles.inlineInfo}>Всего: {logisticsTotal}. Стр. {logisticsPage} / {totalPages}</div>
+                  <div className={styles.inlineInfo}>Стр. {logisticsPage} / {totalPages}</div>
                   <div className={styles.platformTabs}>
                     <button type="button" className={`btn inline ${styles.tabButton}`} onClick={() => setLogisticsPage((p) => Math.max(1, p - 1))} disabled={logisticsPage <= 1}>Назад</button>
                     <button type="button" className={`btn inline ${styles.tabButton}`} onClick={() => setLogisticsPage((p) => p + 1)} disabled={logisticsPage >= totalPages}>Вперед</button>
                   </div>
                 </div>
-              </div>
-
-              <div className={styles.logisticsEditor}>
-                {selectedRow ? (
-                  <>
-                    <div className={styles.categoryEditorHead}>
-                      <div className={styles.logisticsEditorIntro}>
-                        <div className={styles.categoryEditorEyebrow}>Товар</div>
-                        <h3 className={styles.categoryEditorTitle}>{selectedRow.name || "Без названия"}</h3>
-                        <div className={styles.categoryEditorPath}>SKU {selectedRow.sku}</div>
-                      </div>
-                      <div className={styles.categoryEditorMeta}>
-                        <span className={styles.categoryEditorMetaChip}>{fmtCell(selectedRow.logistics_cost_display)} {moneySign}</span>
-                        <span className={styles.categoryEditorMetaChip}>{selectedRow.dimensions_inherited ? "Общие габариты" : "Свои габариты"}</span>
-                      </div>
-                    </div>
-
-                    <div className={styles.logisticsEditorGrid}>
-                      {editableFields.map(({ field, label }) => {
-                        const cellKey = getLogisticsCellKey(selectedRow.sku, field);
-                        const draft = logisticsCellDrafts[cellKey];
-                        const value = selectedRow[field];
-                        return (
-                          <div key={field} className={styles.categoryEditorField}>
-                            <div className={styles.categoryEditorFieldHead}>
-                              <div className={styles.categoryEditorFieldLabel}>{label}</div>
-                              <span className={selectedRow.dimensions_inherited ? styles.categoryTreeStatusInherited : styles.categoryTreeStatusCustom}>
-                                {selectedRow.dimensions_inherited ? "Общее" : "Свое"}
-                              </span>
-                            </div>
-                            <div className={styles.cellInputWrap}>
-                              <input
-                                className={`input ${styles.cellInput}`}
-                                value={draft ?? (value == null ? "" : String(value))}
-                                onChange={(e) => setLogisticsCellDraftByKey(cellKey, e.target.value)}
-                                onBlur={() => commitLogisticsCell(selectedRow, field)}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") e.currentTarget.blur();
-                                  if (e.key === "Escape") {
-                                    setLogisticsCellDrafts((prev) => {
-                                      const next = { ...prev };
-                                      delete next[cellKey];
-                                      return next;
-                                    });
-                                  }
-                                }}
-                                inputMode="decimal"
-                                placeholder="Введите"
-                              />
-                              {logisticsCellSaving[cellKey] ? <span className={styles.cellSavingDot} /> : null}
-                            </div>
-                          </div>
-                        );
-                      })}
-                      <div className={styles.logisticsMetricCard}>
-                        <div className={styles.categoryEditorFieldLabel}>Вес объемный, кг</div>
-                        <div className={styles.logisticsReadOnlyValue}>{fmtCell(selectedRow.volumetric_weight_kg)}</div>
-                      </div>
-                      <div className={styles.logisticsMetricCard}>
-                        <div className={styles.categoryEditorFieldLabel}>Макс. вес, кг</div>
-                        <div className={styles.logisticsReadOnlyValue}>{fmtCell(selectedRow.max_weight_kg)}</div>
-                      </div>
-                      <div className={styles.logisticsMetricCard}>
-                        <div className={styles.categoryEditorFieldLabel}>Стоимость за кг, {moneySign}</div>
-                        <div className={styles.logisticsReadOnlyValue}>{fmtCell(selectedRow.cost_per_kg)}</div>
-                      </div>
-                      <div className={styles.logisticsMetricCard}>
-                        <div className={styles.categoryEditorFieldLabel}>Обработка, {moneySign}</div>
-                        <div className={styles.logisticsReadOnlyValue}>{fmtCell(selectedRow.handling_cost_display)}</div>
-                      </div>
-                      <div className={styles.logisticsMetricCard}>
-                        <div className={styles.categoryEditorFieldLabel}>Доставка до клиента, {moneySign}</div>
-                        <div className={styles.logisticsReadOnlyValue}>{fmtCell(selectedRow.delivery_to_client_cost)}</div>
-                      </div>
-                      <div className={styles.logisticsMetricCard}>
-                        <div className={styles.categoryEditorFieldLabel}>Обработка возврата, {moneySign}</div>
-                        <div className={styles.logisticsReadOnlyValue}>{fmtCell(selectedRow.return_processing_cost)}</div>
-                      </div>
-                      <div className={styles.logisticsMetricCard}>
-                        <div className={styles.categoryEditorFieldLabel}>Утилизация, {moneySign}</div>
-                        <div className={styles.logisticsReadOnlyValue}>{fmtCell(selectedRow.disposal_cost)}</div>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className={styles.emptyState}>Выбери SKU слева, чтобы редактировать габариты и смотреть расчёт логистики.</div>
-                )}
               </div>
             </div>
           )}
