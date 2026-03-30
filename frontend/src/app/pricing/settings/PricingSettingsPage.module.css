@@ -1769,7 +1769,24 @@
   opacity: 0.85;
 }
 
-.cogsSourceDisplay {
+.cogsSourceCard {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  border-radius: 12px;
+  background: rgba(9, 18, 34, 0.4);
+}
+
+.cogsSourceCardLabel {
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cogsSourceActions {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1778,24 +1795,18 @@
 
 .cogsSourceName,
 .cogsSourceNameSet {
-  min-height: 36px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(132, 161, 214, 0.22);
-  background: rgba(9, 18, 34, 0.52);
-  min-width: 180px;
+  min-width: 0;
   max-width: 100%;
   color: var(--text-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 26px;
+  line-height: 1.12;
+  font-weight: 800;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .cogsSourceNameSet {
   color: #dceaff;
-  border-color: rgba(76, 201, 240, 0.28);
 }
 
 .cogsSelectButton {
@@ -1813,9 +1824,12 @@
 .cogsSourceMeta {
   color: var(--text-soft);
   font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .monitoringExportCard {

@@ -118,10 +118,13 @@ export function GeneralSettingsPanel({
         <>
           <div className={`${styles.cogsSourceRow} ${earningMode !== "profit" ? styles.cogsSourceRowDisabled : ""}`}>
             <span className={styles.settingLabel}>Источник себестоимости</span>
-            <div className={styles.cogsSourceDisplay}>
+            <div className={styles.cogsSourceCard}>
+              <span className={styles.cogsSourceCardLabel}>Выбранный источник</span>
               <span className={cogsSource ? styles.cogsSourceNameSet : styles.cogsSourceName}>
                 {cogsSource ? cogsSource.sourceName : "Не выбран"}
               </span>
+            </div>
+            <div className={styles.cogsSourceActions}>
               <button
                 type="button"
                 className={`btn inline ${styles.cogsSelectButton}`}
@@ -146,17 +149,21 @@ export function GeneralSettingsPanel({
               <div className={styles.cogsSourceMeta}>Доступно только в режиме «Прибыль».</div>
             ) : cogsSource ? (
               <div className={styles.cogsSourceMeta}>
-                SKU: <b>{cogsSource.skuColumn}</b> · Себестоимость: <b>{cogsSource.valueColumn}</b>
+                <span>SKU: <b>{cogsSource.skuColumn}</b></span>
+                <span>Себестоимость: <b>{cogsSource.valueColumn}</b></span>
               </div>
             ) : null}
           </div>
 
           <div className={styles.cogsSourceRow}>
             <span className={styles.settingLabel}>Источник остатка</span>
-            <div className={styles.cogsSourceDisplay}>
+            <div className={styles.cogsSourceCard}>
+              <span className={styles.cogsSourceCardLabel}>Выбранный источник</span>
               <span className={stockSource ? styles.cogsSourceNameSet : styles.cogsSourceName}>
                 {stockSource ? stockSource.sourceName : "Не выбран"}
               </span>
+            </div>
+            <div className={styles.cogsSourceActions}>
               <button
                 type="button"
                 className={`btn inline ${styles.cogsSelectButton}`}
@@ -179,7 +186,8 @@ export function GeneralSettingsPanel({
             </div>
             {stockSource ? (
               <div className={styles.cogsSourceMeta}>
-                SKU: <b>{stockSource.skuColumn}</b> · Остаток: <b>{stockSource.valueColumn}</b>
+                <span>SKU: <b>{stockSource.skuColumn}</b></span>
+                <span>Остаток: <b>{stockSource.valueColumn}</b></span>
               </div>
             ) : null}
           </div>
