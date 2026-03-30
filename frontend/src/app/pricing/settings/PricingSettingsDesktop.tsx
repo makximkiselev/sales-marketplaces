@@ -148,7 +148,7 @@ export function PricingSettingsDesktop({
               stockSource={stockSource}
               activeStoreId={activeStoreId}
               showTargets={false}
-              showRelay={true}
+              showRelay={false}
               showSources={true}
               setEarningMode={setEarningMode}
               setEarningUnit={setEarningUnit}
@@ -238,7 +238,7 @@ export function PricingSettingsDesktop({
           />
         ) : null}
 
-        {activeStoreId && !isSalesPlanSection ? (
+        {activeStoreId && !isSalesPlanSection && settingsTab !== "sources" ? (
           <div className={`${styles.stickyActionBar} ${styles.stickyActionBarAlways}`}>
             <div className={styles.stickyActionMeta}>
               <div className={styles.stickyActionTitle}>Действия по магазину</div>

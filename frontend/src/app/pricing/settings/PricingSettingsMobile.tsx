@@ -145,7 +145,7 @@ export function PricingSettingsMobile({
               stockSource={stockSource}
               activeStoreId={activeStoreId}
               showTargets={false}
-              showRelay={true}
+              showRelay={false}
               showSources={true}
               setEarningMode={setEarningMode}
               setEarningUnit={setEarningUnit}
@@ -238,7 +238,7 @@ export function PricingSettingsMobile({
           </>
         ) : null}
 
-        {activeStoreId && !isSalesPlanSection ? (
+        {activeStoreId && !isSalesPlanSection && settingsTab !== "sources" ? (
           <div className={`${styles.stickyActionBar} ${styles.mobileStickyActionBar}`}>
             <div className={styles.stickyActionMeta}>
               <div className={styles.stickyActionTitle}>Действия по магазину</div>
