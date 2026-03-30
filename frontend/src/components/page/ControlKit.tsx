@@ -23,25 +23,27 @@ export function ControlTabs<T extends string>({
   activeId,
   onChange,
   className = "",
+  variant = "pill",
 }: {
   items: Array<{ id: T; label: ReactNode; badge?: ReactNode }>;
   activeId: T;
   onChange: (id: T) => void;
   className?: string;
+  variant?: "pill" | "underline";
 }) {
   return (
-    <div className={`${styles.tabs} ${className}`.trim()}>
+    <div className={`${styles.tabs} ${variant === "underline" ? styles.tabsUnderline : ""} ${className}`.trim()}>
       {items.map((item) => (
         <button
           key={item.id}
           type="button"
-          className={`btn inline ${styles.tabBtn} ${activeId === item.id ? styles.tabBtnActive : ""}`.trim()}
+          className={`btn inline ${styles.tabBtn} ${variant === "underline" ? styles.tabBtnUnderline : ""} ${activeId === item.id ? (variant === "underline" ? styles.tabBtnUnderlineActive : styles.tabBtnActive) : ""}`.trim()}
           data-active={activeId === item.id ? "true" : "false"}
           aria-current={activeId === item.id ? "page" : undefined}
           onClick={() => onChange(item.id)}
         >
           <span>{item.label}</span>
-          {item.badge ? <span className={styles.tabBadge}>{item.badge}</span> : null}
+          {item.badge ? <span className={`${styles.tabBadge} ${variant === "underline" ? styles.tabBadgeUnderline : ""}`.trim()}>{item.badge}</span> : null}
         </button>
       ))}
     </div>

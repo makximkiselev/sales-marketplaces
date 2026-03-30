@@ -117,6 +117,7 @@ export function PricingSettingsMobile({
         <div className={styles.mobileNavStack}>
           <ControlTabs
             className={styles.mobileSectionTabsRow}
+            variant="underline"
             items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
             activeId={settingsTab}
             onChange={(id) => setSettingsTab(id)}
@@ -124,6 +125,7 @@ export function PricingSettingsMobile({
           {!isSalesPlanSection ? (
             <ControlTabs
               className={styles.mobileStoreTabsRow}
+              variant="underline"
               items={storeTabs.map((store) => ({
                 id: store.key,
                 label: store.storeName,

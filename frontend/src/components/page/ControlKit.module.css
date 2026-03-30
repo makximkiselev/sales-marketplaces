@@ -26,6 +26,11 @@
   flex-wrap: wrap;
 }
 
+.tabsUnderline {
+  gap: 24px;
+  flex-wrap: nowrap;
+}
+
 .tabBtn {
   height: 40px;
   display: inline-flex;
@@ -38,12 +43,69 @@
   background: linear-gradient(180deg, rgba(34, 113, 140, 0.38), rgba(23, 43, 73, 0.9));
 }
 
+.tabBtnUnderline {
+  height: 34px;
+  min-height: 0;
+  padding: 0 2px 8px;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #8ea5c4;
+  font-size: 13px;
+  font-weight: 700;
+  position: relative;
+  transition:
+    color 0.16s ease,
+    background 0.18s ease,
+    opacity 0.16s ease;
+}
+
+.tabBtnUnderline:hover {
+  color: #dde9fb;
+  background: transparent !important;
+}
+
+.tabBtnUnderline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #55c8ff, #9fe4ff);
+  opacity: 0;
+  transform: scaleX(0.3);
+  transform-origin: center;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.tabBtnUnderlineActive {
+  color: #eef5ff !important;
+  background: transparent !important;
+}
+
+.tabBtnUnderlineActive::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
 .tabBadge {
   border: 1px solid rgba(132, 161, 214, 0.28);
   border-radius: 999px;
   padding: 1px 8px;
   font-size: 11px;
   color: var(--text-soft);
+}
+
+.tabBadgeUnderline {
+  border: 0;
+  padding: 0;
+  color: #8ea5c4;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .actionButton {

@@ -82,6 +82,7 @@ export function LogisticsSettingsSection({
   const totalPages = Math.max(1, Math.ceil(logisticsTotal / Math.max(1, logisticsPageSize)));
   const [treeQuery, setTreeQuery] = useState("");
   const [expandedTreePaths, setExpandedTreePaths] = useState<string[]>([]);
+  const [catalogOpen, setCatalogOpen] = useState(false);
 
   const editableFields: Array<{ field: LogisticsEditableFieldKey; label: string }> = [
     { field: "width_cm", label: "Ширина, см" },
@@ -104,37 +105,7 @@ export function LogisticsSettingsSection({
           ) : logisticsLoading ? (
             <div className="status">Загрузка логистики...</div>
           ) : (
-            <div className={styles.logisticsWorkspace}>
-              <div className={styles.logisticsCatalogPane}>
-                <CatalogBrowser
-                  title="Каталог"
-                  subtitle="Выбери ветку каталога, чтобы сузить таблицу товаров."
-                  roots={logisticsTreeRoots}
-                  selectedPath={logisticsTreePath}
-                  expandedPaths={expandedTreePaths}
-                  query={treeQuery}
-                  onQueryChange={setTreeQuery}
-                  onToggleExpand={(path) =>
-                    setExpandedTreePaths((current) =>
-                      current.includes(path) ? current.filter((item) => item !== path) : [...current, path],
-                    )
-                  }
-                  onToggleExpandAll={() =>
-                    setExpandedTreePaths((current) => (current.length ? [] : collectTreePaths(logisticsTreeRoots)))
-                  }
-                  onSelectPath={(path) => {
-                    setLogisticsTreePath((current) => {
-                      const next = current === path ? "" : path;
-                      setLogisticsPage(1);
-                      return next;
-                    });
-                  }}
-                  emptyText="Нет категорий для выбранного магазина"
-                  actionLabel={expandedTreePaths.length ? "Свернуть все" : "Развернуть все"}
-                />
-              </div>
-
-              <div className={styles.logisticsTablePane}>
+            <div className={`${styles.logisticsTablePane} ${styles.logisticsTablePaneFull}`}>
                 <div className={styles.logisticsTableHead}>
                   <div className={styles.logisticsTableIntro}>
                     <div className={styles.categorySidebarTitle}>Товары</div>
@@ -158,7 +129,29 @@ export function LogisticsSettingsSection({
                   </div>
                 </div>
 
-                <div className={styles.logisticsTableControls}>
+                <div className={styles.logisticsFilterBar}>
+                  <button
+                    type="button"
+                    className={`btn ghost ${styles.logisticsCatalogToggle}`}
+                    onClick={() => setCatalogOpen((current) => !current)}
+                  >
+                    {catalogOpen ? "Скрыть каталог" : "Каталог"}
+                  </button>
+                  <div className={styles.logisticsToolbarChipRow}>
+                    <span className={styles.logisticsBranchChip}>{selectedBranchLabel}</span>
+                    {logisticsTreePath ? (
+                      <button
+                        type="button"
+                        className={`btn ghost ${styles.logisticsResetButton}`}
+                        onClick={() => {
+                          setLogisticsTreePath("");
+                          setLogisticsPage(1);
+                        }}
+                      >
+                        Сбросить
+                      </button>
+                    ) : null}
+                  </div>
                   <ControlField label="Поиск по SKU" className={styles.logisticsSearchField}>
                     <div className={styles.inputWithSuffix}>
                       <input
@@ -193,6 +186,37 @@ export function LogisticsSettingsSection({
                     Импорт
                   </button>
                 </div>
+
+                {catalogOpen ? (
+                  <div className={styles.logisticsCatalogInline}>
+                    <CatalogBrowser
+                      title="Каталог"
+                      subtitle="Выбери ветку каталога, чтобы сузить таблицу товаров."
+                      roots={logisticsTreeRoots}
+                      selectedPath={logisticsTreePath}
+                      expandedPaths={expandedTreePaths}
+                      query={treeQuery}
+                      onQueryChange={setTreeQuery}
+                      onToggleExpand={(path) =>
+                        setExpandedTreePaths((current) =>
+                          current.includes(path) ? current.filter((item) => item !== path) : [...current, path],
+                        )
+                      }
+                      onToggleExpandAll={() =>
+                        setExpandedTreePaths((current) => (current.length ? [] : collectTreePaths(logisticsTreeRoots)))
+                      }
+                      onSelectPath={(path) => {
+                        setLogisticsTreePath((current) => {
+                          const next = current === path ? "" : path;
+                          setLogisticsPage(1);
+                          return next;
+                        });
+                      }}
+                      emptyText="Нет категорий для выбранного магазина"
+                      actionLabel={expandedTreePaths.length ? "Свернуть все" : "Развернуть все"}
+                    />
+                  </div>
+                ) : null}
 
                 <div className={`${styles.pricingTableWrap} ${styles.logisticsTableWrap}`}>
                   <table className={`${styles.pricingTable} ${styles.logisticsTable}`}>
@@ -288,7 +312,6 @@ export function LogisticsSettingsSection({
                     <button type="button" className={`btn inline ${styles.tabButton}`} onClick={() => setLogisticsPage((p) => p + 1)} disabled={logisticsPage >= totalPages}>Вперед</button>
                   </div>
                 </div>
-              </div>
             </div>
           )}
         </>

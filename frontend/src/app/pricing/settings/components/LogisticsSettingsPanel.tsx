@@ -35,6 +35,7 @@ export function LogisticsSettingsPanel({
       <div className={styles.logisticsPanelHead}>
         <div className={styles.logisticsPanelHeadMain}>
           <div className={styles.logisticsPanelTitle}>Логистические коэффициенты</div>
+          <div className={styles.logisticsPanelSubtitle}>Store-level параметры применяются ко всей таблице товаров выбранного магазина.</div>
         </div>
         <div className={styles.logisticsPanelMetaChip}>
           {logisticsStoreSaving

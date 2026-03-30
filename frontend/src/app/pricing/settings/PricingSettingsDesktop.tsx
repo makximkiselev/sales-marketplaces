@@ -88,6 +88,7 @@ export function PricingSettingsDesktop({
           <div className={styles.desktopSectionTabs}>
             <ControlTabs
               className={styles.desktopSectionTabsRow}
+              variant="underline"
               items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
               activeId={settingsTab}
               onChange={(id) => setSettingsTab(id)}
@@ -97,6 +98,7 @@ export function PricingSettingsDesktop({
             <div className={styles.desktopStoreTabs}>
               <ControlTabs
                 className={styles.storeTabsBar}
+                variant="underline"
                 items={storeTabs.map((store) => ({
                   id: store.key,
                   label: store.storeName,
