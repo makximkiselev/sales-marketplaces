@@ -43,6 +43,8 @@ export function usePricingLogisticsController(params: {
   const [logisticsImportOpen, setLogisticsImportOpen] = useState(false);
   const logisticsStoreSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logisticsSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const logisticsStoreHydratedRef = useRef(false);
+  const logisticsStoreDirtyRef = useRef(false);
 
   async function loadLogisticsData(opts?: { page?: number; pageSize?: number; search?: string; categoryPath?: string }) {
     if (!activePlatform || !activeStoreId || (activePlatform !== "yandex_market" && activePlatform !== "ozon")) {
@@ -61,6 +63,8 @@ export function usePricingLogisticsController(params: {
       const cacheKey = `${PRICING_SETTINGS_LOGISTICS_CACHE_PREFIX}${JSON.stringify(logisticsParams)}`;
       const cached = safeReadJson<any>(cacheKey);
       if (cached?.ok) {
+        logisticsStoreHydratedRef.current = false;
+        logisticsStoreDirtyRef.current = false;
         setLogisticsStoreSettings((prev) => ({ ...prev, ...(cached.store_settings || {}) }));
         setLogisticsRows(Array.isArray(cached.rows) ? (cached.rows as LogisticsRow[]) : []);
         setLogisticsTreeRoots(Array.isArray(cached.tree_roots) ? (cached.tree_roots as TreeNode[]) : []);
@@ -77,6 +81,8 @@ export function usePricingLogisticsController(params: {
       }
       const data = await fetchPricingLogistics(logisticsParams);
       safeWriteJson(cacheKey, data);
+      logisticsStoreHydratedRef.current = false;
+      logisticsStoreDirtyRef.current = false;
       setLogisticsStoreSettings((prev) => ({ ...prev, ...(data.store_settings || {}) }));
       setLogisticsRows(Array.isArray(data.rows) ? (data.rows as LogisticsRow[]) : []);
       setLogisticsTreeRoots(Array.isArray(data.tree_roots) ? (data.tree_roots as TreeNode[]) : []);
@@ -107,6 +113,12 @@ export function usePricingLogisticsController(params: {
     logisticsSearchTimerRef.current = setTimeout(() => {
       void loadLogisticsData({ page: 1, pageSize: logisticsPageSize, search: logisticsSearch, categoryPath: logisticsTreePath });
     }, 350);
+    return () => {
+      if (logisticsSearchTimerRef.current) {
+        clearTimeout(logisticsSearchTimerRef.current);
+        logisticsSearchTimerRef.current = null;
+      }
+    };
   }, [settingsTab, activePlatform, activeStoreId, logisticsSearch, logisticsPageSize, logisticsTreePath]);
 
   useEffect(() => {
@@ -116,6 +128,11 @@ export function usePricingLogisticsController(params: {
 
   useEffect(() => {
     if (settingsTab !== "logistics" || !activePlatform || !activeStoreId || logisticsLoading || (activePlatform !== "yandex_market" && activePlatform !== "ozon")) return;
+    if (!logisticsStoreHydratedRef.current) {
+      logisticsStoreHydratedRef.current = true;
+      return;
+    }
+    if (!logisticsStoreDirtyRef.current) return;
     if (logisticsStoreSaveTimerRef.current) clearTimeout(logisticsStoreSaveTimerRef.current);
     logisticsStoreSaveTimerRef.current = setTimeout(() => {
       setLogisticsStoreSaving(true);
@@ -125,14 +142,29 @@ export function usePricingLogisticsController(params: {
           if (!data.ok) throw new Error(data.message || "Не удалось сохранить настройки логистики");
           setLogisticsStoreSavedAt(String(data.settings?.updated_at || new Date().toISOString()));
           setLogisticsStoreError("");
+          logisticsStoreDirtyRef.current = false;
           clearPricingSettingsCache();
         })
         .catch((e) => setLogisticsStoreError(e instanceof Error ? e.message : String(e)))
         .finally(() => setLogisticsStoreSaving(false));
     }, 450);
+    return () => {
+      if (logisticsStoreSaveTimerRef.current) {
+        clearTimeout(logisticsStoreSaveTimerRef.current);
+        logisticsStoreSaveTimerRef.current = null;
+      }
+    };
   }, [settingsTab, activePlatform, activeStoreId, logisticsStoreSettings, logisticsLoading]);
 
+  useEffect(() => {
+    return () => {
+      if (logisticsStoreSaveTimerRef.current) clearTimeout(logisticsStoreSaveTimerRef.current);
+      if (logisticsSearchTimerRef.current) clearTimeout(logisticsSearchTimerRef.current);
+    };
+  }, []);
+
   function setLogisticsField<K extends keyof LogisticsStoreSettingsApi>(key: K, value: LogisticsStoreSettingsApi[K]) {
+    logisticsStoreDirtyRef.current = true;
     setLogisticsStoreSettings((prev) => ({ ...prev, [key]: value }));
   }
 

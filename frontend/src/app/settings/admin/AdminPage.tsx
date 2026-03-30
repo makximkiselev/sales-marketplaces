@@ -24,6 +24,12 @@ type UserFormState = {
   password: string;
 };
 
+type FilterState = {
+  role: "all" | UserRole;
+  status: "all" | "active" | "disabled";
+  search: string;
+};
+
 const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
   { value: "owner", label: "Owner" },
   { value: "manager", label: "Manager" },
@@ -55,6 +61,8 @@ export default function SettingsAdminPage() {
   const [form, setForm] = useState<UserFormState>(() => ({ ...emptyForm(), password: generatePassword() }));
   const [editUser, setEditUser] = useState<AdminUser | null>(null);
   const [editForm, setEditForm] = useState<UserFormState | null>(null);
+  const [confirmUser, setConfirmUser] = useState<AdminUser | null>(null);
+  const [filters, setFilters] = useState<FilterState>({ role: "all", status: "all", search: "" });
 
   async function loadUsers() {
     setLoading(true);
@@ -74,6 +82,16 @@ export default function SettingsAdminPage() {
   }, []);
 
   const ownersCount = useMemo(() => users.filter((user) => user.role === "owner" && user.is_active).length, [users]);
+  const filteredUsers = useMemo(() => {
+    const query = filters.search.trim().toLowerCase();
+    return users.filter((user) => {
+      if (filters.role !== "all" && user.role !== filters.role) return false;
+      if (filters.status === "active" && !user.is_active) return false;
+      if (filters.status === "disabled" && user.is_active) return false;
+      if (!query) return true;
+      return `${user.identifier} ${user.display_name} ${user.role}`.toLowerCase().includes(query);
+    });
+  }, [filters, users]);
 
   async function handleCreate() {
     setSaving(true);
@@ -92,6 +110,15 @@ export default function SettingsAdminPage() {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function copyPassword(value: string) {
+    if (!value.trim()) return;
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      setError("Не удалось скопировать пароль");
     }
   }
 
@@ -119,6 +146,21 @@ export default function SettingsAdminPage() {
       });
       setEditUser(null);
       setEditForm(null);
+      await loadUsers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleConfirmDisable() {
+    if (!confirmUser) return;
+    setSaving(true);
+    setError("");
+    try {
+      await apiPostOk(`/api/admin/users/${confirmUser.user_id}`, { is_active: false });
+      setConfirmUser(null);
       await loadUsers();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -191,6 +233,9 @@ export default function SettingsAdminPage() {
                   <button type="button" className="btn ghost" onClick={() => setForm((prev) => ({ ...prev, password: generatePassword() }))}>
                     Сгенерировать
                   </button>
+                  <button type="button" className="btn ghost" onClick={() => void copyPassword(form.password)}>
+                    Скопировать
+                  </button>
                 </div>
               </label>
             </div>
@@ -207,10 +252,46 @@ export default function SettingsAdminPage() {
           </div>
 
           <div className={styles.listCard}>
-            <PageSectionTitle title="Пользователи" meta={loading ? "Загрузка..." : `Всего: ${users.length}`} />
+            <PageSectionTitle title="Пользователи" meta={loading ? "Загрузка..." : `Всего: ${filteredUsers.length}`} />
             {error ? <div className="status error">{error}</div> : null}
+            <div className={styles.filtersBar}>
+              <label className={styles.filterField}>
+                <span className={styles.label}>Поиск</span>
+                <input
+                  className="input"
+                  value={filters.search}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+                  placeholder="Логин или имя"
+                />
+              </label>
+              <label className={styles.filterField}>
+                <span className={styles.label}>Роль</span>
+                <select
+                  className="input"
+                  value={filters.role}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, role: e.target.value as FilterState["role"] }))}
+                >
+                  <option value="all">Все роли</option>
+                  {ROLE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className={styles.filterField}>
+                <span className={styles.label}>Статус</span>
+                <select
+                  className="input"
+                  value={filters.status}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value as FilterState["status"] }))}
+                >
+                  <option value="all">Все</option>
+                  <option value="active">Активные</option>
+                  <option value="disabled">Отключенные</option>
+                </select>
+              </label>
+            </div>
             <div className={styles.userList}>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <article key={user.user_id} className={styles.userCard}>
                   <div className={styles.userHead}>
                     <div className={styles.userMain}>
@@ -230,10 +311,15 @@ export default function SettingsAdminPage() {
                   </div>
                   <div className={styles.userActions}>
                     <button type="button" className="btn ghost" onClick={() => startEdit(user)}>Редактировать</button>
+                    {user.is_active ? (
+                      <button type="button" className="btn danger" onClick={() => setConfirmUser(user)}>
+                        Отключить
+                      </button>
+                    ) : null}
                   </div>
                 </article>
               ))}
-              {!loading && !users.length ? <div className={styles.emptyState}>Пользователей пока нет.</div> : null}
+              {!loading && !filteredUsers.length ? <div className={styles.emptyState}>Пользователи по текущему фильтру не найдены.</div> : null}
             </div>
           </div>
         </div>
@@ -301,6 +387,14 @@ export default function SettingsAdminPage() {
                 >
                   Сгенерировать
                 </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => void copyPassword(editForm.password)}
+                  disabled={!editForm.password.trim()}
+                >
+                  Скопировать
+                </button>
               </div>
             </label>
           </div>
@@ -310,6 +404,27 @@ export default function SettingsAdminPage() {
             </button>
             <button type="button" className="btn primary" disabled={saving} onClick={() => void handleUpdate()}>
               Сохранить
+            </button>
+          </div>
+        </ModalShell>
+      ) : null}
+
+      {confirmUser ? (
+        <ModalShell
+          title="Отключить пользователя"
+          subtitle={confirmUser.identifier}
+          onClose={() => setConfirmUser(null)}
+          width="min(92vw, 520px)"
+        >
+          <div className={styles.confirmText}>
+            Пользователь потеряет доступ к панели сразу после сохранения. Если понадобится, его можно будет включить обратно через редактирование.
+          </div>
+          <div className={styles.modalActions}>
+            <button type="button" className="btn ghost" onClick={() => setConfirmUser(null)}>
+              Отмена
+            </button>
+            <button type="button" className="btn danger" disabled={saving} onClick={() => void handleConfirmDisable()}>
+              Отключить
             </button>
           </div>
         </ModalShell>

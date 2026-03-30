@@ -52,6 +52,17 @@
   gap: 10px;
 }
 
+.filtersBar {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(160px, 0.7fr));
+  gap: 12px;
+}
+
+.filterField {
+  display: grid;
+  gap: 8px;
+}
+
 .userList {
   display: grid;
   gap: 12px;
@@ -139,7 +150,15 @@
 
 .userActions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 10px;
+}
+
+.confirmText {
+  color: #a9bddf;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .emptyState {
@@ -161,6 +180,10 @@
 
 @media (max-width: 720px) {
   .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .filtersBar {
     grid-template-columns: 1fr;
   }
 

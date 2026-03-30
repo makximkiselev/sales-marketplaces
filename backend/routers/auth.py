@@ -51,7 +51,11 @@ async def auth_me(request: Request):
 
 
 @router.post("/api/auth/login")
-async def auth_login(payload: dict | None, request: Request, response: Response):
+async def auth_login(request: Request, response: Response):
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
     body = payload if isinstance(payload, dict) else {}
     identifier = str(body.get("identifier") or "").strip()
     password = str(body.get("password") or "")
