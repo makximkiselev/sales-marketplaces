@@ -58,7 +58,6 @@ const groups: NavGroup[] = [
     items: [
       { href: "/settings/sources", label: "Источники" },
       { href: "/settings/pricing", label: "Настройки ценообразования" },
-      { href: "/settings/admin", label: "Администрирование" },
       { href: "/settings/fx-rates", label: "Курс валют" },
       { href: "/settings/monitoring", label: "Мониторинг" },
     ],
@@ -104,7 +103,12 @@ export function Shell({ children }: { children: ReactNode }) {
   const pullActiveRef = useRef(false);
 
   const currentGroup = useMemo(
-    () => groups.find((group) => groupItems(group).some((item) => isActive(pathname, item.href))) ?? groups[0],
+    () => {
+      if (pathname.startsWith("/settings/admin")) {
+        return groups.find((group) => group.title === "Настройки") ?? groups[0];
+      }
+      return groups.find((group) => groupItems(group).some((item) => isActive(pathname, item.href))) ?? groups[0];
+    },
     [pathname],
   );
   const currentItem = useMemo(
