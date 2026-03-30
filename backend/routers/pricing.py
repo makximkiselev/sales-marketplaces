@@ -821,6 +821,7 @@ async def pricing_settings_logistics(
 
     q = str(search or "").strip().lower()
     category_path_raw = str(category_path or "").strip()
+    selected_category_parts = [part.strip() for part in category_path_raw.split(" / ") if part.strip()]
 
     def _row_tree_path(row: dict) -> list[str]:
         category = str(row.get("category") or "").strip()
@@ -857,7 +858,7 @@ async def pricing_settings_logistics(
         tree_path_parts = _row_tree_path(r)
         if q and q not in f"{sku} {name}".lower():
             continue
-        if category_path_raw and " / ".join(tree_path_parts) != category_path_raw:
+        if selected_category_parts and tree_path_parts[: len(selected_category_parts)] != selected_category_parts:
             continue
         filtered.append(r)
     filtered.sort(key=lambda r: str(r.get("sku") or ""))

@@ -17,11 +17,20 @@ if (typeof window !== "undefined") {
   }) as typeof window.fetch;
 }
 
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
+if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch((error) => {
-      console.error("service worker registration failed", error);
-    });
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((registration) => {
+        registration.unregister().catch(() => undefined);
+      });
+    }).catch(() => undefined);
+    if ("caches" in window) {
+      caches.keys().then((keys) => {
+        keys.forEach((key) => {
+          caches.delete(key).catch(() => undefined);
+        });
+      }).catch(() => undefined);
+    }
   });
 }
 

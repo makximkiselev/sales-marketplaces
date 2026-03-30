@@ -104,6 +104,7 @@ export function LogisticsSettingsSection({
     { field: "height_cm", label: "Высота, см" },
     { field: "weight_kg", label: "Вес, кг" },
   ];
+  const visibleSkuLabel = logisticsTreePath ? "SKU выбранной ветки" : "Все SKU магазина";
 
   return (
     <SectionBlock>
@@ -121,7 +122,7 @@ export function LogisticsSettingsSection({
               <div className={styles.logisticsCatalogPane}>
                 <CatalogBrowser
                   title="Каталог"
-                  subtitle="Выбери ветку каталога, чтобы сузить список товаров."
+                  subtitle="Выбери ветку каталога, затем SKU в соседнем блоке."
                   roots={logisticsTreeRoots}
                   selectedPath={logisticsTreePath}
                   expandedPaths={expandedTreePaths}
@@ -151,13 +152,9 @@ export function LogisticsSettingsSection({
                   <div className={styles.logisticsSidebarPanelHead}>
                     <div>
                       <div className={styles.categorySidebarTitle}>Товары</div>
-                      <div className={styles.categorySidebarMeta}>
-                        {logisticsTreePath ? "SKU в выбранной ветке" : "Все SKU магазина"}
-                      </div>
+                      <div className={styles.categorySidebarMeta}>{visibleSkuLabel}</div>
                     </div>
-                    <div className={styles.inlineInfo}>
-                      {logisticsTreePath ? `Ветка: ${logisticsTreePath}` : "Без фильтра по ветке"}
-                    </div>
+                    {logisticsTreePath ? <div className={styles.logisticsBranchChip}>{logisticsTreePath}</div> : null}
                   </div>
                   <ControlField label="Поиск по SKU" className={styles.logisticsSearchField}>
                     <div className={styles.inputWithSuffix}>
@@ -220,7 +217,13 @@ export function LogisticsSettingsSection({
                       </button>
                     );
                   })}
-                  {!logisticsRows.length ? <div className={styles.emptyState}>Нет товаров в raw-слое выбранного магазина.</div> : null}
+                  {!logisticsRows.length ? (
+                    <div className={styles.logisticsEmptyState}>
+                      {logisticsTreePath
+                        ? "В этой ветке пока нет товаров raw-слоя."
+                        : "Нет товаров в raw-слое выбранного магазина."}
+                    </div>
+                  ) : null}
                 </div>
                 <div className={styles.logisticsPager}>
                   <div className={styles.inlineInfo}>Всего: {logisticsTotal}. Стр. {logisticsPage} / {totalPages}</div>

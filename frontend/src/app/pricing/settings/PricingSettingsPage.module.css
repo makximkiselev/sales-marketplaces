@@ -1237,7 +1237,7 @@
 
 .logisticsWorkspace {
   display: grid;
-  grid-template-columns: minmax(220px, 260px) minmax(280px, 340px) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 250px) minmax(300px, 360px) minmax(420px, 1fr);
   gap: 10px;
   align-items: start;
 }
@@ -1255,12 +1255,17 @@
 .logisticsCatalogPane {
   display: grid;
   align-content: start;
+  max-height: min(62vh, 720px);
+  overflow: hidden;
 }
 
 .logisticsSidebar {
   display: grid;
-  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 10px;
   align-content: start;
+  max-height: min(62vh, 720px);
+  overflow: hidden;
 }
 
 .logisticsSidebarControls {
@@ -1271,6 +1276,21 @@
 .logisticsSidebarPanelHead {
   display: grid;
   gap: 6px;
+}
+
+.logisticsBranchChip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 196, 255, 0.22);
+  background: rgba(12, 24, 46, 0.78);
+  color: #cfe6ff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .logisticsSidebarActionRow {
@@ -1288,7 +1308,7 @@
 .logisticsSidebarList {
   display: grid;
   gap: 8px;
-  max-height: 520px;
+  min-height: 0;
   overflow: auto;
   padding-right: 2px;
 }
@@ -1364,8 +1384,9 @@
 
 .logisticsEditor {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   align-content: start;
+  min-height: min(62vh, 720px);
 }
 
 .logisticsEditorIntro {
@@ -1375,7 +1396,7 @@
 
 .logisticsEditorGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -1393,7 +1414,7 @@
 }
 
 .logisticsMetricCard {
-  min-height: 62px;
+  min-height: 58px;
   border: 1px solid rgba(132, 161, 214, 0.2);
   border-radius: 14px;
   background: rgba(12, 22, 39, 0.48);
@@ -1401,6 +1422,19 @@
   display: grid;
   align-content: start;
   gap: 6px;
+}
+
+.logisticsEmptyState {
+  min-height: 120px;
+  border: 1px dashed rgba(132, 161, 214, 0.18);
+  border-radius: 14px;
+  background: rgba(8, 16, 29, 0.36);
+  padding: 16px;
+  color: var(--text-soft);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  line-height: 1.4;
 }
 
 .logisticsPlaceholder {

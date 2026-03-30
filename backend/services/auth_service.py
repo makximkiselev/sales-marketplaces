@@ -140,6 +140,76 @@ def create_or_update_user(
     return _public_user(row)
 
 
+def list_users() -> list[dict[str, Any]]:
+    _init_system_store_tables()
+    with _connect_system() as conn:
+        rows = conn.execute(
+            """
+            SELECT user_id, identifier, display_name, password_hash, role, is_active, created_at, updated_at
+            FROM app_users
+            ORDER BY created_at ASC, identifier ASC
+            """
+        ).fetchall()
+    return [
+        {
+            **_public_user(row),
+            "created_at": str(_row_value(row, "created_at", 6) or "").strip(),
+            "updated_at": str(_row_value(row, "updated_at", 7) or "").strip(),
+        }
+        for row in rows
+    ]
+
+
+def update_user(
+    *,
+    user_id: str,
+    display_name: str | None = None,
+    role: str | None = None,
+    is_active: bool | None = None,
+    password: str | None = None,
+) -> dict[str, Any]:
+    uid = str(user_id or "").strip()
+    if not uid:
+        raise ValueError("user_id обязателен")
+    _init_system_store_tables()
+    with _connect_system() as conn:
+        row = conn.execute(
+            f"SELECT user_id, identifier, display_name, password_hash, role, is_active, created_at, updated_at FROM app_users WHERE user_id = {_ph()}",
+            (uid,),
+        ).fetchone()
+        if not row:
+            raise ValueError("Пользователь не найден")
+        next_display_name = str(display_name).strip() if display_name is not None else str(_row_value(row, "display_name", 2) or "").strip()
+        next_role = str(role).strip() if role is not None else str(_row_value(row, "role", 4) or "viewer").strip()
+        next_active = (1 if bool(is_active) else 0) if is_active is not None else int(_row_value(row, "is_active", 5) or 0)
+        next_password_hash = (
+            _hash_password(password) if password is not None and str(password).strip() else str(_row_value(row, "password_hash", 3) or "")
+        )
+        ts = _now_iso()
+        conn.execute(
+            f"""
+            UPDATE app_users
+            SET display_name = {_ph()},
+                password_hash = {_ph()},
+                role = {_ph()},
+                is_active = {_ph()},
+                updated_at = {_ph()}
+            WHERE user_id = {_ph()}
+            """,
+            (next_display_name, next_password_hash, next_role, next_active, ts, uid),
+        )
+        updated = conn.execute(
+            f"SELECT user_id, identifier, display_name, password_hash, role, is_active, created_at, updated_at FROM app_users WHERE user_id = {_ph()}",
+            (uid,),
+        ).fetchone()
+        conn.commit()
+    return {
+        **_public_user(updated),
+        "created_at": str(_row_value(updated, "created_at", 6) or "").strip(),
+        "updated_at": str(_row_value(updated, "updated_at", 7) or "").strip(),
+    }
+
+
 def authenticate_user(*, identifier: str, password: str) -> dict[str, Any]:
     ident = str(identifier or "").strip().lower()
     if not ident:

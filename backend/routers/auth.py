@@ -7,8 +7,11 @@ from backend.services.auth_service import (
     AUTH_COOKIE_NAME,
     authenticate_user,
     create_session_for_user,
+    create_or_update_user,
     get_user_by_session_token,
+    list_users,
     revoke_session,
+    update_user,
 )
 
 
@@ -25,6 +28,15 @@ def _client_ip(request: Request) -> str:
     if forwarded:
         return forwarded.split(",")[0].strip()[:120]
     return str(request.client.host if request.client else "")[:120]
+
+
+def _require_owner(request: Request) -> dict:
+    user = getattr(request.state, "auth_user", None)
+    if not user:
+        raise PermissionError("unauthorized")
+    if str(user.get("role") or "").strip() != "owner":
+        raise PermissionError("forbidden")
+    return user
 
 
 @router.get("/api/auth/me")
@@ -73,3 +85,59 @@ async def auth_logout(request: Request, response: Response):
         revoke_session(token)
     response.delete_cookie(AUTH_COOKIE_NAME, path="/")
     return {"ok": True}
+
+
+@router.get("/api/admin/users")
+async def admin_users_list(request: Request):
+    try:
+        _require_owner(request)
+    except PermissionError as exc:
+        code = 401 if str(exc) == "unauthorized" else 403
+        return JSONResponse({"ok": False, "message": str(exc)}, status_code=code)
+    return {"ok": True, "rows": list_users()}
+
+
+@router.post("/api/admin/users")
+async def admin_users_create(payload: dict | None, request: Request):
+    try:
+        _require_owner(request)
+    except PermissionError as exc:
+        code = 401 if str(exc) == "unauthorized" else 403
+        return JSONResponse({"ok": False, "message": str(exc)}, status_code=code)
+    body = payload if isinstance(payload, dict) else {}
+    try:
+        user = create_or_update_user(
+            identifier=str(body.get("identifier") or "").strip(),
+            password=str(body.get("password") or ""),
+            display_name=str(body.get("display_name") or "").strip() or None,
+            role=str(body.get("role") or "viewer").strip() or "viewer",
+            is_active=bool(body.get("is_active", True)),
+        )
+    except ValueError as exc:
+        return JSONResponse({"ok": False, "message": str(exc)}, status_code=400)
+    return {"ok": True, "user": user}
+
+
+@router.post("/api/admin/users/{user_id}")
+async def admin_users_update(user_id: str, payload: dict | None, request: Request):
+    current_user = None
+    try:
+        current_user = _require_owner(request)
+    except PermissionError as exc:
+        code = 401 if str(exc) == "unauthorized" else 403
+        return JSONResponse({"ok": False, "message": str(exc)}, status_code=code)
+    body = payload if isinstance(payload, dict) else {}
+    target_user_id = str(user_id or "").strip()
+    if current_user and current_user.get("user_id") == target_user_id and body.get("is_active") is False:
+        return JSONResponse({"ok": False, "message": "Нельзя отключить текущего владельца"}, status_code=400)
+    try:
+        user = update_user(
+            user_id=target_user_id,
+            display_name=body.get("display_name"),
+            role=body.get("role"),
+            is_active=body.get("is_active"),
+            password=body.get("password"),
+        )
+    except ValueError as exc:
+        return JSONResponse({"ok": False, "message": str(exc)}, status_code=400)
+    return {"ok": True, "user": user}
