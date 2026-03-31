@@ -77,9 +77,11 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
             rows.map((row) => (
               <article key={row.sku} className={styles.mobileCatalogCard}>
                 <div className={styles.mobileCatalogCardHead}>
-                  <div className={styles.mobileCatalogSku}>{row.sku}</div>
-                  <div className={styles.mobileCatalogUpdated}>
-                    {row.updated_at ? new Date(row.updated_at).toLocaleString("ru-RU") : "—"}
+                  <div>
+                    <div className={styles.mobileCatalogSku}>{row.sku}</div>
+                    <div className={styles.mobileCatalogUpdated}>
+                      Обновлено: {row.updated_at ? new Date(row.updated_at).toLocaleString("ru-RU") : "—"}
+                    </div>
                   </div>
                 </div>
                 <div className={styles.mobileCatalogName}>{row.name || "—"}</div>

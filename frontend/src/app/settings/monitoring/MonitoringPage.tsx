@@ -24,6 +24,7 @@ import type {
 } from "../../pricing/settings/types";
 import { showAppToast } from "../../../components/ui/toastBus";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
 
 export default function MonitoringPage() {
   const [tab, setTab] = useState<"import" | "export">("import");
@@ -237,6 +238,11 @@ export default function MonitoringPage() {
               </div>
             )}
           />
+          <WorkspaceToolbar className={layoutStyles.toolbar}>
+            <div className={layoutStyles.toolbarGroup}>
+              <span className={layoutStyles.metaChip}>{tab === "import" ? "Расписания и ручные прогоны" : "Статусы экспортов и конфигурации"}</span>
+            </div>
+          </WorkspaceToolbar>
         </WorkspaceSurface>
         {tab === "import" ? <>{error ? <ErrorBox message={error} /> : null}</> : null}
         {tab === "export" ? <>{exportError ? <ErrorBox message={exportError} /> : null}</> : null}

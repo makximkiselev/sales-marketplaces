@@ -55,11 +55,11 @@ export function SalesOverviewMobile({ vm }: Props) {
             activeId={tab}
             onChange={setTab}
           />
-          <WorkspaceHeader
-            title="Аналитика продаж"
-            subtitle="Компактный mobile-workspace для быстрых срезов по заказам и ретроспективам."
+        <WorkspaceHeader
+          title="Аналитика продаж"
+          subtitle="Компактный mobile-workspace для быстрых срезов по заказам и ретроспективам."
             meta={currentStoreLabel ? <span className={styles.overviewMetaChip}>{currentStoreLabel}</span> : undefined}
-          />
+        />
           <WorkspaceToolbar className={styles.overviewToolbarMobile}>
             {tab === "tracking" ? (
               <select className={`input input-size-fluid ${styles.dateInput}`} value={trackingStoreId} onChange={(e) => setTrackingStoreId(e.target.value)}>

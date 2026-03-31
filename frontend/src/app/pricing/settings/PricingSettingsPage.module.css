@@ -77,16 +77,16 @@
 }
 
 .mobileSettingsMain {
-  gap: 16px;
-  padding-bottom: 96px;
+  gap: 14px;
+  padding-bottom: 112px;
 }
 
 .mobileActionDockPanel {
   display: grid;
-  gap: 14px;
-  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  gap: 12px;
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom, 0px));
   border: 1px solid rgba(132, 161, 214, 0.2);
-  border-radius: 18px;
+  border-radius: 20px;
   background:
     linear-gradient(180deg, rgba(10, 18, 33, 0.96), rgba(8, 16, 30, 0.98));
   box-shadow:
@@ -126,12 +126,12 @@
 }
 
 .mobileWorkspaceSurface {
-  padding: 16px;
-  gap: 14px;
+  padding: 14px;
+  gap: 12px;
 }
 
 .mobileWorkspaceTabs {
-  gap: 10px;
+  gap: 8px;
 }
 
 .desktopRailCard {
@@ -2692,6 +2692,12 @@
     padding: 0;
   }
 
+  .workspaceHeroChip {
+    min-height: 30px;
+    padding-inline: 10px;
+    font-size: 11px;
+  }
+
   .categoryWorkspace {
     grid-template-columns: 1fr;
   }
@@ -2930,6 +2936,23 @@
     font-size: 16px;
   }
 
+  .mobileActionDockPanel {
+    gap: 10px;
+  }
+
+  .stickyActionMeta {
+    gap: 4px;
+  }
+
+  .stickyActionTitle {
+    font-size: 14px;
+  }
+
+  .stickyActionHint {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
   .categorySidebar {
     display: none;
   }
@@ -2945,6 +2968,28 @@
   .mobileSectionTabsRow,
   .mobileStoreTabsRow {
     display: flex;
+  }
+}
+
+@media (max-width: 640px) {
+  .mobileSettingsMain {
+    gap: 12px;
+  }
+
+  .mobileWorkspaceSurface {
+    padding: 12px;
+  }
+
+  .mobileNavStack {
+    gap: 6px;
+  }
+
+  .workspaceHeroChips {
+    gap: 8px;
+  }
+
+  .mobileActionDockPanel {
+    padding-inline: 12px;
   }
 }
 

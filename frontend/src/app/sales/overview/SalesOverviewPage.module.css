@@ -361,7 +361,7 @@
 
 .mobileOverviewShell {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .mobileOverviewCards {
@@ -371,9 +371,11 @@
 
 .mobileOverviewCard {
   border: 1px solid rgba(157, 182, 230, 0.16);
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 14px;
-  background: rgba(10, 18, 34, 0.88);
+  background:
+    radial-gradient(circle at top right, rgba(63, 114, 206, 0.11), transparent 38%),
+    rgba(10, 18, 34, 0.9);
   display: grid;
   gap: 10px;
 }
@@ -401,8 +403,8 @@
 }
 
 .mobileOverviewCardMeta {
-  min-width: 96px;
-  text-align: right;
+  min-width: 0;
+  text-align: left;
 }
 
 .mobileOverviewInfoRow {
@@ -418,13 +420,15 @@
 
 .mobileOverviewMetrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
 .mobileOverviewMetric {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   padding: 10px 12px;
   border: 1px solid rgba(132, 161, 214, 0.14);
   border-radius: 12px;
@@ -460,13 +464,53 @@
   .summaryGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  .mobileOverviewCardMeta {
-    min-width: 0;
-    text-align: left;
+@media (max-width: 640px) {
+  .overviewHeroSurface {
+    padding: 12px;
+    gap: 12px;
   }
 
-  .mobileOverviewMetrics {
+  .summaryGrid {
     grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .summaryCard {
+    padding: 12px 14px;
+  }
+
+  .summaryValue {
+    font-size: 21px;
+  }
+
+  .mobileOverviewCard {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .mobileOverviewCardHead {
+    gap: 6px;
+  }
+
+  .mobileOverviewCardTitle {
+    font-size: 14px;
+  }
+
+  .mobileOverviewCardMeta,
+  .mobileOverviewCardSub,
+  .mobileOverviewCardPath {
+    font-size: 11px;
+  }
+
+  .mobileOverviewMetric {
+    padding: 9px 10px;
+    font-size: 12px;
+  }
+
+  .mobileOverviewMetric strong {
+    font-size: 13px;
   }
 }

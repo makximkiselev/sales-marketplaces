@@ -113,7 +113,7 @@ export function PricingSettingsMobile({
   return (
     <div className={`${styles.settingsShell} ${styles.mobileSettingsShell}`}>
       <div className={`${styles.settingsMain} ${styles.mobileSettingsMain}`}>
-        <MobileDockLayout dock={mobileDock} dockVisible={mobileDockVisible} dockHeight={210} dockOffset={82}>
+        <MobileDockLayout dock={mobileDock} dockVisible={mobileDockVisible} dockHeight={232} dockOffset={82}>
         <WorkspaceSurface className={styles.mobileWorkspaceSurface}>
           <div className={styles.mobileNavStack}>
             <WorkspaceTabs

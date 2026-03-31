@@ -393,16 +393,16 @@
 
 .mobileCatalogShell {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .mobileCatalogTabs {
-  gap: 10px;
+  gap: 8px;
 }
 
 .mobileCatalogControls {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .mobileSearchBlock {
@@ -422,7 +422,7 @@
 
 .mobileCatalogMetaRow {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .mobileCatalogActivePath {
@@ -444,17 +444,18 @@
 
 .mobileCatalogCards {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .mobileCatalogCard {
   border: 1px solid rgba(132, 161, 214, 0.16);
-  border-radius: 18px;
+  border-radius: 20px;
   background:
-    linear-gradient(180deg, rgba(12, 23, 41, 0.9), rgba(8, 16, 30, 0.86));
-  padding: 16px;
+    radial-gradient(circle at top right, rgba(66, 120, 214, 0.12), transparent 38%),
+    linear-gradient(180deg, rgba(12, 23, 41, 0.92), rgba(8, 16, 30, 0.88));
+  padding: 14px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .mobileCatalogCardHead {
@@ -475,15 +476,15 @@
 .mobileCatalogUpdated {
   color: var(--text-soft);
   font-size: 11px;
-  text-align: right;
-  min-width: 96px;
+  text-align: left;
+  min-width: 0;
 }
 
 .mobileCatalogName {
   color: #e9f2ff;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 1.35;
+  line-height: 1.32;
 }
 
 .mobileCatalogPath {
@@ -494,7 +495,7 @@
 
 .mobileCatalogStoreGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -502,9 +503,9 @@
   border: 1px solid rgba(132, 161, 214, 0.14);
   border-radius: 14px;
   background: rgba(7, 14, 27, 0.42);
-  padding: 14px;
+  padding: 12px;
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .mobileCatalogStoreTitle {
@@ -549,7 +550,7 @@
 
 .mobileCatalogPagerMeta {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   color: #d9e6fb;
   font-size: 13px;
   justify-content: center;
@@ -607,5 +608,33 @@
 
   .mobileCatalogPageSize {
     width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .mobileCatalogHero {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .mobileCatalogCard {
+    padding: 12px;
+  }
+
+  .mobileCatalogCardHead,
+  .mobileCatalogStoreTitle {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .mobileCatalogUpdated {
+    font-size: 10px;
+  }
+
+  .mobileCatalogMeta,
+  .mobileCatalogPath,
+  .mobileCatalogMetricMuted {
+    font-size: 11px;
   }
 }
