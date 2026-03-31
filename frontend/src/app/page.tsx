@@ -388,9 +388,13 @@ function Sparkline({
 function TrendChart({
   days,
   currencyCode,
+  title = "Оборот и прибыль по дням",
+  hint = "Выбранный диапазон из обзора продаж.",
 }: {
   days: TrackingDay[];
   currencyCode?: string | null;
+  title?: string;
+  hint?: string;
 }) {
   const chartWidth = 760;
   const chartHeight = 280;
@@ -414,8 +418,8 @@ function TrendChart({
     <div className={styles.chartCard}>
       <div className={styles.chartHead}>
         <div>
-          <div className={styles.panelTitle}>Оборот и прибыль по дням</div>
-          <div className={styles.panelHint}>Текущий активный месяц из обзора продаж.</div>
+          <div className={styles.panelTitle}>{title}</div>
+          <div className={styles.panelHint}>{hint}</div>
         </div>
         <div className={styles.chartLegend}>
           <span><i className={styles.legendRevenue} /> Оборот</span>
@@ -827,7 +831,15 @@ export default function Page() {
   const selectedDayDate = period === "yesterday" ? shiftDate(localDateOnly(), -1) : localDateOnly();
   const selectedOverviewStoreId = storeId === "all" ? "all" : storeId;
   const activeMonth = useMemo(() => getActiveMonth(bundle?.tracking || null), [bundle?.tracking]);
-  const trendDays = useMemo(() => (activeMonth?.days || []).filter((day) => day.date), [activeMonth]);
+  const allTrendDays = useMemo(
+    () =>
+      (bundle?.tracking?.years || [])
+        .flatMap((year) => year.months || [])
+        .flatMap((month) => month.days || [])
+        .filter((day) => day.date)
+        .sort((a, b) => String(a.date).localeCompare(String(b.date))),
+    [bundle?.tracking?.years],
+  );
 
   const revenueTotal = sumBy(bundle?.orders?.rows || [], (row) => row.sale_price);
   const profitTotal = sumBy(bundle?.orders?.rows || [], (row) => row.profit);
@@ -855,9 +867,6 @@ export default function Page() {
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3);
   }, [bundle?.problems?.rows]);
   const problemStatusRows = problematicStatuses.map(([label, count]) => ({ label, count }));
-  const revenueSpark = trendDays.map((day) => Number(day.revenue || 0));
-  const profitSpark = trendDays.map((day) => Number(day.profit_amount || 0));
-  const marginSpark = trendDays.map((day) => Number(day.profit_pct || 0));
   const todayRevenue = sumBy(bundle?.today?.rows || [], (row) => row.sale_price);
   const yesterdayRevenue = sumBy(bundle?.yesterday?.rows || [], (row) => row.sale_price);
   const todayProfit = sumBy(bundle?.today?.rows || [], (row) => row.profit);
@@ -904,6 +913,13 @@ export default function Page() {
   const yesterdayDate = shiftDate(todayDate, -1);
   const currentRange = getCurrentPeriodRange(period);
   const previousRange = getPreviousPeriodRange(period);
+  const trendDays = useMemo(() => {
+    const scoped = allTrendDays.filter((day) => day.date >= currentRange.start && day.date <= currentRange.end);
+    return scoped.length ? scoped : (activeMonth?.days || []).filter((day) => day.date);
+  }, [activeMonth?.days, allTrendDays, currentRange.end, currentRange.start]);
+  const revenueSpark = trendDays.map((day) => Number(day.revenue || 0));
+  const profitSpark = trendDays.map((day) => Number(day.profit_amount || 0));
+  const marginSpark = trendDays.map((day) => Number(day.profit_pct || 0));
   const currentRangeLabel = `${formatLongDate(currentRange.start)} - ${formatLongDate(currentRange.end)}`;
   const previousRangeLabel = `${formatLongDate(previousRange.start)} - ${formatLongDate(previousRange.end)}`;
   const selectedDayRevenue = period === "yesterday" ? yesterdayRevenue : todayRevenue;
@@ -916,6 +932,12 @@ export default function Page() {
   const selectedProfitDeltaPct = period === "yesterday" ? compareDelta(yesterdayProfit, todayProfit) : todayProfitDeltaPct;
   const selectedOrdersDeltaPct = period === "yesterday" ? compareDelta(yesterdayOrdersCount, todayOrdersCount) : todayOrdersDeltaPct;
   const selectedProblemsDeltaPct = period === "yesterday" ? compareDelta(yesterdayProblemsCount, todayProblemsCount) : todayProblemsDeltaPct;
+  const averageDayRevenue = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.revenue || 0), 0) / trendDays.length : null;
+  const averageDayProfit = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.profit_amount || 0), 0) / trendDays.length : null;
+  const chartTitle = isSingleDayPeriod ? "День в контексте диапазона" : "Оборот и прибыль по дням";
+  const chartHint = isSingleDayPeriod
+    ? `${selectedDayLabel} внутри текущего рабочего диапазона.`
+    : `Выбранный диапазон: ${currentRangeLabel}.`;
 
   return (
     <PageFrame title="Сводка" subtitle="Финальный dashboard по продажам, эффективности и зонам риска.">
@@ -1215,39 +1237,66 @@ export default function Page() {
             </section>
 
             <section className={styles.dashboardGrid}>
-              <TrendChart days={trendDays} currencyCode={currencyCode} />
+              <TrendChart days={trendDays} currencyCode={currencyCode} title={chartTitle} hint={chartHint} />
 
               <div className={styles.sideStack}>
-                <div className={styles.panelCard}>
-                  <div className={styles.panelTitle}>Выполнение плана</div>
-                  <div className={styles.panelHint}>{activeMonth?.month_label || "Текущий месяц"}</div>
-                  <div className={styles.progressGroup}>
-                    <div className={styles.progressRow}>
-                      <div className={styles.progressHead}>
-                        <span>Оборот</span>
-                        <strong>{planRevenue > 0 ? formatPercent((revenueTotal / planRevenue) * 100) : "—"}</strong>
+                {period === "month" ? (
+                  <div className={styles.panelCard}>
+                    <div className={styles.panelTitle}>Выполнение плана</div>
+                    <div className={styles.panelHint}>{activeMonth?.month_label || "Текущий месяц"}</div>
+                    <div className={styles.progressGroup}>
+                      <div className={styles.progressRow}>
+                        <div className={styles.progressHead}>
+                          <span>Оборот</span>
+                          <strong>{planRevenue > 0 ? formatPercent((revenueTotal / planRevenue) * 100) : "—"}</strong>
+                        </div>
+                        <div className={styles.progressTrack}>
+                          <div className={styles.progressFillRevenue} style={{ width: `${Math.max(6, Math.min(100, planRevenue > 0 ? (revenueTotal / planRevenue) * 100 : 0))}%` }} />
+                        </div>
                       </div>
-                      <div className={styles.progressTrack}>
-                        <div className={styles.progressFillRevenue} style={{ width: `${Math.max(6, Math.min(100, planRevenue > 0 ? (revenueTotal / planRevenue) * 100 : 0))}%` }} />
-                      </div>
-                    </div>
-                    <div className={styles.progressRow}>
-                      <div className={styles.progressHead}>
-                        <span>Прибыль</span>
-                        <strong>{planProfit > 0 ? formatPercent((profitTotal / planProfit) * 100) : "—"}</strong>
-                      </div>
-                      <div className={styles.progressTrack}>
-                        <div className={styles.progressFillProfit} style={{ width: `${Math.max(6, Math.min(100, planProfit > 0 ? (profitTotal / planProfit) * 100 : 0))}%` }} />
+                      <div className={styles.progressRow}>
+                        <div className={styles.progressHead}>
+                          <span>Прибыль</span>
+                          <strong>{planProfit > 0 ? formatPercent((profitTotal / planProfit) * 100) : "—"}</strong>
+                        </div>
+                        <div className={styles.progressTrack}>
+                          <div className={styles.progressFillProfit} style={{ width: `${Math.max(6, Math.min(100, planProfit > 0 ? (profitTotal / planProfit) * 100 : 0))}%` }} />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className={styles.panelCard}>
+                    <div className={styles.panelTitle}>Ритм выбранного периода</div>
+                    <div className={styles.panelHint}>{currentRangeLabel}</div>
+                    <div className={styles.progressGroup}>
+                      <div className={styles.progressRow}>
+                        <div className={styles.progressHead}>
+                          <span>Средний оборот в день</span>
+                          <strong>{formatMoney(averageDayRevenue, currencyCode)}</strong>
+                        </div>
+                      </div>
+                      <div className={styles.progressRow}>
+                        <div className={styles.progressHead}>
+                          <span>Средняя прибыль в день</span>
+                          <strong>{formatMoney(averageDayProfit, currencyCode)}</strong>
+                        </div>
+                      </div>
+                      <div className={styles.progressRow}>
+                        <div className={styles.progressHead}>
+                          <span>Активных дней в графике</span>
+                          <strong>{formatNumber(trendDays.length)}</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className={styles.insightGrid}>
                   <InsightCard
                     title="Средний день"
-                    value={formatMoney(bundle?.tracking?.kpis?.revenue, currencyCode)}
-                    detail={`Активных дней: ${formatNumber(bundle?.tracking?.kpis?.days)}`}
+                    value={formatMoney(averageDayRevenue, currencyCode)}
+                    detail={`Активных дней: ${formatNumber(trendDays.length)}`}
                     tone="positive"
                   />
                   <InsightCard

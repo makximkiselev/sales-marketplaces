@@ -112,17 +112,13 @@
 }
 
 .platformRows {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-columns: 1fr !important;
   gap: 16px;
   align-items: start;
 }
 
 .platformRows > * {
   min-width: 0;
-}
-
-.platformRows > :first-child {
-  grid-column: 1 / -1;
 }
 
 @media (max-width: 960px) {
@@ -170,10 +166,6 @@
 
   .platformRows {
     grid-template-columns: 1fr !important;
-  }
-
-  .platformRows > :first-child {
-    grid-column: auto;
   }
 }
 
