@@ -5,6 +5,7 @@ import { useCatalogPageController } from "./useCatalogPageController";
 import { CatalogDesktop } from "./CatalogDesktop";
 import { CatalogMobile } from "./CatalogMobile";
 import styles from "./CatalogPage.module.css";
+import { WorkspaceTabs } from "../../components/page/WorkspaceKit";
 
 function useCatalogMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -55,22 +56,14 @@ export default function CatalogPage() {
     <div className={styles.treeSourcePanel}>
       <div className={styles.treeSourceBlock}>
         <label className={commonStyles.fieldLabel}>Источник древа</label>
-        <div className={styles.modeSwitch}>
-          <button
-            type="button"
-            className={`btn inline ${commonStyles.tabBtn} ${treeMode === "marketplaces" ? commonStyles.tabBtnActive : ""}`}
-            onClick={() => setTreeMode("marketplaces")}
-          >
-            Маркетплейсы
-          </button>
-          <button
-            type="button"
-            className={`btn inline ${commonStyles.tabBtn} ${treeMode === "external" ? commonStyles.tabBtnActive : ""}`}
-            onClick={() => setTreeMode("external")}
-          >
-            Внешний источник
-          </button>
-        </div>
+        <WorkspaceTabs
+          items={[
+            { id: "marketplaces", label: "Маркетплейсы" },
+            { id: "external", label: "Внешний источник" },
+          ]}
+          activeId={treeMode}
+          onChange={setTreeMode}
+        />
       </div>
 
       {treeMode === "marketplaces" && tab === "all" ? (
@@ -78,7 +71,7 @@ export default function CatalogPage() {
           <label className={commonStyles.fieldLabel} htmlFor="catalog-tree-source-store">Магазин для каталога</label>
           <select
             id="catalog-tree-source-store"
-            className={`input ${commonStyles.select}`}
+            className={`input input-size-md ${commonStyles.select}`}
             value={treeSourceStoreId}
             onChange={(e) => setTreeSourceStoreId(e.target.value)}
           >
@@ -97,7 +90,7 @@ export default function CatalogPage() {
             <label className={commonStyles.fieldLabel} htmlFor="catalog-ext-type">Тип источника</label>
             <select
               id="catalog-ext-type"
-              className={`input ${commonStyles.select}`}
+              className={`input input-size-md ${commonStyles.select}`}
               value={externalSourceType}
               onChange={(e) => setExternalSourceType(e.target.value)}
             >
@@ -110,7 +103,7 @@ export default function CatalogPage() {
             <label className={commonStyles.fieldLabel} htmlFor="catalog-ext-source">Источник</label>
             <select
               id="catalog-ext-source"
-              className={`input ${commonStyles.select}`}
+              className={`input input-size-md ${commonStyles.select}`}
               value={externalSourceId}
               onChange={(e) => setExternalSourceId(e.target.value)}
             >

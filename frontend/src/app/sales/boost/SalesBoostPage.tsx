@@ -7,6 +7,7 @@ import { readGlobalStockFilter, writeGlobalStockFilter } from "../../pricing/_sh
 import { usePricingCatalogController } from "../../pricing/_shared/usePricingCatalogController";
 import { usePricingOverviewData } from "../../pricing/_shared/usePricingOverviewData";
 import { BoostOverviewRow, BoostTable } from "./BoostTable";
+import { WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 
 const BOOST_CTX_CACHE_KEY = "sales_boost_ctx_v3";
 const BOOST_TREE_SOURCE_STORE_KEY = "sales_boost_tree_source_store_id_v3";
@@ -191,18 +192,18 @@ export default function SalesBoostPage() {
       title="Эффективность буста"
       subtitle="Дневной отчёт по SKU: какая стратегия буста стояла и какую долю продаж товар получил под бустом."
       tabs={(
-        <>
-          <button className={`btn inline ${commonStyles.tabBtn} ${tab === "all" ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab("all")}>Все товары</button>
-          {yandexStores.map((store) => {
-            const key = tabKeyForStore(store);
-            return (
-              <button key={key} className={`btn inline ${commonStyles.tabBtn} ${tab === key ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab(key)}>
-                <span>{store.label}</span>
-                <span className={commonStyles.tabBadge}>{store.platform_label}</span>
-              </button>
-            );
-          })}
-        </>
+        <WorkspaceTabs
+          items={[
+            { id: "all", label: "Все товары" },
+            ...yandexStores.map((store) => ({
+              id: tabKeyForStore(store),
+              label: store.label,
+              meta: store.platform_label,
+            })),
+          ]}
+          activeId={tab}
+          onChange={setTab}
+        />
       )}
       searchValue={searchDraft}
       onSearchChange={setSearchDraft}

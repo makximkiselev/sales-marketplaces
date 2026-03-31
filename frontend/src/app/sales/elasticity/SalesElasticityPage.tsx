@@ -8,6 +8,7 @@ import { usePricingCatalogController } from "../../pricing/_shared/usePricingCat
 import { usePricingOverviewData } from "../../pricing/_shared/usePricingOverviewData";
 import { readGlobalStockFilter, StockFilterValue, writeGlobalStockFilter } from "../../pricing/_shared/stockFilterState";
 import styles from "./SalesElasticityPage.module.css";
+import { WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 
 type ElasticityPeriod = "today" | "yesterday" | "week" | "month" | "quarter" | "custom";
 
@@ -328,25 +329,20 @@ export default function SalesElasticityPage() {
   const gridValues = [0.25, 0.5, 0.75];
 
   const periodTabs = (
-      <div className={styles.periodControls}>
+    <div className={styles.periodControls}>
       <div className={styles.periodTabs}>
-        {[
-          ["today", "Сегодня"],
-          ["yesterday", "Вчера"],
-          ["week", "За неделю"],
-          ["month", "30 дней"],
-          ["quarter", "Квартал"],
-          ["custom", "Период"],
-        ].map(([key, label]) => (
-          <button
-            key={key}
-            className={`btn inline ${commonStyles.tabBtn} ${period === key ? commonStyles.tabBtnActive : ""}`}
-            onClick={() => setPeriod(key as ElasticityPeriod)}
-            type="button"
-          >
-            {label}
-          </button>
-        ))}
+        <WorkspaceTabs
+          items={[
+            { id: "today", label: "Сегодня" },
+            { id: "yesterday", label: "Вчера" },
+            { id: "week", label: "За неделю" },
+            { id: "month", label: "30 дней" },
+            { id: "quarter", label: "Квартал" },
+            { id: "custom", label: "Период" },
+          ]}
+          activeId={period}
+          onChange={setPeriod}
+        />
       </div>
       {period === "custom" ? (
         <div className={styles.dateRange}>
@@ -355,7 +351,7 @@ export default function SalesElasticityPage() {
           <input className={`input input-size-md ${styles.dateInput}`} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
         </div>
       ) : null}
-      </div>
+    </div>
   );
 
   const summaryPanel = (
@@ -506,18 +502,18 @@ export default function SalesElasticityPage() {
       title="Эластичность"
       subtitle="Оперативный мониторинг спроса по цене: за день, неделю, 30 дней, квартал и произвольный период."
       tabs={(
-        <>
-          <button className={`btn inline ${commonStyles.tabBtn} ${tab === "all" ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab("all")}>Все товары</button>
-          {visiblePageStores.map((store) => {
-            const key = tabKeyForStore(store);
-            return (
-              <button key={key} className={`btn inline ${commonStyles.tabBtn} ${tab === key ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab(key)}>
-                <span>{store.label}</span>
-                <span className={commonStyles.tabBadge}>{store.platform_label}</span>
-              </button>
-            );
-          })}
-        </>
+        <WorkspaceTabs
+          items={[
+            { id: "all", label: "Все товары" },
+            ...visiblePageStores.map((store) => ({
+              id: tabKeyForStore(store),
+              label: store.label,
+              meta: store.platform_label,
+            })),
+          ]}
+          activeId={tab}
+          onChange={setTab}
+        />
       )}
       summaryPanel={summaryPanel}
       searchValue={searchDraft}

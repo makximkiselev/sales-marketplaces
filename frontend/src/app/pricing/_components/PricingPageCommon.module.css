@@ -11,26 +11,6 @@
   min-width: 100%;
 }
 
-.tabBtn {
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.tabBtnActive {
-  border-color: rgba(43, 214, 255, 0.55);
-  background: linear-gradient(180deg, rgba(34, 113, 140, 0.38), rgba(23, 43, 73, 0.9));
-}
-
-.tabBadge {
-  border: 1px solid rgba(132, 161, 214, 0.28);
-  border-radius: 999px;
-  padding: 1px 8px;
-  font-size: 11px;
-  color: var(--text-soft);
-}
-
 .refreshBtn {
   height: 40px;
   min-width: 128px;

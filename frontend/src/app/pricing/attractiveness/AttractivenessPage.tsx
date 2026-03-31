@@ -8,6 +8,7 @@ import { usePricingCatalogController } from "../_shared/usePricingCatalogControl
 import { usePricingOverviewData } from "../_shared/usePricingOverviewData";
 import { AttractivenessTable } from "./AttractivenessTable";
 import { AttractivenessOverviewRow } from "./attractivenessUtils";
+import { WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 
 const ATTR_CTX_CACHE_KEY = "pricing_attractiveness_ctx_v4";
 const ATTR_TREE_SOURCE_STORE_KEY = "pricing_attractiveness_tree_source_store_id_v4";
@@ -169,18 +170,18 @@ export default function AttractivenessPage() {
       title="Привлекательность"
       subtitle="Каталог товаров для расчета выгодных/умеренных/невыгодных цен и конкурентов по площадкам."
       tabs={(
-        <>
-          <button className={`btn inline ${commonStyles.tabBtn} ${tab === "all" ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab("all")}>Все товары</button>
-          {visiblePageStores.map((s) => {
-            const key = tabKeyForStore(s);
-            return (
-              <button key={key} className={`btn inline ${commonStyles.tabBtn} ${tab === key ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab(key)}>
-                <span>{s.label}</span>
-                <span className={commonStyles.tabBadge}>{s.platform_label}</span>
-              </button>
-            );
-          })}
-        </>
+        <WorkspaceTabs
+          items={[
+            { id: "all", label: "Все товары" },
+            ...visiblePageStores.map((store) => ({
+              id: tabKeyForStore(store),
+              label: store.label,
+              meta: store.platform_label,
+            })),
+          ]}
+          activeId={tab}
+          onChange={setTab}
+        />
       )}
       searchValue={searchDraft}
       onSearchChange={setSearchDraft}

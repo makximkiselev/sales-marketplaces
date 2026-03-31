@@ -7,6 +7,7 @@ import { readGlobalStockFilter, writeGlobalStockFilter } from "../_shared/stockF
 import { usePricingCatalogController } from "../_shared/usePricingCatalogController";
 import { usePricingOverviewData } from "../_shared/usePricingOverviewData";
 import { PromoColumn, PromoOverviewRow, PromoTable } from "./PromoTable";
+import { WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 
 const PROMOS_CTX_CACHE_KEY = "pricing_promos_ctx_v10";
 const PROMOS_OVERVIEW_CACHE_PREFIX = "pricing_promos_overview_v10:";
@@ -168,18 +169,18 @@ export default function PromosPage() {
       title="Промо"
       subtitle="Промо-сценарии по товарам, участию в акциях и экономике по каждой акции Яндекс.Маркета."
       tabs={(
-        <>
-          <button className={`btn inline ${commonStyles.tabBtn} ${tab === "all" ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab("all")}>Все товары</button>
-          {visiblePageStores.map((s) => {
-            const key = tabKeyForStore(s);
-            return (
-              <button key={key} className={`btn inline ${commonStyles.tabBtn} ${tab === key ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab(key)}>
-                <span>{s.label} ({s.store_id})</span>
-                <span className={commonStyles.tabBadge}>{s.platform_label}</span>
-              </button>
-            );
-          })}
-        </>
+        <WorkspaceTabs
+          items={[
+            { id: "all", label: "Все товары" },
+            ...visiblePageStores.map((store) => ({
+              id: tabKeyForStore(store),
+              label: `${store.label} (${store.store_id})`,
+              meta: store.platform_label,
+            })),
+          ]}
+          activeId={tab}
+          onChange={setTab}
+        />
       )}
       searchValue={searchDraft}
       onSearchChange={setSearchDraft}

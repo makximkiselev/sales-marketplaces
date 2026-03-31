@@ -8,6 +8,7 @@ import { usePricingCatalogController } from "../_shared/usePricingCatalogControl
 import { usePricingOverviewData } from "../_shared/usePricingOverviewData";
 import { StrategyOverviewRow, StrategyTable } from "./StrategyTable";
 import styles from "./StrategyPage.module.css";
+import { WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 
 const STRATEGY_CTX_CACHE_KEY = "pricing_strategy_ctx_v6";
 const STRATEGY_TREE_SOURCE_STORE_KEY = "pricing_strategy_tree_source_store_id_v6";
@@ -297,18 +298,18 @@ export default function PricingDecisionPage() {
       subtitle="Финальный сценарий по каждому товару: промо, привлекательность, буст и итоговая цена отправки."
       summaryPanel={salesPlanPanel}
       tabs={(
-        <>
-          <button className={`btn inline ${commonStyles.tabBtn} ${tab === "all" ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab("all")}>Все товары</button>
-          {visiblePageStores.map((store) => {
-            const key = tabKeyForStore(store);
-            return (
-              <button key={key} className={`btn inline ${commonStyles.tabBtn} ${tab === key ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab(key)}>
-                <span>{store.label}</span>
-                <span className={commonStyles.tabBadge}>{store.platform_label}</span>
-              </button>
-            );
-          })}
-        </>
+        <WorkspaceTabs
+          items={[
+            { id: "all", label: "Все товары" },
+            ...visiblePageStores.map((store) => ({
+              id: tabKeyForStore(store),
+              label: store.label,
+              meta: store.platform_label,
+            })),
+          ]}
+          activeId={tab}
+          onChange={setTab}
+        />
       )}
       searchValue={searchDraft}
       onSearchChange={setSearchDraft}

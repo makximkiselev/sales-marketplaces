@@ -9,6 +9,7 @@ import { usePricingCatalogController } from "../../pricing/_shared/usePricingCat
 import { usePricingOverviewData } from "../../pricing/_shared/usePricingOverviewData";
 import styles from "../elasticity/SalesElasticityPage.module.css";
 import { apiPostOk } from "../../../lib/api";
+import { WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 
 type OverviewRow = {
   sku: string;
@@ -354,18 +355,18 @@ export default function SalesCoinvestPage() {
       title="Соинвест"
       subtitle="Актуальная сводка по витрине: установленная цена, соинвест и цена показа товара."
       tabs={(
-        <>
-          <button className={`btn inline ${commonStyles.tabBtn} ${tab === "all" ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab("all")}>Все товары</button>
-          {visiblePageStores.map((store) => {
-            const key = tabKeyForStore(store);
-            return (
-              <button key={key} className={`btn inline ${commonStyles.tabBtn} ${tab === key ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab(key)}>
-                <span>{store.label}</span>
-                <span className={commonStyles.tabBadge}>{store.platform_label}</span>
-              </button>
-            );
-          })}
-        </>
+        <WorkspaceTabs
+          items={[
+            { id: "all", label: "Все товары" },
+            ...visiblePageStores.map((store) => ({
+              id: tabKeyForStore(store),
+              label: store.label,
+              meta: store.platform_label,
+            })),
+          ]}
+          activeId={tab}
+          onChange={setTab}
+        />
       )}
       summaryPanel={summaryPanel}
       searchValue={searchDraft}

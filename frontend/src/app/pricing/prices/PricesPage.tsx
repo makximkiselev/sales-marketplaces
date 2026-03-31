@@ -7,6 +7,7 @@ import { currencySymbol, filterWorkingMarketplaceStores, formatMoney, parseStore
 import { readGlobalStockFilter, writeGlobalStockFilter } from "../_shared/stockFilterState";
 import { usePricingCatalogController } from "../_shared/usePricingCatalogController";
 import { usePricingOverviewData } from "../_shared/usePricingOverviewData";
+import { WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 
 type PriceMetric = {
   mrc_with_boost_price?: number | null;
@@ -258,10 +259,10 @@ export default function PricesPage() {
   const renderInstalledProfitPctCell = (row: OverviewRow) => renderStorePercentMapCell(row, row.installed_profit_pct_by_store, "installed-profit-pct");
 
   const tableHeaderControls = (
-    <div style={{ minWidth: 320, flex: "1 1 420px" }}>
+    <div className={commonStyles.tableSearchWrap}>
       <input
         id="prices-table-search"
-        className={`input ${commonStyles.select}`}
+        className={`input input-size-xl ${commonStyles.select}`}
         value={searchDraft}
         onChange={(e) => setSearchDraft(e.target.value)}
         placeholder="Поиск по SKU или наименованию"
@@ -274,18 +275,18 @@ export default function PricesPage() {
       title="Цены"
       subtitle="Базовый слой расчёта цены: РРЦ, РРЦ без рекламы, МРЦ и финальная установленная цена из стратегии."
       tabs={(
-        <>
-          <button className={`btn inline ${commonStyles.tabBtn} ${tab === "all" ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab("all")}>Все товары</button>
-          {visiblePageStores.map((store) => {
-            const key = tabKeyForStore(store);
-            return (
-              <button key={key} className={`btn inline ${commonStyles.tabBtn} ${tab === key ? commonStyles.tabBtnActive : ""}`} onClick={() => setTab(key)}>
-                <span>{store.label}</span>
-                <span className={commonStyles.tabBadge}>{store.platform_label}</span>
-              </button>
-            );
-          })}
-        </>
+        <WorkspaceTabs
+          items={[
+            { id: "all", label: "Все товары" },
+            ...visiblePageStores.map((store) => ({
+              id: tabKeyForStore(store),
+              label: store.label,
+              meta: store.platform_label,
+            })),
+          ]}
+          activeId={tab}
+          onChange={setTab}
+        />
       )}
       searchValue={searchDraft}
       onSearchChange={setSearchDraft}
