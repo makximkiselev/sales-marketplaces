@@ -64,6 +64,12 @@ function emptyForm(): UserFormState {
   };
 }
 
+function buildAccessMessage(identifier: string, password: string) {
+  const login = String(identifier || "").trim();
+  const secret = String(password || "").trim();
+  return `Доступ к платформе\nЛогин: ${login}\nПароль: ${secret}`;
+}
+
 export default function SettingsAdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -144,6 +150,15 @@ export default function SettingsAdminPage() {
       await navigator.clipboard.writeText(value);
     } catch {
       setError("Не удалось скопировать пароль");
+    }
+  }
+
+  async function copyAccessMessage(identifier: string, password: string) {
+    if (!identifier.trim() || !password.trim()) return;
+    try {
+      await navigator.clipboard.writeText(buildAccessMessage(identifier, password));
+    } catch {
+      setError("Не удалось скопировать данные доступа");
     }
   }
 
@@ -280,6 +295,13 @@ export default function SettingsAdminPage() {
                   <div className={styles.issuedActions}>
                     <button type="button" className="btn ghost" onClick={() => void copyPassword(issuedPassword.password)}>
                       Скопировать пароль
+                    </button>
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={() => void copyAccessMessage(issuedPassword.identifier, issuedPassword.password)}
+                    >
+                      Скопировать доступ
                     </button>
                     <button type="button" className="btn ghost" onClick={() => setIssuedPassword(null)}>
                       Скрыть
@@ -556,6 +578,14 @@ export default function SettingsAdminPage() {
                   disabled={!resetPassword.trim()}
                 >
                   Скопировать
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => void copyAccessMessage(resetUser.identifier, resetPassword)}
+                  disabled={!resetPassword.trim()}
+                >
+                  Скопировать доступ
                 </button>
               </div>
             </label>
