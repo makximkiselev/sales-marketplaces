@@ -166,7 +166,7 @@ export function AttractivenessTable(props: Props) {
     tableTitleControls: (
       <div className={styles.statusFilterWrap}>
         <select
-          className={`input ${commonStyles.select} ${styles.statusSelect}`}
+          className={`input input-size-md ${commonStyles.select} ${styles.statusSelect}`}
           value={statusFilter}
           onChange={(e) => {
             onPageChange(() => 1);

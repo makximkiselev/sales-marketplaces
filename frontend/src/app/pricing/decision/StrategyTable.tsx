@@ -423,7 +423,7 @@ export function StrategyTable(props: Props) {
       <div className={styles.filterWrap}>
         <span className={commonStyles.fieldLabel}>Решение</span>
         <select
-          className={`input ${commonStyles.select} ${styles.filterSelect}`}
+          className={`input input-size-md ${commonStyles.select} ${styles.filterSelect}`}
           value={strategyFilter}
           onChange={(e) => {
             onPageChange(() => 1);
@@ -447,7 +447,7 @@ export function StrategyTable(props: Props) {
         </select>
         <span className={commonStyles.fieldLabel}>Продажи</span>
         <select
-          className={`input ${commonStyles.select} ${styles.filterSelect}`}
+          className={`input input-size-md ${commonStyles.select} ${styles.filterSelect}`}
           value={salesFilter}
           onChange={(e) => {
             onPageChange(() => 1);
