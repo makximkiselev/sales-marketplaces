@@ -155,7 +155,7 @@ export function LogisticsSettingsSection({
                   <ControlField label="Поиск по SKU" className={styles.logisticsSearchField}>
                     <div className={styles.inputWithSuffix}>
                       <input
-                        className={`input ${styles.settingInput}`}
+                        className={`input input-size-fluid ${styles.settingInput}`}
                         value={logisticsSearch}
                         onChange={(e) => {
                           setLogisticsSearch(e.target.value);
@@ -167,7 +167,7 @@ export function LogisticsSettingsSection({
                   </ControlField>
                   <ControlField label="На странице" className={styles.logisticsPageSizeBox}>
                     <select
-                      className={`input ${styles.logisticsPageSizeSelect}`}
+                      className={`input input-size-sm ${styles.logisticsPageSizeSelect}`}
                       value={String(logisticsPageSize)}
                       onChange={(e) => {
                         setLogisticsPageSize(Number(e.target.value));

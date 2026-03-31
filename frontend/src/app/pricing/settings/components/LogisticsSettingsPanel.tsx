@@ -76,7 +76,7 @@ export function LogisticsSettingsPanel({
               <div className={styles.logisticsMetricField}>
                 <label className={styles.logisticsMetricLabel}>Ставка, %</label>
                 <input
-                  className={`input ${styles.settingInput} ${styles.fieldSizeSm}`}
+                  className={`input input-size-sm ${styles.settingInput}`}
                   value={getLogisticsNumericValue("handling_percent", logisticsStoreSettings.handling_percent)}
                   onChange={(e) => setLogisticsNumericField("handling_percent", e.target.value)}
                   onBlur={() => onLogisticsNumericBlur("handling_percent")}
@@ -87,7 +87,7 @@ export function LogisticsSettingsPanel({
               <div className={styles.logisticsMetricField}>
                 <label className={styles.logisticsMetricLabel}>Минимум, {moneySign}</label>
                 <input
-                  className={`input ${styles.settingInput} ${styles.fieldSizeSm}`}
+                  className={`input input-size-sm ${styles.settingInput}`}
                   value={getLogisticsNumericValue("handling_min_amount", logisticsStoreSettings.handling_min_amount)}
                   onChange={(e) => setLogisticsNumericField("handling_min_amount", e.target.value)}
                   onBlur={() => onLogisticsNumericBlur("handling_min_amount")}
@@ -98,7 +98,7 @@ export function LogisticsSettingsPanel({
               <div className={styles.logisticsMetricField}>
                 <label className={styles.logisticsMetricLabel}>Максимум, {moneySign}</label>
                 <input
-                  className={`input ${styles.settingInput} ${styles.fieldSizeSm}`}
+                  className={`input input-size-sm ${styles.settingInput}`}
                   value={getLogisticsNumericValue("handling_max_amount", logisticsStoreSettings.handling_max_amount)}
                   onChange={(e) => setLogisticsNumericField("handling_max_amount", e.target.value)}
                   onBlur={() => onLogisticsNumericBlur("handling_max_amount")}
@@ -111,7 +111,7 @@ export function LogisticsSettingsPanel({
             <div className={`${styles.logisticsMetricField} ${styles.logisticsMetricFieldInline}`}>
               <label className={styles.logisticsMetricLabel}>Стоимость обработки, {moneySign}</label>
               <input
-                className={`input ${styles.settingInput} ${styles.fieldSizeLg}`}
+                className={`input input-size-lg ${styles.settingInput}`}
                 value={getLogisticsNumericValue("handling_fixed_amount", logisticsStoreSettings.handling_fixed_amount)}
                 onChange={(e) => setLogisticsNumericField("handling_fixed_amount", e.target.value)}
                 onBlur={() => onLogisticsNumericBlur("handling_fixed_amount")}
@@ -127,7 +127,7 @@ export function LogisticsSettingsPanel({
           <div className={styles.logisticsStoreCardTitle}>Доставка до клиента, {moneySign}/кг</div>
           <div className={styles.logisticsMetricField}>
             <input
-              className={`input ${styles.settingInput} ${styles.fieldSizeSm}`}
+              className={`input input-size-sm ${styles.settingInput}`}
               value={getLogisticsNumericValue("delivery_cost_per_kg", logisticsStoreSettings.delivery_cost_per_kg)}
               onChange={(e) => setLogisticsNumericField("delivery_cost_per_kg", e.target.value)}
               onBlur={() => onLogisticsNumericBlur("delivery_cost_per_kg")}
@@ -142,7 +142,7 @@ export function LogisticsSettingsPanel({
           <div className={styles.logisticsStoreCardTitle}>Обработка возврата, {moneySign}</div>
           <div className={styles.logisticsMetricField}>
             <input
-              className={`input ${styles.settingInput} ${styles.fieldSizeSm}`}
+              className={`input input-size-sm ${styles.settingInput}`}
               value={getLogisticsNumericValue("return_processing_cost", logisticsStoreSettings.return_processing_cost)}
               onChange={(e) => setLogisticsNumericField("return_processing_cost", e.target.value)}
               onBlur={() => onLogisticsNumericBlur("return_processing_cost")}
@@ -157,7 +157,7 @@ export function LogisticsSettingsPanel({
           <div className={styles.logisticsStoreCardTitle}>Утилизация, {moneySign}</div>
           <div className={styles.logisticsMetricField}>
             <input
-              className={`input ${styles.settingInput} ${styles.fieldSizeSm}`}
+              className={`input input-size-sm ${styles.settingInput}`}
               value={getLogisticsNumericValue("disposal_cost", logisticsStoreSettings.disposal_cost)}
               onChange={(e) => setLogisticsNumericField("disposal_cost", e.target.value)}
               onBlur={() => onLogisticsNumericBlur("disposal_cost")}

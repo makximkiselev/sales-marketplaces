@@ -309,7 +309,7 @@ export function GeneralSettingsSection({
                               </span>
                               <div className={styles.cellInputWrap}>
                                 <input
-                                  className={`input ${styles.cellInput} ${styles.fieldSizeMd}`}
+                                  className={`input input-size-md ${styles.cellInput}`}
                                   value={value}
                                   onChange={(e) => queueSaveCell(selectedRow, field, e.target.value)}
                                   onBlur={(e) => flushSaveCell(selectedRow, field, e.target.value)}

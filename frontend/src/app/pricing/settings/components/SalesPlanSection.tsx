@@ -334,7 +334,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                         </div>
                         <div className={styles.cellInputWrap}>
                         <input
-                          className={`input ${styles.cellInput} ${styles.fieldSizeLg}`}
+                          className={`input input-size-lg ${styles.cellInput}`}
                           value={focusedCell === revenueCellKey ? draft.planned_revenue : formatGrouped(draft.planned_revenue)}
                           inputMode="numeric"
                           onChange={(e) => patchDraft(row.store_uid, (prev) => recalcByRevenue(prev, e.target.value))}
@@ -353,7 +353,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                       </div>
                       <div className={styles.cellInputWrap}>
                         <input
-                          className={`input ${styles.cellInput} ${styles.fieldSizeSm}`}
+                          className={`input input-size-sm ${styles.cellInput}`}
                           value={draft.target_drr_percent}
                           inputMode="decimal"
                           onChange={(e) => patchDraft(row.store_uid, (prev) => ({ ...prev, target_drr_percent: e.target.value }))}
@@ -369,7 +369,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                       </div>
                       <div className={styles.cellInputWrap}>
                         <input
-                          className={`input ${styles.cellInput} ${styles.fieldSizeMd}`}
+                          className={`input input-size-md ${styles.cellInput}`}
                           value={focusedCell === rubCellKey ? rubValue : formatGrouped(rubValue)}
                           inputMode="decimal"
                           onChange={(e) => patchDraft(row.store_uid, (prev) => recalcByRub(prev, e.target.value))}
@@ -389,7 +389,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                       </div>
                       <div className={styles.cellInputWrap}>
                         <input
-                          className={`input ${styles.cellInput} ${styles.fieldSizeSm}`}
+                          className={`input input-size-sm ${styles.cellInput}`}
                           value={pctValue}
                           inputMode="decimal"
                           onChange={(e) => patchDraft(row.store_uid, (prev) => recalcByPercent(prev, e.target.value))}
@@ -403,7 +403,7 @@ export function SalesPlanSection({ loading, error, rows, savingMap, saveError, o
                       </div>
                       <div className={styles.cellInputWrap}>
                         <input
-                          className={`input ${styles.cellInput} ${styles.fieldSizeSm}`}
+                          className={`input input-size-sm ${styles.cellInput}`}
                           value={draft.minimum_profit_percent}
                           inputMode="decimal"
                           onChange={(e) => patchDraft(row.store_uid, (prev) => ({ ...prev, minimum_profit_percent: e.target.value }))}
