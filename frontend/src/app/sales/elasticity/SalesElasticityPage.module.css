@@ -416,7 +416,82 @@
 }
 
 @media (max-width: 720px) {
+  .periodControls {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .periodTabs,
+  .dateRange {
+    width: 100%;
+  }
+
+  .dateRange {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .dateInput {
+    width: 100%;
+  }
+
+  .dateDivider {
+    display: none;
+  }
+
   .summaryGrid {
     grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+
+  .summaryCard {
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .summaryValue {
+    font-size: 18px;
+  }
+
+  .chartCard {
+    padding: 12px;
+  }
+
+  .chartHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .chartLegend {
+    gap: 10px;
+  }
+
+  .storeMetricList {
+    min-width: 0;
+  }
+
+  .storeMetricRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .storeMetricValue {
+    white-space: normal;
+  }
+
+  .deltaCell {
+    justify-items: start;
+  }
+
+  .elasticityCell {
+    justify-items: start;
+  }
+}
+
+@media (max-width: 520px) {
+  .summaryGrid {
+    grid-template-columns: 1fr;
   }
 }

@@ -51,11 +51,24 @@
 @media (max-width: 960px) {
   .tableControlRow {
     align-items: stretch;
+    gap: 10px;
   }
 
   .tableSearchWrap,
   .tableFilterWrap,
   .tableFilterBlock {
     width: 100%;
+  }
+
+  .tableFilterWrap {
+    display: grid;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 640px) {
+  .metaText,
+  .fieldLabel {
+    font-size: 11px;
   }
 }

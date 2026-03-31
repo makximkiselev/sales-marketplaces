@@ -369,15 +369,16 @@
   .tabsBar {
     flex-direction: column;
     align-items: stretch;
+    padding: 10px;
   }
 
   .tabsRow,
   .tabsRight,
   .tableTitleControls {
     width: 100%;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 2px;
+    overflow: visible;
+    flex-wrap: wrap;
+    padding-bottom: 0;
   }
 
   .treeList {
@@ -402,6 +403,26 @@
 }
 
 @media (max-width: 960px) {
+  .pageCard :global(.inner) {
+    padding: 14px 12px 16px;
+  }
+
+  .summaryPanel,
+  .controlPanel,
+  .layout {
+    margin-top: 12px;
+  }
+
+  .treePanel,
+  .tablePanel {
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .treeSelectorWrap {
+    padding: 10px;
+  }
+
   .tableHeaderRow {
     flex-direction: column;
   }
@@ -418,10 +439,52 @@
     touch-action: pan-x pan-y;
   }
 
+  .paginationRow {
+    gap: 8px;
+    padding-top: 8px;
+  }
+
   .pageLeft,
   .pageRightStack,
   .pageRight {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .pageLeft,
+  .pageRightStack {
+    flex-wrap: wrap;
+  }
+
+  .pageSizeSelect,
+  .pageInput {
+    min-width: 84px;
+  }
+}
+
+@media (max-width: 640px) {
+  .tabsBar {
+    padding: 8px;
+  }
+
+  .treeRow {
+    min-height: 34px;
+  }
+
+  .treeLabelBtn {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.25;
+  }
+
+  .pageLeft {
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .pageTotals,
+  .pageInfo {
+    font-size: 11px;
   }
 }
