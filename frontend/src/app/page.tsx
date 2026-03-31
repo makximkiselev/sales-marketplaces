@@ -124,6 +124,10 @@ type DashboardBundle = {
   problems: ProblemOrdersResp;
   sku: RetrospectiveResp;
   category: RetrospectiveResp;
+  today: OrdersResp;
+  yesterday: OrdersResp;
+  todayProblems: ProblemOrdersResp;
+  yesterdayProblems: ProblemOrdersResp;
 };
 
 type StoreComparison = {
@@ -374,6 +378,11 @@ function InsightCard({
   );
 }
 
+function compareDelta(current: number, previous: number) {
+  if (!previous) return null;
+  return ((current - previous) / previous) * 100;
+}
+
 export default function Page() {
   const [context, setContext] = useState<ContextResp | null>(null);
   const [bundle, setBundle] = useState<DashboardBundle | null>(null);
@@ -408,12 +417,16 @@ export default function Page() {
       setError("");
       try {
         const storeQuery = storeId === "all" ? "" : `store_id=${encodeURIComponent(storeId)}&`;
-        const [tracking, orders, problems, sku, category] = await Promise.all([
+        const [tracking, orders, problems, sku, category, today, yesterday, todayProblems, yesterdayProblems] = await Promise.all([
           apiGetOk<TrackingResp>(`/api/sales/overview/tracking?store_id=${encodeURIComponent(storeId === "all" ? "all" : storeId)}&date_mode=created`),
           apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=${encodeURIComponent(period)}&page=1&page_size=200`),
           apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=${encodeURIComponent(period)}&page=1&page_size=50`),
           apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=sku&grain=month&date_mode=created&limit=6`),
           apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=category&grain=month&date_mode=created&limit=6`),
+          apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=today&page=1&page_size=200`),
+          apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=yesterday&page=1&page_size=200`),
+          apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=today&page=1&page_size=50`),
+          apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=yesterday&page=1&page_size=50`),
         ]);
 
         const comparison = await Promise.all(
@@ -437,7 +450,7 @@ export default function Page() {
         );
 
         if (!active) return;
-        setBundle({ tracking, orders, problems, sku, category });
+        setBundle({ tracking, orders, problems, sku, category, today, yesterday, todayProblems, yesterdayProblems });
         setStoreComparison(comparison.sort((a, b) => b.revenue - a.revenue));
       } catch (e) {
         if (!active) return;
@@ -486,6 +499,18 @@ export default function Page() {
   const revenueSpark = trendDays.map((day) => Number(day.revenue || 0));
   const profitSpark = trendDays.map((day) => Number(day.profit_amount || 0));
   const marginSpark = trendDays.map((day) => Number(day.profit_pct || 0));
+  const todayRevenue = sumBy(bundle?.today?.rows || [], (row) => row.sale_price);
+  const yesterdayRevenue = sumBy(bundle?.yesterday?.rows || [], (row) => row.sale_price);
+  const todayProfit = sumBy(bundle?.today?.rows || [], (row) => row.profit);
+  const yesterdayProfit = sumBy(bundle?.yesterday?.rows || [], (row) => row.profit);
+  const todayOrdersCount = Number(bundle?.today?.kpis?.orders_count || (bundle?.today?.rows || []).length);
+  const yesterdayOrdersCount = Number(bundle?.yesterday?.kpis?.orders_count || (bundle?.yesterday?.rows || []).length);
+  const todayProblemsCount = Number(bundle?.todayProblems?.total_count || 0);
+  const yesterdayProblemsCount = Number(bundle?.yesterdayProblems?.total_count || 0);
+  const todayRevenueDeltaPct = compareDelta(todayRevenue, yesterdayRevenue);
+  const todayProfitDeltaPct = compareDelta(todayProfit, yesterdayProfit);
+  const todayOrdersDeltaPct = compareDelta(todayOrdersCount, yesterdayOrdersCount);
+  const todayProblemsDeltaPct = compareDelta(todayProblemsCount, yesterdayProblemsCount);
 
   return (
     <PageFrame title="Сводка" subtitle="Финальный dashboard по продажам, эффективности и зонам риска.">
@@ -586,6 +611,68 @@ export default function Page() {
                 <div className={styles.kpiMeta}>
                   <span>Ошибки: {formatMoney(bundle?.orders?.kpis?.operational_errors, currencyCode)}</span>
                   <span>{bundle?.problems?.loaded_at ? `Обновлено: ${formatDateTime(bundle.problems.loaded_at)}` : "Требует контроля"}</span>
+                </div>
+              </div>
+            </section>
+
+            <section className={styles.dailyGrid}>
+              <div className={styles.dailyCard}>
+                <div className={styles.dailyTitle}>Сегодня</div>
+                <div className={styles.dailyMetrics}>
+                  <div className={styles.dailyMetric}>
+                    <span>Оборот</span>
+                    <strong>{formatMoney(todayRevenue, currencyCode)}</strong>
+                    <em className={todayRevenueDeltaPct != null && todayRevenueDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                      vs вчера {formatPercent(todayRevenueDeltaPct)}
+                    </em>
+                  </div>
+                  <div className={styles.dailyMetric}>
+                    <span>Прибыль</span>
+                    <strong>{formatMoney(todayProfit, currencyCode)}</strong>
+                    <em className={todayProfitDeltaPct != null && todayProfitDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                      vs вчера {formatPercent(todayProfitDeltaPct)}
+                    </em>
+                  </div>
+                  <div className={styles.dailyMetric}>
+                    <span>Заказы</span>
+                    <strong>{formatNumber(todayOrdersCount)}</strong>
+                    <em className={todayOrdersDeltaPct != null && todayOrdersDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                      vs вчера {formatPercent(todayOrdersDeltaPct)}
+                    </em>
+                  </div>
+                  <div className={styles.dailyMetric}>
+                    <span>Проблемные</span>
+                    <strong>{formatNumber(todayProblemsCount)}</strong>
+                    <em className={todayProblemsDeltaPct != null && todayProblemsDeltaPct <= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                      vs вчера {formatPercent(todayProblemsDeltaPct)}
+                    </em>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.dailyCard}>
+                <div className={styles.dailyTitle}>Вчера</div>
+                <div className={styles.dailyMetrics}>
+                  <div className={styles.dailyMetric}>
+                    <span>Оборот</span>
+                    <strong>{formatMoney(yesterdayRevenue, currencyCode)}</strong>
+                    <em>{bundle?.yesterday?.loaded_at ? `Срез: ${formatDateTime(bundle.yesterday.loaded_at)}` : "Дневной срез"}</em>
+                  </div>
+                  <div className={styles.dailyMetric}>
+                    <span>Прибыль</span>
+                    <strong>{formatMoney(yesterdayProfit, currencyCode)}</strong>
+                    <em>Маржа: {formatPercent(yesterdayRevenue > 0 ? (yesterdayProfit / yesterdayRevenue) * 100 : null)}</em>
+                  </div>
+                  <div className={styles.dailyMetric}>
+                    <span>Заказы</span>
+                    <strong>{formatNumber(yesterdayOrdersCount)}</strong>
+                    <em>Средний соинвест: {formatPercent(bundle?.yesterday?.kpis?.avg_coinvest_pct)}</em>
+                  </div>
+                  <div className={styles.dailyMetric}>
+                    <span>Проблемные</span>
+                    <strong>{formatNumber(yesterdayProblemsCount)}</strong>
+                    <em>{bundle?.yesterdayProblems?.loaded_at ? `Обновлено: ${formatDateTime(bundle.yesterdayProblems.loaded_at)}` : "Контроль качества"}</em>
+                  </div>
                 </div>
               </div>
             </section>

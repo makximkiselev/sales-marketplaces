@@ -106,6 +106,65 @@
   gap: 16px;
 }
 
+.dailyGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dailyCard {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(59, 111, 214, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(12, 23, 41, 0.92), rgba(8, 16, 30, 0.9));
+}
+
+.dailyTitle {
+  color: #f2f7ff;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.dailyMetrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dailyMetric {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.12);
+  background: rgba(8, 16, 30, 0.42);
+}
+
+.dailyMetric span {
+  color: #97add0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.dailyMetric strong {
+  color: #f4f8ff;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.dailyMetric em {
+  color: #91a7c9;
+  font-size: 12px;
+  line-height: 1.4;
+  font-style: normal;
+}
+
 .chartCard,
 .panelCard,
 .rankingCard {
@@ -407,6 +466,7 @@
   }
 
   .dashboardGrid,
+  .dailyGrid,
   .analysisGrid {
     grid-template-columns: 1fr;
   }
@@ -423,6 +483,7 @@
   }
 
   .kpiCard,
+  .dailyCard,
   .chartCard,
   .panelCard,
   .rankingCard,
@@ -449,6 +510,7 @@
 
 @media (max-width: 640px) {
   .kpiGrid,
+  .dailyGrid,
   .actionGrid {
     grid-template-columns: 1fr;
   }
@@ -459,6 +521,7 @@
   }
 
   .kpiCard,
+  .dailyCard,
   .chartCard,
   .panelCard,
   .rankingCard,
@@ -469,6 +532,14 @@
 
   .kpiValue {
     font-size: 21px;
+  }
+
+  .dailyMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .dailyMetric strong {
+    font-size: 18px;
   }
 
   .panelTitle {
