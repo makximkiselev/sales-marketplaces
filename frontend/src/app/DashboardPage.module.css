@@ -123,6 +123,46 @@
     linear-gradient(180deg, rgba(12, 23, 41, 0.92), rgba(8, 16, 30, 0.9));
 }
 
+.tempoGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.tempoCard {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top right, rgba(76, 201, 240, 0.08), transparent 34%),
+    rgba(10, 18, 33, 0.78);
+}
+
+.tempoLabel {
+  color: #8ea5c8;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tempoValue {
+  color: #f4f8ff;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.04;
+}
+
+.tempoMeta {
+  display: grid;
+  gap: 6px;
+  color: #9db2d4;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .dailyTitle {
   color: #f2f7ff;
   font-size: 18px;
@@ -319,6 +359,12 @@
   background: linear-gradient(90deg, #63e3a8, #2bbf83);
 }
 
+.statusBarFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffb866, #ff7f7f);
+}
+
 .insightGrid {
   display: grid;
   gap: 12px;
@@ -371,15 +417,24 @@
   gap: 16px;
 }
 
+.analysisGridSingle {
+  display: grid;
+  gap: 16px;
+}
+
 .rankingList,
-.storeList {
+.storeList,
+.watchList,
+.flowList {
   margin-top: 14px;
   display: grid;
   gap: 12px;
 }
 
 .rankingRow,
-.storeRow {
+.storeRow,
+.watchRow,
+.flowRow {
   display: grid;
   gap: 8px;
 }
@@ -408,18 +463,61 @@
   white-space: nowrap;
 }
 
+.watchMargin,
+.flowCode {
+  color: #f3f8ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.flowCode {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  background: rgba(7, 14, 27, 0.42);
+}
+
 .rankingDetail,
 .storeMeta,
-.storeStats {
+.storeStats,
+.flowHint,
+.flowMeta {
   color: #91a7c9;
   font-size: 12px;
   line-height: 1.4;
 }
 
-.storeStats {
+.storeStats,
+.flowMeta {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+.watchRowHead,
+.flowRowHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.flowLabel {
+  color: #ecf3ff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.placeholderCard {
+  color: var(--text-soft);
+  border: 1px dashed rgba(132, 161, 214, 0.2);
+  border-radius: 16px;
+  padding: 16px;
+  line-height: 1.5;
 }
 
 .actionGrid {
@@ -467,6 +565,7 @@
 
   .dashboardGrid,
   .dailyGrid,
+  .tempoGrid,
   .analysisGrid {
     grid-template-columns: 1fr;
   }
@@ -484,6 +583,7 @@
 
   .kpiCard,
   .dailyCard,
+  .tempoCard,
   .chartCard,
   .panelCard,
   .rankingCard,
@@ -511,6 +611,7 @@
 @media (max-width: 640px) {
   .kpiGrid,
   .dailyGrid,
+  .tempoGrid,
   .actionGrid {
     grid-template-columns: 1fr;
   }
@@ -522,6 +623,7 @@
 
   .kpiCard,
   .dailyCard,
+  .tempoCard,
   .chartCard,
   .panelCard,
   .rankingCard,
@@ -547,9 +649,16 @@
   }
 
   .storeStats,
-  .kpiMeta {
+  .kpiMeta,
+  .flowMeta {
     flex-direction: column;
     gap: 6px;
+  }
+
+  .watchRowHead,
+  .flowRowHead {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .sparkline {
