@@ -68,7 +68,7 @@
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -128,6 +128,22 @@
   font-size: 13px;
 }
 
+.pageInfoChip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  background: rgba(8, 16, 30, 0.56);
+  color: #dceaff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .pageSize {
   display: inline-flex;
   align-items: center;
@@ -142,7 +158,7 @@
 
 .dateInput {
   height: 40px;
-  min-width: 150px;
+  min-width: 0;
   padding: 0 12px;
   border-radius: 12px;
   border: 1px solid rgba(109, 151, 255, 0.22);
@@ -367,6 +383,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .mobileOverviewCardTitle {
@@ -383,18 +400,43 @@
   line-height: 1.35;
 }
 
+.mobileOverviewCardMeta {
+  min-width: 96px;
+  text-align: right;
+}
+
+.mobileOverviewInfoRow {
+  display: grid;
+  gap: 6px;
+}
+
+.mobileOverviewCardPath {
+  color: #abc3e8;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .mobileOverviewMetrics {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   gap: 8px;
 }
 
 .mobileOverviewMetric {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 12px;
+  background: rgba(8, 16, 30, 0.46);
   color: #dfe8ff;
   font-size: 13px;
+}
+
+.mobileOverviewMetric strong {
+  color: #edf4ff;
+  font-size: 14px;
+  line-height: 1.25;
 }
 
 @media (max-width: 960px) {
@@ -413,5 +455,18 @@
 
   .toolbarGroup > * {
     flex: 1 1 180px;
+  }
+
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mobileOverviewCardMeta {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .mobileOverviewMetrics {
+    grid-template-columns: 1fr;
   }
 }

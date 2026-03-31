@@ -88,8 +88,8 @@ export function SalesOverviewMobile({ vm }: Props) {
         </div>
 
         {tab === "tracking"
-          ? (activeTrackingStore ? <div className={styles.pageInfo}>Магазин: {activeTrackingStore.label}</div> : null)
-          : (activeStore ? <div className={styles.pageInfo}>Магазин: {activeStore.label}</div> : null)}
+          ? (activeTrackingStore ? <div className={styles.pageInfoChip}>Магазин: {activeTrackingStore.label}</div> : null)
+          : (activeStore ? <div className={styles.pageInfoChip}>Магазин: {activeStore.label}</div> : null)}
 
         {loading ? <div className={styles.empty}>Загрузка...</div> : null}
         {error ? <div className={styles.errorBox}>{error}</div> : null}
@@ -98,8 +98,8 @@ export function SalesOverviewMobile({ vm }: Props) {
           <div className={styles.mobileOverviewCards}>
             {rows.length === 0 ? (
               <div className={styles.empty}>Нет данных для выбранного режима</div>
-            ) : rows.slice(0, 50).map((row: any) => (
-              <article key={`${row.key || row.order_id || row.sku || Math.random()}`} className={styles.mobileOverviewCard}>
+            ) : rows.slice(0, 50).map((row: any, index: number) => (
+              <article key={String(row.key || row.order_id || row.sku || row.category_path || row.label || index)} className={styles.mobileOverviewCard}>
                 <div className={styles.mobileOverviewCardHead}>
                   <div className={styles.mobileOverviewCardTitle}>
                     {row.item_name || row.label || row.order_id || row.sku || "Запись"}
@@ -108,8 +108,10 @@ export function SalesOverviewMobile({ vm }: Props) {
                     {row.order_created_at ? formatDateTime(row.order_created_at) : row.sku || "—"}
                   </div>
                 </div>
-                {row.sku ? <div className={styles.mobileOverviewCardSub}>SKU: {row.sku}</div> : null}
-                {row.category_path ? <div className={styles.mobileOverviewCardSub}>{row.category_path}</div> : null}
+                <div className={styles.mobileOverviewInfoRow}>
+                  {row.sku ? <div className={styles.mobileOverviewCardSub}>SKU: {row.sku}</div> : null}
+                  {row.category_path ? <div className={styles.mobileOverviewCardPath}>{row.category_path}</div> : null}
+                </div>
                 <div className={styles.mobileOverviewMetrics}>
                   {"sale_price" in row ? (
                     <>

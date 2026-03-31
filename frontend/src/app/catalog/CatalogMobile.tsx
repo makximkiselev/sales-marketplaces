@@ -63,9 +63,11 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
 
         {error ? <div className="status error">{error}</div> : null}
 
-        <div className={styles.mobileCatalogMeta}>
-          {tableLoading ? "Обновление..." : `Всего: ${totalCount}`}
-          {selectedTreePath ? ` • ${selectedTreePath}` : ""}
+        <div className={styles.mobileCatalogMetaRow}>
+          <div className={styles.mobileCatalogMeta}>
+            {tableLoading ? "Обновление..." : `Всего: ${totalCount}`}
+          </div>
+          {selectedTreePath ? <div className={styles.mobileCatalogActivePath}>{selectedTreePath}</div> : null}
         </div>
 
         <div className={styles.mobileCatalogCards}>
@@ -108,7 +110,7 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
             Назад
           </button>
           <div className={styles.mobileCatalogPagerMeta}>
-            <span>{page} / {totalPages}</span>
+            <span>Страница {page} / {totalPages}</span>
             <select
               className={`input input-size-sm ${styles.mobileCatalogPageSize}`}
               value={pageSize}
