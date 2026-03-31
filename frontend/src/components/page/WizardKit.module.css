@@ -53,6 +53,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .dropzone {
@@ -101,4 +102,24 @@
 .dropzoneSubtitle {
   font-size: 12px;
   color: var(--text-soft);
+}
+
+@media (max-width: 960px) {
+  .steps {
+    grid-template-columns: 1fr !important;
+  }
+
+  .step {
+    min-height: 40px;
+    text-align: left;
+  }
+
+  .footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .footer > :global(.btn) {
+    width: 100%;
+  }
 }

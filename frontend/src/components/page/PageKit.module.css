@@ -244,6 +244,17 @@
     padding-inline: 14px;
   }
 
+  .modalHead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: linear-gradient(180deg, rgba(13, 24, 44, 0.998), rgba(13, 24, 44, 0.94));
+  }
+
+  .modalBody {
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+
   .mobileDockSpacer {
     height: calc(var(--mobile-dock-height, 208px) + 12px);
   }

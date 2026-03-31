@@ -861,6 +861,10 @@
   gap: 8px;
 }
 
+.bulkFillField :global(.input) {
+  min-width: 0;
+}
+
 .globalSettingsGrid {
   display: grid;
   grid-template-columns: 0.95fr 1.1fr 1.1fr 1fr 0.8fr;
@@ -2265,6 +2269,66 @@
   justify-content: center;
 }
 
+.monitoringExportDesktopTable {
+  display: block;
+}
+
+.monitoringExportMobileList {
+  display: none;
+}
+
+.monitoringExportMobileCard {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(12, 23, 41, 0.9), rgba(8, 16, 30, 0.84));
+}
+
+.monitoringExportMobileHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.monitoringExportMobilePlatform {
+  margin-top: 4px;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.monitoringExportMobileSection {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 14px;
+  background: rgba(10, 18, 33, 0.42);
+}
+
+.monitoringExportMobileSectionHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.monitoringExportMobileSectionTitle {
+  color: #eaf2ff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.monitoringExportMobileButton {
+  justify-self: start;
+}
+
 .globalSettingsGrid > .cogsSourceRow {
   align-content: start;
 }
@@ -2719,6 +2783,10 @@
     grid-template-columns: 1fr;
   }
 
+  .matrixSelect {
+    min-width: 0;
+  }
+
   .inlineThreeInputs {
     grid-template-columns: 1fr;
   }
@@ -2734,6 +2802,34 @@
 
   .monitoringExportMetaGrid {
     grid-template-columns: 1fr;
+  }
+
+  .monitoringExportDesktopTable {
+    display: none;
+  }
+
+  .monitoringExportMobileList {
+    display: grid;
+    gap: 14px;
+  }
+
+  .monitoringExportMobileHead,
+  .monitoringExportMobileSectionHead {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .monitoringExportMobileButton,
+  .logisticsTemplateButton {
+    width: 100%;
+  }
+
+  .logisticsImportFooter {
+    flex-direction: column;
+  }
+
+  .logisticsImportFooter > :global(.btn) {
+    width: 100%;
   }
 
   .monitoringHeader {

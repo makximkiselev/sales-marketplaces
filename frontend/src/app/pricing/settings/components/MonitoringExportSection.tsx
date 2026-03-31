@@ -147,7 +147,7 @@ export function MonitoringExportSection({
               </button>
             </div>
           </div>
-          <div className="table-wrap">
+          <div className={`${styles.monitoringExportDesktopTable} table-wrap`}>
             <table className={`table ${styles.monitoringTable} ${styles.monitoringExportTable}`}>
               <colgroup>
                 <col className={styles.monitoringExportMethodCol} />
@@ -312,6 +312,110 @@ export function MonitoringExportSection({
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className={styles.monitoringExportMobileList}>
+            {platformEntries.flatMap(([, stores]) =>
+              stores.map((store) => {
+                const storeUid = String(store.store_uid || "").trim();
+                const item = rowsByStore.get(storeUid);
+                return (
+                  <article key={`mobile-export:${storeUid}`} className={styles.monitoringExportMobileCard}>
+                    <div className={styles.monitoringExportMobileHead}>
+                      <div>
+                        <div className={styles.monitoringMobileCardTitle}>{store.store_name || store.store_id}</div>
+                        <div className={styles.monitoringExportMobilePlatform}>{store.platform_label}</div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn ghost"
+                        disabled={Boolean(runningMap[`store:${storeUid}`])}
+                        onClick={() => {
+                          void onRunExport(storeUid);
+                        }}
+                      >
+                        {runningMap[`store:${storeUid}`] ? "Обновление..." : "Обновить"}
+                      </button>
+                    </div>
+
+                    {exportRows.map((exportRow) => {
+                      const config = exportRow.key === "prices" ? item?.export_prices : item?.export_ads;
+                      const currentStatus = statusMap[`${storeUid}:${exportRow.key}`];
+                      const modalConfig = toModalConfig(config);
+                      const meta = configMeta(config);
+                      const saveKey = `${exportRow.key}:${storeUid}`;
+                      return (
+                        <section key={`${storeUid}:${exportRow.key}`} className={styles.monitoringExportMobileSection}>
+                          <div className={styles.monitoringExportMobileSectionHead}>
+                            <div className={styles.monitoringExportMobileSectionTitle}>{exportRow.label}</div>
+                            <span
+                              className={`${styles.monitoringConfigState} ${
+                                isConfigured(config) ? styles.monitoringConfigStateReady : styles.monitoringConfigStateEmpty
+                              }`}
+                            >
+                              {isConfigured(config) ? "Настроено" : "Не настроено"}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className={`btn ghost ${styles.monitoringExportMobileButton}`}
+                            disabled={Boolean(savingMap[saveKey])}
+                            onClick={() =>
+                              setModal({
+                                storeUid,
+                                exportKind: exportRow.key,
+                                title: exportRow.key === "prices" ? "Источник экспорта цен" : "Источник экспорта рекламных расходов",
+                                current: modalConfig,
+                              })
+                            }
+                          >
+                            {modalConfig ? "Изменить источник" : "Настроить источник"}
+                          </button>
+                          <div className={styles.monitoringExportSourceWrap}>
+                            <div className={modalConfig ? styles.monitoringExportSourceSet : styles.monitoringExportSource}>
+                              {configLabel(config)}
+                            </div>
+                          </div>
+                          <div className={styles.monitoringExportMetaGrid}>
+                            <div className={styles.monitoringExportMetaItem}>
+                              <span className={styles.monitoringExportMetaLabel}>SKU</span>
+                              <strong className={styles.monitoringExportMetaValue}>{meta.sku}</strong>
+                            </div>
+                            <div className={styles.monitoringExportMetaItem}>
+                              <span className={styles.monitoringExportMetaLabel}>Значение</span>
+                              <strong className={styles.monitoringExportMetaValue}>{meta.value}</strong>
+                            </div>
+                          </div>
+                          {currentStatus ? (
+                            <div className={styles.monitoringExportStatusRow}>
+                              <span className={`${styles.monitoringConfigState} ${statusClass(currentStatus, styles)}`}>
+                                {statusLabel(currentStatus)}
+                              </span>
+                            </div>
+                          ) : null}
+                        </section>
+                      );
+                    })}
+
+                    <section className={styles.monitoringExportMobileSection}>
+                      <div className={styles.monitoringExportMobileSectionTitle}>Маркет API</div>
+                      <div className={styles.monitoringExportMetaGrid}>
+                        {marketRows.map((exportRow) => {
+                          const currentStatus = statusMap[`${storeUid}:${exportRow.key}`];
+                          return (
+                            <div key={`${storeUid}:${exportRow.key}`} className={styles.monitoringExportMetaItem}>
+                              <span className={styles.monitoringExportMetaLabel}>{exportRow.label}</span>
+                              <strong className={styles.monitoringExportMetaValue}>
+                                {currentStatus ? statusLabel(currentStatus) : "Ожидание"}
+                              </strong>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  </article>
+                );
+              }),
+            )}
           </div>
           {modal ? (
             <CogsSourceModal
