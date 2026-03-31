@@ -276,108 +276,125 @@ export default function SettingsAdminPage() {
         <SectionBlock>
           <div className={styles.layout}>
             <div className={styles.createCard}>
-              <PageSectionTitle title="Новый пользователь" />
-              {issuedPassword ? (
-                <div className={styles.issuedCard}>
-                  <div className={styles.issuedHead}>
-                    <div>
-                      <div className={styles.issuedTitle}>Последний выданный пароль</div>
-                      <div className={styles.issuedMeta}>
-                        {issuedPassword.display_name || issuedPassword.identifier} · @{issuedPassword.identifier}
+              <div className={styles.sectionIntro}>
+                <PageSectionTitle title="Новый пользователь" />
+                <div className={styles.sectionHint}>
+                  Создание пользователя, генерация пароля и выдача готового сообщения с доступом в одном месте.
+                </div>
+              </div>
+              <div className={styles.createShell}>
+                <div className={styles.createFormPanel}>
+                  <div className={styles.formGrid}>
+                    <label className={`${styles.field} ${styles.fieldSpan3}`}>
+                      <span className={styles.label}>Логин</span>
+                      <input
+                        className="input input-size-lg"
+                        value={form.identifier}
+                        onChange={(e) => setForm((prev) => ({ ...prev, identifier: e.target.value }))}
+                        placeholder="например, manager"
+                      />
+                    </label>
+                    <label className={`${styles.field} ${styles.fieldSpan3}`}>
+                      <span className={styles.label}>Имя</span>
+                      <input
+                        className="input input-size-lg"
+                        value={form.display_name}
+                        onChange={(e) => setForm((prev) => ({ ...prev, display_name: e.target.value }))}
+                        placeholder="Имя в интерфейсе"
+                      />
+                    </label>
+                    <label className={`${styles.field} ${styles.fieldSpan2}`}>
+                      <span className={styles.label}>Роль</span>
+                      <select
+                        className="input input-size-md"
+                        value={form.role}
+                        onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as UserRole }))}
+                      >
+                        {ROLE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className={`${styles.field} ${styles.fieldSpan2}`}>
+                      <span className={styles.label}>Статус</span>
+                      <select
+                        className="input input-size-md"
+                        value={form.is_active ? "active" : "disabled"}
+                        onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.value === "active" }))}
+                      >
+                        <option value="active">Активен</option>
+                        <option value="disabled">Отключен</option>
+                      </select>
+                    </label>
+                    <label className={`${styles.field} ${styles.fieldWide}`}>
+                      <span className={styles.label}>Пароль</span>
+                      <div className={styles.passwordRow}>
+                        <input
+                          className="input input-size-fluid"
+                          value={form.password}
+                          onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+                          placeholder="Введите пароль"
+                        />
+                        <button type="button" className="btn ghost" onClick={() => setForm((prev) => ({ ...prev, password: generatePassword() }))}>
+                          Сгенерировать
+                        </button>
+                        <button
+                          type="button"
+                          className="btn ghost"
+                          onClick={() => void copyAccessMessage(form.identifier, form.password)}
+                          disabled={!form.identifier.trim() || !form.password.trim()}
+                        >
+                          Скопировать доступ
+                        </button>
                       </div>
-                    </div>
-                    <span className={styles.issuedBadge}>Только для администратора</span>
+                      <div className={styles.passwordHint}>
+                        Кнопка копирует логин и пароль вместе в готовом виде для отправки пользователю.
+                      </div>
+                    </label>
                   </div>
-                  <div className={styles.issuedPassword}>{issuedPassword.password}</div>
-                  <div className={styles.issuedHint}>
-                    Показывается только в текущей сессии админки. После закрытия страницы восстановить его нельзя.
-                  </div>
-                  <div className={styles.issuedActions}>
-                    <button type="button" className="btn ghost" onClick={() => void copyPassword(issuedPassword.password)}>
-                      Скопировать пароль
-                    </button>
+                  <div className={styles.actions}>
                     <button
                       type="button"
-                      className="btn ghost"
-                      onClick={() => void copyAccessMessage(issuedPassword.identifier, issuedPassword.password)}
+                      className="btn primary"
+                      disabled={saving || !form.identifier.trim() || !form.password.trim()}
+                      onClick={() => void handleCreate()}
                     >
-                      Скопировать доступ
-                    </button>
-                    <button type="button" className="btn ghost" onClick={() => setIssuedPassword(null)}>
-                      Скрыть
+                      Создать пользователя
                     </button>
                   </div>
                 </div>
-              ) : null}
-              <div className={styles.formGrid}>
-                <label className={styles.field}>
-                  <span className={styles.label}>Логин</span>
-                  <input
-                    className="input input-size-lg"
-                    value={form.identifier}
-                    onChange={(e) => setForm((prev) => ({ ...prev, identifier: e.target.value }))}
-                    placeholder="например, manager"
-                  />
-                </label>
-                <label className={styles.field}>
-                  <span className={styles.label}>Имя</span>
-                  <input
-                    className="input input-size-lg"
-                    value={form.display_name}
-                    onChange={(e) => setForm((prev) => ({ ...prev, display_name: e.target.value }))}
-                    placeholder="Имя в интерфейсе"
-                  />
-                </label>
-                <label className={styles.field}>
-                  <span className={styles.label}>Роль</span>
-                  <select
-                    className="input input-size-md"
-                    value={form.role}
-                    onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as UserRole }))}
-                  >
-                    {ROLE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className={styles.field}>
-                  <span className={styles.label}>Статус</span>
-                  <select
-                    className="input input-size-md"
-                    value={form.is_active ? "active" : "disabled"}
-                    onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.value === "active" }))}
-                  >
-                    <option value="active">Активен</option>
-                    <option value="disabled">Отключен</option>
-                  </select>
-                </label>
-                <label className={`${styles.field} ${styles.fieldWide}`}>
-                  <span className={styles.label}>Пароль</span>
-                  <div className={styles.passwordRow}>
-                    <input
-                      className="input input-size-fluid"
-                      value={form.password}
-                      onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-                      placeholder="Введите пароль"
-                    />
-                    <button type="button" className="btn ghost" onClick={() => setForm((prev) => ({ ...prev, password: generatePassword() }))}>
-                      Сгенерировать
-                    </button>
-                    <button type="button" className="btn ghost" onClick={() => void copyPassword(form.password)}>
-                      Скопировать
-                    </button>
+                {issuedPassword ? (
+                  <div className={styles.issuedCard}>
+                    <div className={styles.issuedHead}>
+                      <div>
+                        <div className={styles.issuedTitle}>Последний выданный доступ</div>
+                        <div className={styles.issuedMeta}>
+                          {issuedPassword.display_name || issuedPassword.identifier} · @{issuedPassword.identifier}
+                        </div>
+                      </div>
+                      <span className={styles.issuedBadge}>Только для администратора</span>
+                    </div>
+                    <div className={styles.issuedPassword}>{issuedPassword.password}</div>
+                    <div className={styles.issuedHint}>
+                      Сгенерирован {new Date(issuedPassword.issued_at).toLocaleString("ru-RU")}. После закрытия страницы восстановить его нельзя.
+                    </div>
+                    <div className={styles.issuedActions}>
+                      <button type="button" className="btn ghost" onClick={() => void copyPassword(issuedPassword.password)}>
+                        Скопировать пароль
+                      </button>
+                      <button
+                        type="button"
+                        className="btn ghost"
+                        onClick={() => void copyAccessMessage(issuedPassword.identifier, issuedPassword.password)}
+                      >
+                        Скопировать доступ
+                      </button>
+                      <button type="button" className="btn ghost" onClick={() => setIssuedPassword(null)}>
+                        Скрыть
+                      </button>
+                    </div>
                   </div>
-                </label>
-              </div>
-              <div className={styles.actions}>
-                <button
-                  type="button"
-                  className="btn primary"
-                  disabled={saving || !form.identifier.trim() || !form.password.trim()}
-                  onClick={() => void handleCreate()}
-                >
-                  Создать пользователя
-                </button>
+                ) : null}
               </div>
             </div>
 
@@ -522,10 +539,10 @@ export default function SettingsAdminPage() {
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => void copyPassword(editForm.password)}
+                  onClick={() => void copyAccessMessage(editForm.identifier, editForm.password)}
                   disabled={!editForm.password.trim()}
                 >
-                  Скопировать
+                  Скопировать доступ
                 </button>
               </div>
             </label>

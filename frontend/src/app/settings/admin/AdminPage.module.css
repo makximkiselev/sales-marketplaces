@@ -1,24 +1,50 @@
 .layout {
   display: grid;
-  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
   gap: 16px;
-  align-items: start;
 }
 
 .createCard,
 .listCard {
   border: 1px solid rgba(132, 161, 214, 0.16);
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(13, 23, 42, 0.84), rgba(8, 15, 27, 0.88));
-  padding: 18px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(13, 23, 42, 0.86), rgba(8, 15, 27, 0.9));
+  padding: 20px;
   display: grid;
   gap: 16px;
+}
+
+.sectionIntro {
+  display: grid;
+  gap: 6px;
+}
+
+.sectionHint {
+  color: #93a9cc;
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 840px;
+}
+
+.createShell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.95fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.createFormPanel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 18px;
+  background: rgba(7, 14, 28, 0.48);
 }
 
 .issuedCard {
   display: grid;
   gap: 12px;
-  padding: 16px;
+  padding: 18px;
   border: 1px solid rgba(109, 151, 255, 0.2);
   border-radius: 18px;
   background:
@@ -35,7 +61,7 @@
 
 .issuedTitle {
   color: #f2f7ff;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 800;
   line-height: 1.1;
 }
@@ -61,8 +87,8 @@
 }
 
 .issuedPassword {
-  padding: 12px 14px;
-  border: 1px dashed rgba(132, 161, 214, 0.22);
+  padding: 13px 14px;
+  border: 1px dashed rgba(132, 161, 214, 0.24);
   border-radius: 14px;
   background: rgba(7, 15, 29, 0.72);
   color: #f8fbff;
@@ -87,13 +113,22 @@
 
 .formGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(10, minmax(0, 1fr));
   gap: 12px;
 }
 
 .field {
   display: grid;
   gap: 8px;
+  min-width: 0;
+}
+
+.fieldSpan2 {
+  grid-column: span 2;
+}
+
+.fieldSpan3 {
+  grid-column: span 3;
 }
 
 .fieldWide {
@@ -111,21 +146,33 @@
 
 .passwordRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 10px;
+  align-items: center;
+}
+
+.passwordHint {
+  color: #8ea7cd;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .actions,
 .modalActions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
 }
 
 .filtersBar {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(160px, 0.7fr));
+  grid-template-columns: minmax(0, 1.5fr) repeat(2, minmax(180px, 0.8fr));
   gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.12);
+  border-radius: 16px;
+  background: rgba(7, 14, 28, 0.4);
 }
 
 .filterField {
@@ -140,30 +187,30 @@
 
 .userCard {
   border: 1px solid rgba(132, 161, 214, 0.16);
-  border-radius: 16px;
-  background: rgba(8, 15, 28, 0.6);
-  padding: 14px;
+  border-radius: 18px;
+  background: rgba(8, 15, 28, 0.56);
+  padding: 16px;
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .userHead {
   display: flex;
-  align-items: start;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
 }
 
 .userMain {
   display: grid;
-  gap: 4px;
+  gap: 5px;
 }
 
 .userName {
   color: #eff6ff;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
-  line-height: 1.05;
+  line-height: 1.1;
 }
 
 .userLogin {
@@ -248,27 +295,49 @@
   text-align: center;
 }
 
-@media (max-width: 1120px) {
-  .layout {
+@media (max-width: 1180px) {
+  .createShell {
     grid-template-columns: 1fr;
+  }
+
+  .formGrid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .fieldSpan3 {
+    grid-column: span 3;
+  }
+
+  .fieldSpan2 {
+    grid-column: span 3;
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 820px) {
+  .createCard,
+  .listCard {
+    padding: 16px;
+  }
+
+  .createFormPanel,
+  .filtersBar,
+  .issuedCard {
+    padding: 14px;
+  }
+
   .formGrid {
     grid-template-columns: 1fr;
   }
 
-  .filtersBar {
-    grid-template-columns: 1fr;
+  .fieldSpan2,
+  .fieldSpan3,
+  .fieldWide {
+    grid-column: 1 / -1;
   }
 
+  .filtersBar,
   .passwordRow {
     grid-template-columns: 1fr;
-  }
-
-  .issuedHead {
-    flex-direction: column;
   }
 
   .userHead {
@@ -281,5 +350,11 @@
   .actions,
   .modalActions {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .issuedHead {
+    flex-direction: column;
   }
 }
