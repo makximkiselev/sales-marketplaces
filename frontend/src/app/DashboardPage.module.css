@@ -1,0 +1,487 @@
+.heroSurface {
+  padding: 22px;
+  gap: 18px;
+}
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.kpiCard {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(76, 201, 240, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(12, 23, 41, 0.94), rgba(7, 15, 29, 0.92));
+}
+
+.kpiHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kpiLabel {
+  color: #8ea5c8;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.kpiValue {
+  margin-top: 6px;
+  color: #f4f8ff;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.04;
+}
+
+.kpiMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  color: #9db2d4;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.kpiBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 179, 71, 0.22);
+  background: rgba(74, 46, 17, 0.52);
+  color: #ffd8a8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.deltaPositive {
+  color: #92f0bf;
+}
+
+.deltaNegative {
+  color: #ffb6b6;
+}
+
+.sparkline {
+  width: 120px;
+  height: 32px;
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.95;
+}
+
+.sparklineCyan {
+  stroke: #65d9ff;
+}
+
+.sparklineGreen {
+  stroke: #5ce0a1;
+}
+
+.sparklineAmber {
+  stroke: #ffcc66;
+}
+
+.sparklineEmpty {
+  color: #7e94b8;
+  font-size: 11px;
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.95fr);
+  gap: 16px;
+}
+
+.chartCard,
+.panelCard,
+.rankingCard {
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(59, 111, 214, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(12, 23, 41, 0.92), rgba(8, 16, 30, 0.9));
+  padding: 18px;
+}
+
+.chartHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.panelTitle {
+  color: #f2f7ff;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.12;
+}
+
+.panelHint {
+  margin-top: 4px;
+  color: #93a9cc;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.chartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: #b5c9e9;
+  font-size: 12px;
+}
+
+.chartLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendRevenue,
+.legendProfit {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.legendRevenue {
+  background: #64d6ff;
+}
+
+.legendProfit {
+  background: #58d59f;
+}
+
+.chartSvg {
+  width: 100%;
+  min-height: 280px;
+}
+
+.chartGrid {
+  stroke: rgba(132, 161, 214, 0.12);
+  stroke-width: 1;
+}
+
+.chartRevenue,
+.chartProfit {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chartRevenue {
+  stroke: #64d6ff;
+}
+
+.chartProfit {
+  stroke: #58d59f;
+}
+
+.chartPointRevenue {
+  fill: #64d6ff;
+}
+
+.chartPointProfit {
+  fill: #58d59f;
+}
+
+.chartLabel,
+.chartScaleLabel {
+  fill: #93a9cc;
+  font-size: 11px;
+}
+
+.sideStack {
+  display: grid;
+  gap: 16px;
+}
+
+.progressGroup {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.progressRow {
+  display: grid;
+  gap: 8px;
+}
+
+.progressHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #dce8ff;
+  font-size: 13px;
+}
+
+.progressTrack,
+.rankingBarTrack {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(132, 161, 214, 0.12);
+  overflow: hidden;
+}
+
+.progressFillRevenue,
+.progressFillProfit,
+.rankingBarFill,
+.storeBarFill {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.progressFillRevenue,
+.rankingBarFill {
+  background: linear-gradient(90deg, #63d6ff, #3aa7f7);
+}
+
+.progressFillProfit,
+.storeBarFill {
+  background: linear-gradient(90deg, #63e3a8, #2bbf83);
+}
+
+.insightGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.insightCard {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 18px;
+  background: rgba(8, 16, 30, 0.52);
+}
+
+.insightPositive {
+  background: linear-gradient(180deg, rgba(18, 52, 37, 0.72), rgba(8, 17, 28, 0.72));
+}
+
+.insightWarn {
+  background: linear-gradient(180deg, rgba(58, 40, 17, 0.72), rgba(8, 17, 28, 0.72));
+}
+
+.insightNeutral {
+  background: linear-gradient(180deg, rgba(17, 35, 58, 0.72), rgba(8, 17, 28, 0.72));
+}
+
+.insightTitle {
+  color: #b9cceb;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.insightValue {
+  color: #f4f8ff;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.insightDetail {
+  color: #94abc9;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.analysisGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.rankingList,
+.storeList {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.rankingRow,
+.storeRow {
+  display: grid;
+  gap: 8px;
+}
+
+.rankingRowHead,
+.storeRowHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rankingLabel,
+.storeLabel {
+  color: #ecf3ff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.rankingValue,
+.storeRevenue {
+  color: #f3f8ff;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.rankingDetail,
+.storeMeta,
+.storeStats {
+  color: #91a7c9;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.storeStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.actionGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.actionCard {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(76, 201, 240, 0.1), transparent 36%),
+    rgba(10, 18, 34, 0.78);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.actionCard:hover {
+  transform: translateY(-1px);
+  border-color: rgba(105, 185, 255, 0.28);
+  background:
+    radial-gradient(circle at top right, rgba(76, 201, 240, 0.16), transparent 36%),
+    rgba(12, 22, 40, 0.88);
+}
+
+.actionTitle {
+  color: #f2f7ff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.actionText {
+  color: #96adcf;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1280px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboardGrid,
+  .analysisGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .actionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .heroSurface {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .kpiCard,
+  .chartCard,
+  .panelCard,
+  .rankingCard,
+  .actionCard {
+    padding: 14px;
+  }
+
+  .kpiHead,
+  .chartHead,
+  .rankingRowHead,
+  .storeRowHead {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kpiValue {
+    font-size: 24px;
+  }
+
+  .chartSvg {
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 640px) {
+  .kpiGrid,
+  .actionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heroSurface {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .kpiCard,
+  .chartCard,
+  .panelCard,
+  .rankingCard,
+  .actionCard {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .kpiValue {
+    font-size: 21px;
+  }
+
+  .panelTitle {
+    font-size: 16px;
+  }
+
+  .storeStats,
+  .kpiMeta {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .sparkline {
+    width: 96px;
+  }
+}
