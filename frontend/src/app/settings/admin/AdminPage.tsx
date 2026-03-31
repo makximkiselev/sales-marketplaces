@@ -33,6 +33,14 @@ type FilterState = {
   search: string;
 };
 
+type IssuedPasswordState = {
+  user_id: string;
+  identifier: string;
+  display_name: string;
+  password: string;
+  issued_at: string;
+};
+
 const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
   { value: "owner", label: "Owner" },
   { value: "manager", label: "Manager" },
@@ -64,7 +72,10 @@ export default function SettingsAdminPage() {
   const [form, setForm] = useState<UserFormState>(() => ({ ...emptyForm(), password: generatePassword() }));
   const [editUser, setEditUser] = useState<AdminUser | null>(null);
   const [editForm, setEditForm] = useState<UserFormState | null>(null);
+  const [resetUser, setResetUser] = useState<AdminUser | null>(null);
+  const [resetPassword, setResetPassword] = useState(() => generatePassword());
   const [confirmUser, setConfirmUser] = useState<AdminUser | null>(null);
+  const [issuedPassword, setIssuedPassword] = useState<IssuedPasswordState | null>(null);
   const [filters, setFilters] = useState<FilterState>({ role: "all", status: "all", search: "" });
 
   async function loadUsers() {
@@ -101,12 +112,22 @@ export default function SettingsAdminPage() {
     setSaving(true);
     setError("");
     try {
+      const nextIssuedPassword = form.password;
+      const nextIdentifier = form.identifier.trim();
+      const nextDisplayName = form.display_name.trim() || nextIdentifier;
       await apiPostOk("/api/admin/users", {
         identifier: form.identifier,
         display_name: form.display_name,
         role: form.role,
         is_active: form.is_active,
         password: form.password,
+      });
+      setIssuedPassword({
+        user_id: nextIdentifier,
+        identifier: nextIdentifier,
+        display_name: nextDisplayName,
+        password: nextIssuedPassword,
+        issued_at: new Date().toISOString(),
       });
       setForm({ ...emptyForm(), password: generatePassword() });
       await loadUsers();
@@ -137,19 +158,58 @@ export default function SettingsAdminPage() {
     });
   }
 
+  function startResetPassword(user: AdminUser) {
+    setResetUser(user);
+    setResetPassword(generatePassword());
+  }
+
   async function handleUpdate() {
     if (!editUser || !editForm) return;
     setSaving(true);
     setError("");
     try {
+      const nextIssuedPassword = editForm.password.trim();
       await apiPostOk(`/api/admin/users/${editUser.user_id}`, {
         display_name: editForm.display_name,
         role: editForm.role,
         is_active: editForm.is_active,
         password: editForm.password || undefined,
       });
+      if (nextIssuedPassword) {
+        setIssuedPassword({
+          user_id: editUser.user_id,
+          identifier: editUser.identifier,
+          display_name: editForm.display_name.trim() || editUser.display_name || editUser.identifier,
+          password: nextIssuedPassword,
+          issued_at: new Date().toISOString(),
+        });
+      }
       setEditUser(null);
       setEditForm(null);
+      await loadUsers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!resetUser || !resetPassword.trim()) return;
+    setSaving(true);
+    setError("");
+    try {
+      const nextIssuedPassword = resetPassword.trim();
+      await apiPostOk(`/api/admin/users/${resetUser.user_id}`, { password: nextIssuedPassword });
+      setIssuedPassword({
+        user_id: resetUser.user_id,
+        identifier: resetUser.identifier,
+        display_name: resetUser.display_name || resetUser.identifier,
+        password: nextIssuedPassword,
+        issued_at: new Date().toISOString(),
+      });
+      setResetUser(null);
+      setResetPassword(generatePassword());
       await loadUsers();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -202,6 +262,31 @@ export default function SettingsAdminPage() {
           <div className={styles.layout}>
             <div className={styles.createCard}>
               <PageSectionTitle title="Новый пользователь" />
+              {issuedPassword ? (
+                <div className={styles.issuedCard}>
+                  <div className={styles.issuedHead}>
+                    <div>
+                      <div className={styles.issuedTitle}>Последний выданный пароль</div>
+                      <div className={styles.issuedMeta}>
+                        {issuedPassword.display_name || issuedPassword.identifier} · @{issuedPassword.identifier}
+                      </div>
+                    </div>
+                    <span className={styles.issuedBadge}>Только для администратора</span>
+                  </div>
+                  <div className={styles.issuedPassword}>{issuedPassword.password}</div>
+                  <div className={styles.issuedHint}>
+                    Показывается только в текущей сессии админки. После закрытия страницы восстановить его нельзя.
+                  </div>
+                  <div className={styles.issuedActions}>
+                    <button type="button" className="btn ghost" onClick={() => void copyPassword(issuedPassword.password)}>
+                      Скопировать пароль
+                    </button>
+                    <button type="button" className="btn ghost" onClick={() => setIssuedPassword(null)}>
+                      Скрыть
+                    </button>
+                  </div>
+                </div>
+              ) : null}
               <div className={styles.formGrid}>
                 <label className={styles.field}>
                   <span className={styles.label}>Логин</span>
@@ -334,6 +419,7 @@ export default function SettingsAdminPage() {
                     </div>
                     <div className={styles.userActions}>
                       <button type="button" className="btn ghost" onClick={() => startEdit(user)}>Редактировать</button>
+                      <button type="button" className="btn ghost" onClick={() => startResetPassword(user)}>Сбросить пароль</button>
                       {user.is_active ? (
                         <button type="button" className="btn danger" onClick={() => setConfirmUser(user)}>
                           Отключить
@@ -428,6 +514,70 @@ export default function SettingsAdminPage() {
             </button>
             <button type="button" className="btn primary" disabled={saving} onClick={() => void handleUpdate()}>
               Сохранить
+            </button>
+          </div>
+        </ModalShell>
+      ) : null}
+
+      {resetUser ? (
+        <ModalShell
+          title="Сброс пароля"
+          subtitle={resetUser.identifier}
+          onClose={() => {
+            setResetUser(null);
+            setResetPassword(generatePassword());
+          }}
+          width="min(92vw, 640px)"
+        >
+          <div className={styles.resetIntro}>
+            Текущий пароль посмотреть нельзя, он хранится только как хэш. Ниже можно сразу выпустить новый пароль, скопировать его и отправить пользователю.
+          </div>
+          <div className={styles.formGrid}>
+            <label className={`${styles.field} ${styles.fieldWide}`}>
+              <span className={styles.label}>Новый пароль</span>
+              <div className={styles.passwordRow}>
+                <input
+                  className="input input-size-fluid"
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  placeholder="Введите новый пароль"
+                />
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => setResetPassword(generatePassword())}
+                >
+                  Сгенерировать
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => void copyPassword(resetPassword)}
+                  disabled={!resetPassword.trim()}
+                >
+                  Скопировать
+                </button>
+              </div>
+            </label>
+          </div>
+          <div className={styles.modalActions}>
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => {
+                setResetUser(null);
+                setResetPassword(generatePassword());
+              }}
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={saving || !resetPassword.trim()}
+              onClick={() => void handleResetPassword()}
+            >
+              Сбросить и сохранить
             </button>
           </div>
         </ModalShell>

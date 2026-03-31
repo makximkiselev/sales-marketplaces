@@ -15,6 +15,76 @@
   gap: 16px;
 }
 
+.issuedCard {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid rgba(109, 151, 255, 0.2);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(76, 125, 255, 0.18), transparent 40%),
+    linear-gradient(180deg, rgba(15, 28, 52, 0.92), rgba(9, 19, 36, 0.9));
+}
+
+.issuedHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.issuedTitle {
+  color: #f2f7ff;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.issuedMeta {
+  margin-top: 4px;
+  color: #9eb4d6;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.issuedBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 196, 255, 0.18);
+  background: rgba(12, 29, 52, 0.72);
+  color: #dcedff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.issuedPassword {
+  padding: 12px 14px;
+  border: 1px dashed rgba(132, 161, 214, 0.22);
+  border-radius: 14px;
+  background: rgba(7, 15, 29, 0.72);
+  color: #f8fbff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.issuedHint {
+  color: #9cb3d7;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.issuedActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -161,6 +231,12 @@
   line-height: 1.5;
 }
 
+.resetIntro {
+  color: #a9bddf;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
 .emptyState {
   min-height: 160px;
   border: 1px dashed rgba(132, 161, 214, 0.16);
@@ -191,12 +267,17 @@
     grid-template-columns: 1fr;
   }
 
+  .issuedHead {
+    flex-direction: column;
+  }
+
   .userHead {
     flex-direction: column;
   }
 
   .userBadges,
   .userActions,
+  .issuedActions,
   .actions,
   .modalActions {
     justify-content: flex-start;
