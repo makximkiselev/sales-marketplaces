@@ -37,6 +37,7 @@ type DataFlowResp = {
 
 type OrderRow = {
   sale_price?: number | null;
+  sale_price_with_coinvest?: number | null;
   profit?: number | null;
   item_name?: string;
   sku?: string;
@@ -46,6 +47,9 @@ type OrderRow = {
 type OrdersResp = {
   ok: boolean;
   rows?: OrderRow[];
+  total_count?: number;
+  date_from?: string;
+  date_to?: string;
   loaded_at?: string;
   kpis?: {
     orders_count?: number;
@@ -59,6 +63,8 @@ type ProblemOrdersResp = {
   ok: boolean;
   rows?: Array<{ sku?: string; item_name?: string; item_status?: string }>;
   total_count?: number;
+  date_from?: string;
+  date_to?: string;
   loaded_at?: string;
 };
 
@@ -143,6 +149,8 @@ type DashboardBundle = {
   yesterday: OrdersResp;
   todayProblems: ProblemOrdersResp;
   yesterdayProblems: ProblemOrdersResp;
+  previousOrders: OrdersResp;
+  previousProblems: ProblemOrdersResp;
 };
 
 type StoreComparison = {
@@ -153,6 +161,9 @@ type StoreComparison = {
   profit: number;
   orders: number;
   marginPct: number | null;
+  revenueDeltaPct: number | null;
+  profitDeltaPct: number | null;
+  ordersDeltaPct: number | null;
 };
 
 type DashboardPeriod = "week" | "month" | "quarter";
@@ -190,6 +201,13 @@ function formatShortDate(value: string | undefined) {
   return parsed.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
 }
 
+function formatLongDate(value: string | Date | undefined) {
+  if (!value) return "—";
+  const parsed = value instanceof Date ? value : new Date(`${String(value).trim()}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+}
+
 function formatDateTime(value: string | undefined) {
   const raw = String(value || "").trim();
   if (!raw) return "—";
@@ -205,6 +223,123 @@ function formatDateTime(value: string | undefined) {
 
 function sumBy<T>(rows: T[], getter: (item: T) => number | null | undefined) {
   return rows.reduce((acc, row) => acc + Number(getter(row) || 0), 0);
+}
+
+function localDateOnly(base = new Date()) {
+  return new Date(base.getFullYear(), base.getMonth(), base.getDate());
+}
+
+function shiftDate(base: Date, days: number) {
+  const copy = new Date(base);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function toIsoDate(base: Date) {
+  const year = base.getFullYear();
+  const month = String(base.getMonth() + 1).padStart(2, "0");
+  const day = String(base.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getPeriodSpanDays(period: DashboardPeriod) {
+  if (period === "week") return 7;
+  if (period === "quarter") return 90;
+  return 30;
+}
+
+function getCurrentPeriodRange(period: DashboardPeriod) {
+  const end = localDateOnly();
+  const span = getPeriodSpanDays(period);
+  const start = shiftDate(end, -(span - 1));
+  return { start: toIsoDate(start), end: toIsoDate(end), span };
+}
+
+function getPreviousPeriodRange(period: DashboardPeriod) {
+  const current = getCurrentPeriodRange(period);
+  const currentStart = localDateOnly(new Date(`${current.start}T00:00:00`));
+  const previousEnd = shiftDate(currentStart, -1);
+  const previousStart = shiftDate(previousEnd, -(current.span - 1));
+  return { start: toIsoDate(previousStart), end: toIsoDate(previousEnd), span: current.span };
+}
+
+function latestTimestamp(values: Array<string | undefined>) {
+  return values.filter(Boolean).sort().at(-1) || "";
+}
+
+function buildOrdersKpis(rows: OrderRow[], fallback?: OrdersResp["kpis"]) {
+  const totalRevenue = sumBy(rows, (row) => row.sale_price);
+  const totalCoinvestAmount = rows.reduce((acc, row) => {
+    const revenue = Number(row.sale_price || 0);
+    const buyerPrice = Number(row.sale_price_with_coinvest ?? row.sale_price ?? 0);
+    if (revenue <= 0) return acc;
+    return acc + Math.max(0, revenue - buyerPrice);
+  }, 0);
+  return {
+    orders_count: rows.length,
+    avg_coinvest_pct: totalRevenue > 0 ? Number(((totalCoinvestAmount / totalRevenue) * 100).toFixed(2)) : Number(fallback?.avg_coinvest_pct || 0),
+    additional_ads: Number(fallback?.additional_ads || 0),
+    operational_errors: Number(fallback?.operational_errors || 0),
+  };
+}
+
+function mergeOrdersResponses(responses: OrdersResp[]): OrdersResp {
+  const rows = responses.flatMap((response) => response.rows || []);
+  return {
+    ok: true,
+    rows,
+    total_count: rows.length,
+    date_from: responses.map((response) => response.date_from).filter(Boolean).sort().at(0),
+    date_to: responses.map((response) => response.date_to).filter(Boolean).sort().at(-1),
+    loaded_at: latestTimestamp(responses.map((response) => response.loaded_at)),
+    kpis: buildOrdersKpis(rows),
+  };
+}
+
+function mergeProblemResponses(responses: ProblemOrdersResp[]): ProblemOrdersResp {
+  const rows = responses.flatMap((response) => response.rows || []);
+  return {
+    ok: true,
+    rows,
+    total_count: rows.length,
+    date_from: responses.map((response) => response.date_from).filter(Boolean).sort().at(0),
+    date_to: responses.map((response) => response.date_to).filter(Boolean).sort().at(-1),
+    loaded_at: latestTimestamp(responses.map((response) => response.loaded_at)),
+  };
+}
+
+function mergeRetrospectiveResponses(responses: RetrospectiveResp[]): RetrospectiveResp {
+  const grouped = new Map<string, RetrospectiveRow>();
+  for (const response of responses) {
+    for (const row of response.rows || []) {
+      const key = String(row.key || row.label || row.sku || row.category_path || "").trim();
+      if (!key) continue;
+      const existing = grouped.get(key);
+      if (!existing) {
+        grouped.set(key, {
+          ...row,
+          revenue: Number(row.revenue || 0),
+          profit_amount: Number(row.profit_amount || 0),
+        });
+        continue;
+      }
+      const nextRevenue = Number(existing.revenue || 0) + Number(row.revenue || 0);
+      const nextProfit = Number(existing.profit_amount || 0) + Number(row.profit_amount || 0);
+      grouped.set(key, {
+        ...existing,
+        revenue: nextRevenue,
+        profit_amount: nextProfit,
+        profit_pct: nextRevenue > 0 ? Number(((nextProfit / nextRevenue) * 100).toFixed(2)) : null,
+      });
+    }
+  }
+  const rows = Array.from(grouped.values()).sort((a, b) => Number(b.revenue || 0) - Number(a.revenue || 0));
+  return { ok: true, rows, total_count: rows.length };
+}
+
+function mergeDataFlowResponses(responses: DataFlowResp[]): DataFlowResp {
+  const flows = responses.flatMap((response) => response.flows || []);
+  return { ok: true, flows };
 }
 
 function getActiveMonth(tracking: TrackingResp | null) {
@@ -348,7 +483,7 @@ function StoreComparisonCard({ rows, currencyCode }: { rows: StoreComparison[]; 
   return (
     <div className={styles.rankingCard}>
       <div className={styles.panelTitle}>Сравнение магазинов</div>
-      <div className={styles.panelHint}>Сводка по обороту, прибыли и марже за выбранный период.</div>
+      <div className={styles.panelHint}>Сводка по обороту, прибыли и марже за выбранный период с дельтой к прошлому такому же периоду.</div>
       <div className={styles.storeList}>
         {rows.map((row) => (
           <div key={row.storeId} className={styles.storeRow}>
@@ -365,6 +500,12 @@ function StoreComparisonCard({ rows, currencyCode }: { rows: StoreComparison[]; 
             <div className={styles.storeStats}>
               <span>Прибыль: {formatMoney(row.profit, currencyCode)}</span>
               <span>Маржа: {formatPercent(row.marginPct)}</span>
+              <span className={row.revenueDeltaPct != null && row.revenueDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                Оборот: {row.revenueDeltaPct == null ? "—" : `${row.revenueDeltaPct >= 0 ? "+" : ""}${formatPercent(row.revenueDeltaPct)}`}
+              </span>
+              <span className={row.profitDeltaPct != null && row.profitDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                Прибыль: {row.profitDeltaPct == null ? "—" : `${row.profitDeltaPct >= 0 ? "+" : ""}${formatPercent(row.profitDeltaPct)}`}
+              </span>
             </div>
           </div>
         ))}
@@ -526,42 +667,91 @@ export default function Page() {
       setLoading(true);
       setError("");
       try {
-        const storeQuery = storeId === "all" ? "" : `store_id=${encodeURIComponent(storeId)}&`;
-        const [tracking, orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems] = await Promise.all([
-          apiGetOk<TrackingResp>(`/api/sales/overview/tracking?store_id=${encodeURIComponent(storeId === "all" ? "all" : storeId)}&date_mode=created`),
-          apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=${encodeURIComponent(period)}&page=1&page_size=200`),
-          apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=${encodeURIComponent(period)}&page=1&page_size=50`),
-          apiGetOk<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(storeId === "all" ? "" : storeId)}`),
-          apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=sku&grain=month&date_mode=created&limit=6`),
-          apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=category&grain=month&date_mode=created&limit=6`),
-          apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=today&page=1&page_size=200`),
-          apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=yesterday&page=1&page_size=200`),
-          apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=today&page=1&page_size=50`),
-          apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=yesterday&page=1&page_size=50`),
-        ]);
+        const previousRange = getPreviousPeriodRange(period);
+        const fetchStoreDashboard = async (sid: string) => {
+          const storeQuery = `store_id=${encodeURIComponent(sid)}&`;
+          const [orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems] = await Promise.all([
+            apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=${encodeURIComponent(period)}&page=1&page_size=1000`),
+            apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=${encodeURIComponent(period)}&page=1&page_size=500`),
+            apiGetOk<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(sid)}`),
+            apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=sku&grain=month&date_mode=created&limit=120`),
+            apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=category&grain=month&date_mode=created&limit=120`),
+            apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=today&page=1&page_size=1000`),
+            apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=yesterday&page=1&page_size=1000`),
+            apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=today&page=1&page_size=500`),
+            apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=yesterday&page=1&page_size=500`),
+            apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=custom&date_from=${encodeURIComponent(previousRange.start)}&date_to=${encodeURIComponent(previousRange.end)}&page=1&page_size=1000`),
+            apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=custom&date_from=${encodeURIComponent(previousRange.start)}&date_to=${encodeURIComponent(previousRange.end)}&page=1&page_size=500`),
+          ]);
+          return { orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems };
+        };
+
+        const tracking = await apiGetOk<TrackingResp>(`/api/sales/overview/tracking?store_id=${encodeURIComponent(storeId === "all" ? "all" : storeId)}&date_mode=created`);
+
+        let orders: OrdersResp;
+        let problems: ProblemOrdersResp;
+        let dataFlow: DataFlowResp;
+        let sku: RetrospectiveResp;
+        let category: RetrospectiveResp;
+        let today: OrdersResp;
+        let yesterday: OrdersResp;
+        let todayProblems: ProblemOrdersResp;
+        let yesterdayProblems: ProblemOrdersResp;
+        let previousOrders: OrdersResp;
+        let previousProblems: ProblemOrdersResp;
+
+        if (storeId === "all") {
+          const scoped = await Promise.all(storesCtx.map((store) => fetchStoreDashboard(store.store_id)));
+          orders = mergeOrdersResponses(scoped.map((item) => item.orders));
+          problems = mergeProblemResponses(scoped.map((item) => item.problems));
+          dataFlow = mergeDataFlowResponses(scoped.map((item) => item.dataFlow));
+          sku = mergeRetrospectiveResponses(scoped.map((item) => item.sku));
+          category = mergeRetrospectiveResponses(scoped.map((item) => item.category));
+          today = mergeOrdersResponses(scoped.map((item) => item.today));
+          yesterday = mergeOrdersResponses(scoped.map((item) => item.yesterday));
+          todayProblems = mergeProblemResponses(scoped.map((item) => item.todayProblems));
+          yesterdayProblems = mergeProblemResponses(scoped.map((item) => item.yesterdayProblems));
+          previousOrders = mergeOrdersResponses(scoped.map((item) => item.previousOrders));
+          previousProblems = mergeProblemResponses(scoped.map((item) => item.previousProblems));
+        } else {
+          ({ orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems } = await fetchStoreDashboard(storeId));
+        }
 
         const comparison = await Promise.all(
           storesCtx.map(async (store) => {
-            const response = await apiGetOk<OrdersResp>(
-              `/api/sales/overview/united-orders?store_id=${encodeURIComponent(store.store_id)}&period=${encodeURIComponent(period)}&page=1&page_size=200`,
-            );
-            const rows = response.rows || [];
+            const [currentResponse, previousResponse] = await Promise.all([
+              apiGetOk<OrdersResp>(
+                `/api/sales/overview/united-orders?store_id=${encodeURIComponent(store.store_id)}&period=${encodeURIComponent(period)}&page=1&page_size=1000`,
+              ),
+              apiGetOk<OrdersResp>(
+                `/api/sales/overview/united-orders?store_id=${encodeURIComponent(store.store_id)}&period=custom&date_from=${encodeURIComponent(previousRange.start)}&date_to=${encodeURIComponent(previousRange.end)}&page=1&page_size=1000`,
+              ),
+            ]);
+            const rows = currentResponse.rows || [];
+            const previousRows = previousResponse.rows || [];
             const revenue = sumBy(rows, (row) => row.sale_price);
             const profit = sumBy(rows, (row) => row.profit);
+            const ordersCount = Number(currentResponse.kpis?.orders_count || rows.length);
+            const previousRevenue = sumBy(previousRows, (row) => row.sale_price);
+            const previousProfit = sumBy(previousRows, (row) => row.profit);
+            const previousOrdersCount = Number(previousResponse.kpis?.orders_count || previousRows.length);
             return {
               storeId: store.store_id,
               label: store.label,
               platformLabel: store.platform_label,
               revenue,
               profit,
-              orders: Number(response.kpis?.orders_count || rows.length),
+              orders: ordersCount,
               marginPct: revenue > 0 ? (profit / revenue) * 100 : null,
+              revenueDeltaPct: compareDelta(revenue, previousRevenue),
+              profitDeltaPct: compareDelta(profit, previousProfit),
+              ordersDeltaPct: compareDelta(ordersCount, previousOrdersCount),
             } satisfies StoreComparison;
           }),
         );
 
         if (!active) return;
-        setBundle({ tracking, orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems });
+        setBundle({ tracking, orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems });
         setStoreComparison(comparison.sort((a, b) => b.revenue - a.revenue));
       } catch (e) {
         if (!active) return;
@@ -615,24 +805,23 @@ export default function Page() {
   const yesterdayRevenue = sumBy(bundle?.yesterday?.rows || [], (row) => row.sale_price);
   const todayProfit = sumBy(bundle?.today?.rows || [], (row) => row.profit);
   const yesterdayProfit = sumBy(bundle?.yesterday?.rows || [], (row) => row.profit);
+  const previousRevenue = sumBy(bundle?.previousOrders?.rows || [], (row) => row.sale_price);
+  const previousProfit = sumBy(bundle?.previousOrders?.rows || [], (row) => row.profit);
   const todayOrdersCount = Number(bundle?.today?.kpis?.orders_count || (bundle?.today?.rows || []).length);
   const yesterdayOrdersCount = Number(bundle?.yesterday?.kpis?.orders_count || (bundle?.yesterday?.rows || []).length);
+  const previousOrdersCount = Number(bundle?.previousOrders?.kpis?.orders_count || (bundle?.previousOrders?.rows || []).length);
   const todayProblemsCount = Number(bundle?.todayProblems?.total_count || 0);
   const yesterdayProblemsCount = Number(bundle?.yesterdayProblems?.total_count || 0);
+  const previousProblemsCount = Number(bundle?.previousProblems?.total_count || 0);
   const todayRevenueDeltaPct = compareDelta(todayRevenue, yesterdayRevenue);
   const todayProfitDeltaPct = compareDelta(todayProfit, yesterdayProfit);
   const todayOrdersDeltaPct = compareDelta(todayOrdersCount, yesterdayOrdersCount);
   const todayProblemsDeltaPct = compareDelta(todayProblemsCount, yesterdayProblemsCount);
-  const activeDaysCount = Math.max(1, Number(bundle?.tracking?.kpis?.days || trendDays.length || 1));
-  const averageDailyRevenue = activeDaysCount > 0 ? Number(bundle?.tracking?.kpis?.revenue || 0) / activeDaysCount : 0;
-  const todayVsAveragePct = compareDelta(todayRevenue, averageDailyRevenue);
-  const todayMarginPct = todayRevenue > 0 ? (todayProfit / todayRevenue) * 100 : null;
+  const periodRevenueDeltaPct = compareDelta(revenueTotal, previousRevenue);
+  const periodProfitDeltaPct = compareDelta(profitTotal, previousProfit);
+  const periodOrdersDeltaPct = compareDelta(Number(bundle?.orders?.kpis?.orders_count || 0), previousOrdersCount);
+  const periodProblemsDeltaPct = compareDelta(Number(bundle?.problems?.total_count || 0), previousProblemsCount);
   const yesterdayMarginPct = yesterdayRevenue > 0 ? (yesterdayProfit / yesterdayRevenue) * 100 : null;
-  const todayMarginDeltaPct = todayMarginPct != null && yesterdayMarginPct != null ? todayMarginPct - yesterdayMarginPct : null;
-  const periodProblemShare = Number(bundle?.orders?.kpis?.orders_count || 0) > 0
-    ? (Number(bundle?.problems?.total_count || 0) / Math.max(1, Number(bundle?.orders?.kpis?.orders_count || 0))) * 100
-    : null;
-  const todayProblemShare = todayOrdersCount > 0 ? (todayProblemsCount / todayOrdersCount) * 100 : null;
   const weakestSku = (bundle?.sku?.rows || [])
     .filter((row) => Number(row.revenue || 0) > 0)
     .sort((a, b) => Number(a.profit_pct ?? 999999) - Number(b.profit_pct ?? 999999))
@@ -654,15 +843,12 @@ export default function Page() {
       marginPct: row.profit_pct ?? null,
     }));
   const flowRows = bundle?.dataFlow?.flows || [];
-  const freshestLoadAt = [
-    bundle?.orders?.loaded_at,
-    bundle?.problems?.loaded_at,
-    bundle?.tracking?.loaded_at,
-    ...flowRows.map((flow) => flow.loaded_at),
-  ]
-    .filter(Boolean)
-    .sort()
-    .at(-1);
+  const todayDate = localDateOnly();
+  const yesterdayDate = shiftDate(todayDate, -1);
+  const currentRange = getCurrentPeriodRange(period);
+  const previousRange = getPreviousPeriodRange(period);
+  const currentRangeLabel = `${formatLongDate(currentRange.start)} - ${formatLongDate(currentRange.end)}`;
+  const previousRangeLabel = `${formatLongDate(previousRange.start)} - ${formatLongDate(previousRange.end)}`;
 
   return (
     <PageFrame title="Сводка" subtitle="Финальный dashboard по продажам, эффективности и зонам риска.">
@@ -769,7 +955,7 @@ export default function Page() {
 
             <section className={styles.dailyGrid}>
               <div className={styles.dailyCard}>
-                <div className={styles.dailyTitle}>Сегодня</div>
+                <div className={styles.dailyTitle}>Сегодня · {formatLongDate(todayDate)}</div>
                 <div className={styles.dailyMetrics}>
                   <div className={styles.dailyMetric}>
                     <span>Оборот</span>
@@ -803,7 +989,7 @@ export default function Page() {
               </div>
 
               <div className={styles.dailyCard}>
-                <div className={styles.dailyTitle}>Вчера</div>
+                <div className={styles.dailyTitle}>Вчера · {formatLongDate(yesterdayDate)}</div>
                 <div className={styles.dailyMetrics}>
                   <div className={styles.dailyMetric}>
                     <span>Оборот</span>
@@ -831,39 +1017,43 @@ export default function Page() {
 
             <section className={styles.tempoGrid}>
               <div className={styles.tempoCard}>
-                <div className={styles.tempoLabel}>Темп дня</div>
-                <div className={styles.tempoValue}>{formatMoney(todayRevenue, currencyCode)}</div>
+                <div className={styles.tempoLabel}>Период к периоду</div>
+                <div className={styles.tempoValue}>{formatMoney(revenueTotal, currencyCode)}</div>
                 <div className={styles.tempoMeta}>
-                  <span>Средний активный день: {formatMoney(averageDailyRevenue, currencyCode)}</span>
-                  <span className={todayVsAveragePct != null && todayVsAveragePct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                    {todayVsAveragePct == null ? "—" : `${todayVsAveragePct >= 0 ? "+" : ""}${formatPercent(todayVsAveragePct)}`} к среднему дню
+                  <span>{currentRangeLabel}</span>
+                  <span className={periodRevenueDeltaPct != null && periodRevenueDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                    Оборот: {periodRevenueDeltaPct == null ? "—" : `${periodRevenueDeltaPct >= 0 ? "+" : ""}${formatPercent(periodRevenueDeltaPct)}`} к прошлому периоду
                   </span>
                 </div>
               </div>
               <div className={styles.tempoCard}>
-                <div className={styles.tempoLabel}>Маржа дня</div>
-                <div className={styles.tempoValue}>{formatPercent(todayMarginPct)}</div>
+                <div className={styles.tempoLabel}>Прибыль периода</div>
+                <div className={styles.tempoValue}>{formatMoney(profitTotal, currencyCode)}</div>
                 <div className={styles.tempoMeta}>
-                  <span>Вчера: {formatPercent(yesterdayMarginPct)}</span>
-                  <span className={todayMarginDeltaPct != null && todayMarginDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                    Δ {formatPercent(todayMarginDeltaPct)}
+                  <span>Прошлый период: {formatMoney(previousProfit, currencyCode)}</span>
+                  <span className={periodProfitDeltaPct != null && periodProfitDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                    Прибыль: {periodProfitDeltaPct == null ? "—" : `${periodProfitDeltaPct >= 0 ? "+" : ""}${formatPercent(periodProfitDeltaPct)}`}
                   </span>
                 </div>
               </div>
               <div className={styles.tempoCard}>
-                <div className={styles.tempoLabel}>Доля проблем</div>
-                <div className={styles.tempoValue}>{formatPercent(todayProblemShare)}</div>
+                <div className={styles.tempoLabel}>Заказы периода</div>
+                <div className={styles.tempoValue}>{formatNumber(bundle?.orders?.kpis?.orders_count)}</div>
                 <div className={styles.tempoMeta}>
-                  <span>За сегодня: {formatNumber(todayProblemsCount)} / {formatNumber(todayOrdersCount)}</span>
-                  <span>За период: {formatPercent(periodProblemShare)}</span>
+                  <span>Прошлый период: {formatNumber(previousOrdersCount)}</span>
+                  <span className={periodOrdersDeltaPct != null && periodOrdersDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                    Заказы: {periodOrdersDeltaPct == null ? "—" : `${periodOrdersDeltaPct >= 0 ? "+" : ""}${formatPercent(periodOrdersDeltaPct)}`}
+                  </span>
                 </div>
               </div>
               <div className={styles.tempoCard}>
-                <div className={styles.tempoLabel}>Свежесть данных</div>
-                <div className={styles.tempoValue}>{formatNumber(flowRows.length)}</div>
+                <div className={styles.tempoLabel}>Проблемы периода</div>
+                <div className={styles.tempoValue}>{formatNumber(bundle?.problems?.total_count)}</div>
                 <div className={styles.tempoMeta}>
-                  <span>Активных потоков: {formatNumber(flowRows.length)}</span>
-                  <span>{freshestLoadAt ? `Последняя загрузка: ${formatDateTime(freshestLoadAt)}` : "Нет отметки о загрузке"}</span>
+                  <span>{previousRangeLabel}</span>
+                  <span className={periodProblemsDeltaPct != null && periodProblemsDeltaPct <= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                    Проблемы: {periodProblemsDeltaPct == null ? "—" : `${periodProblemsDeltaPct >= 0 ? "+" : ""}${formatPercent(periodProblemsDeltaPct)}`}
+                  </span>
                 </div>
               </div>
             </section>
