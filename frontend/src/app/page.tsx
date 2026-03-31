@@ -166,9 +166,11 @@ type StoreComparison = {
   ordersDeltaPct: number | null;
 };
 
-type DashboardPeriod = "week" | "month" | "quarter";
+type DashboardPeriod = "today" | "yesterday" | "week" | "month" | "quarter";
 
 const PERIOD_OPTIONS: Array<{ value: DashboardPeriod; label: string }> = [
+  { value: "today", label: "Сегодня" },
+  { value: "yesterday", label: "Вчера" },
   { value: "week", label: "7 дней" },
   { value: "month", label: "30 дней" },
   { value: "quarter", label: "90 дней" },
@@ -243,6 +245,7 @@ function toIsoDate(base: Date) {
 }
 
 function getPeriodSpanDays(period: DashboardPeriod) {
+  if (period === "today" || period === "yesterday") return 1;
   if (period === "week") return 7;
   if (period === "quarter") return 90;
   return 30;
@@ -640,7 +643,7 @@ export default function Page() {
   const [storeComparison, setStoreComparison] = useState<StoreComparison[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [period, setPeriod] = useState<DashboardPeriod>("month");
+  const [period, setPeriod] = useState<DashboardPeriod>("today");
   const [storeId, setStoreId] = useState("all");
 
   useEffect(() => {
