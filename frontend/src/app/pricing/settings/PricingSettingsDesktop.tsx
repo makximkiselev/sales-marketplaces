@@ -115,6 +115,7 @@ export function PricingSettingsDesktop({
                 !isSalesPlanSection && activeStore ? (
                   <div className={styles.workspaceHeroChips}>
                     <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
+                    <span className={styles.workspaceHeroChip}>{activeStore.storeName}</span>
                     <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
                   </div>
                 ) : isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : undefined

@@ -48,6 +48,8 @@
 .sourcesToolbar {
   align-items: center;
   justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
 .sourcesToolbarMobile {
@@ -110,8 +112,17 @@
 }
 
 .platformRows {
-  grid-template-columns: 1fr !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 16px;
+  align-items: start;
+}
+
+.platformRows > * {
+  min-width: 0;
+}
+
+.platformRows > :first-child {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 960px) {
@@ -141,6 +152,14 @@
 
   .sourcesHeroMeta {
     gap: 8px;
+  }
+
+  .platformRows {
+    grid-template-columns: 1fr !important;
+  }
+
+  .platformRows > :first-child {
+    grid-column: auto;
   }
 }
 
@@ -542,7 +561,7 @@
     border: 0 !important;
     padding: 0 !important;
     display: grid;
-    grid-template-columns: minmax(104px, 42%) minmax(0, 1fr);
+    grid-template-columns: minmax(92px, 38%) minmax(0, 1fr);
     gap: 12px;
     align-items: start;
     text-align: left !important;
@@ -573,10 +592,24 @@
     justify-content: flex-start;
   }
 
+  .ymTable tbody td[data-label="Статус"],
+  .ymTable tbody td[data-label="Действия"] {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
   .ymStatusTime,
   .ymStatusTimeValue,
   .ymStatusError {
     text-align: left;
+  }
+
+  .ymStatusCell {
+    padding-top: 4px !important;
+  }
+
+  .ymDeleteCell :global(.btn) {
+    width: 100%;
   }
 
   .storeSourceButton,

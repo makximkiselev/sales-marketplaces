@@ -114,6 +114,44 @@
   font-variant-numeric: tabular-nums;
 }
 
+.ratesMobileList {
+  display: none;
+}
+
+.ratesMobileRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.12);
+}
+
+.ratesMobileRow:last-child {
+  border-bottom: 0;
+}
+
+.ratesMobileDate {
+  color: #dbe8ff;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.ratesMobileValue {
+  color: #f2f7ff;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ratesMobileEmpty {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 2px 0;
+}
+
 .statusBox {
   margin-top: 0;
 }
@@ -121,5 +159,27 @@
 @media (max-width: 1200px) {
   .tablesGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .tableCard {
+    padding: 14px;
+  }
+
+  .tableHead {
+    display: grid;
+    gap: 4px;
+  }
+
+  .tableWrap {
+    display: none;
+  }
+
+  .ratesMobileList {
+    display: grid;
+    gap: 0;
+    margin-top: 10px;
+    padding: 0 2px;
   }
 }

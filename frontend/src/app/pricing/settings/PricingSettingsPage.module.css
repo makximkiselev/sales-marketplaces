@@ -112,8 +112,8 @@
 }
 
 .pricingHeroSurface {
-  padding: 20px;
-  gap: 18px;
+  padding: 22px;
+  gap: 16px;
 }
 
 .pricingPrimaryTabs,
@@ -1601,11 +1601,12 @@
 
 .salesPlanGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
-  gap: 16px;
-  max-width: 1320px;
+  gap: 18px;
+  max-width: 1120px;
   width: 100%;
+  margin-inline: auto;
   justify-self: stretch;
 }
 
@@ -1615,15 +1616,18 @@
   background:
     radial-gradient(circle at top right, rgba(76, 201, 240, 0.07), transparent 32%),
     linear-gradient(180deg, rgba(13, 24, 42, 0.78), rgba(8, 16, 30, 0.9));
-  padding: 16px;
+  padding: 18px;
   display: grid;
-  gap: 14px;
+  gap: 16px;
   min-width: 0;
+  box-shadow: 0 10px 24px rgba(3, 8, 18, 0.14);
 }
 
 .salesPlanCardHead {
   display: grid;
   gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(132, 161, 214, 0.12);
 }
 
 .salesPlanCardTitleBlock {
@@ -1689,7 +1693,7 @@
 .salesPlanModeGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .salesPlanModeCard {
@@ -1719,12 +1723,12 @@
 .salesPlanFields {
   display: grid;
   grid-template-columns: repeat(2, minmax(140px, 1fr));
-  gap: 12px;
+  gap: 14px;
   align-items: start;
 }
 
 .salesPlanField {
-  padding: 12px;
+  padding: 14px;
   border-radius: 14px;
   border: 1px solid rgba(132, 161, 214, 0.12);
   background: linear-gradient(180deg, rgba(10, 18, 33, 0.46), rgba(7, 14, 27, 0.34));
@@ -1787,13 +1791,19 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 16px;
+  background: rgba(9, 18, 33, 0.42);
 }
 
 .monitoringHeaderText {
-  color: var(--text-soft);
+  color: #d6e4fb;
   font-size: 13px;
+  line-height: 1.5;
+  max-width: 760px;
 }
 
 .monitoringExportHeaderActions {
@@ -1811,7 +1821,7 @@
 .monitoringRunAll {
   display: grid;
   justify-items: end;
-  gap: 6px;
+  gap: 8px;
 }
 
 .monitoringRunAllMeta {
@@ -2992,7 +3002,8 @@
 
 @media (max-width: 1180px) and (min-width: 961px) {
   .salesPlanGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
+    max-width: 860px;
   }
 }
 

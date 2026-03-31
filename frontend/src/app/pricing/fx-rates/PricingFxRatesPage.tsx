@@ -182,6 +182,17 @@ export default function PricingFxRatesPage() {
                 </tbody>
               </table>
             </div>
+            <div className={styles.ratesMobileList}>
+              {tbl.rows.map((row) => (
+                <div key={`mobile-${tbl.key}-${row.date}`} className={styles.ratesMobileRow}>
+                  <div className={styles.ratesMobileDate}>{formatRuDate(row.date)}</div>
+                  <div className={styles.ratesMobileValue}>{formatRate(row.rate)}</div>
+                </div>
+              ))}
+              {!tbl.rows.length ? (
+                <div className={styles.ratesMobileEmpty}>Нет данных за выбранный период</div>
+              ) : null}
+            </div>
           </section>
         ))}
       </div>
