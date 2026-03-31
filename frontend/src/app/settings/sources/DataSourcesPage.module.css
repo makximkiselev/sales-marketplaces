@@ -131,10 +131,16 @@
     gap: 14px;
   }
 
+  .sourcesTabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .flowInline {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-start;
     flex-wrap: wrap;
+    padding: 12px;
+    gap: 10px 12px;
   }
 
   .refreshBlock {
@@ -154,12 +160,36 @@
     gap: 8px;
   }
 
+  .sourcesToolbarMobile > * {
+    min-width: 0;
+  }
+
+  .refreshMeta {
+    line-height: 1.45;
+  }
+
   .platformRows {
     grid-template-columns: 1fr !important;
   }
 
   .platformRows > :first-child {
     grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .sourcesTabs {
+    grid-template-columns: 1fr;
+  }
+
+  .flowInline {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .flowInlineItem {
+    justify-content: space-between;
   }
 }
 

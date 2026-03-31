@@ -2294,6 +2294,7 @@ select.input {
   .app-shell-subnav {
     padding: 8px 12px;
     gap: 4px;
+    scroll-snap-type: x proximity;
   }
 
   .app-shell-subnav-link {
@@ -2302,6 +2303,7 @@ select.input {
     border-radius: 999px;
     background: rgba(10, 18, 33, 0.46);
     border: 1px solid rgba(132, 161, 214, 0.1);
+    scroll-snap-align: start;
   }
 
   .app-shell-subnav-link::after {
@@ -2353,5 +2355,30 @@ select.input {
   .wrap {
     padding: 16px 12px calc(100px + env(safe-area-inset-bottom, 0px));
     gap: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-shell-subnav {
+    padding-inline: 10px;
+  }
+
+  .app-shell-subnav-link {
+    min-height: 34px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  .app-shell-bottom-nav {
+    left: 10px;
+    right: 10px;
+    gap: 4px;
+    padding: 6px;
+  }
+
+  .app-shell-bottom-link {
+    min-height: 42px;
+    padding: 0 6px;
+    font-size: 10px;
   }
 }

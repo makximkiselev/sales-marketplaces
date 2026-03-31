@@ -113,9 +113,11 @@
 
   .toolbarGroup {
     width: 100%;
+    gap: 10px;
   }
 
   .toolbarGroup > * {
-    flex: 1 1 180px;
+    flex: 0 1 auto;
+    min-width: min(220px, 100%);
   }
 }

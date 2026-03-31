@@ -121,6 +121,50 @@
   min-width: 172px;
 }
 
+@media (max-width: 960px) {
+  .field {
+    min-width: 0;
+  }
+
+  .tabs {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    gap: 8px;
+  }
+
+  .tabsUnderline {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 16px;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+
+  .tabsUnderline::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabBtn {
+    width: 100%;
+    justify-content: space-between;
+    min-width: 0;
+  }
+
+  .tabBtnUnderline {
+    width: auto;
+    justify-content: flex-start;
+    flex: 0 0 auto;
+  }
+
+  .actionButton,
+  .actionButtonLoading {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
 .spinner {
   width: 14px;
   height: 14px;

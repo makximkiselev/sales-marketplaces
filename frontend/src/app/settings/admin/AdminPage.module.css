@@ -490,6 +490,10 @@
     justify-content: flex-start;
   }
 
+  .toolbarActions > :global(.btn) {
+    width: 100%;
+  }
+
   .filtersBar,
   .passwordRow,
   .formGrid {
@@ -539,5 +543,11 @@
 
   .groupToggleSide {
     justify-content: space-between;
+    width: 100%;
+  }
+
+  .issuedActions > :global(.btn),
+  .modalActions > :global(.btn) {
+    width: 100%;
   }
 }
