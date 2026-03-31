@@ -124,6 +124,7 @@ export function OzonPanel({
                     return (
                       <tr key={acc.client_id}>
                         <td
+                          data-label="Client ID"
                           className={`${styles.ymBusinessCell} ${styles.ymClickableCell}`}
                           onClick={() =>
                             openOzonWizard({
@@ -138,6 +139,7 @@ export function OzonPanel({
                           {acc.client_id}
                         </td>
                         <td
+                          data-label="Seller ID"
                           className={styles.ymClickableCell}
                           onClick={() =>
                             openOzonWizard({
@@ -152,6 +154,7 @@ export function OzonPanel({
                           {acc.seller_id || "-"}
                         </td>
                         <td
+                          data-label="Наименование"
                           className={styles.ymClickableCell}
                           onClick={() =>
                             openOzonWizard({
@@ -165,7 +168,7 @@ export function OzonPanel({
                         >
                           {acc.seller_name || `Ozon кабинет ${acc.client_id}`}
                         </td>
-                        <td className={styles.ymCurrencyCell}>
+                        <td data-label="Модель" className={styles.ymCurrencyCell}>
                           <select
                             className={`input input-size-sm ${styles.sourceInlineSelect}`}
                             value={String(acc.fulfillment_model || "FBO").toUpperCase()}
@@ -184,7 +187,7 @@ export function OzonPanel({
                             <option value="EXPRESS">EXPRESS</option>
                           </select>
                         </td>
-                        <td className={styles.ymCurrencyCell}>
+                        <td data-label="Валюта" className={styles.ymCurrencyCell}>
                           <select
                             className={`input input-size-sm ${styles.sourceInlineSelect}`}
                             value={(acc.currency_code || "RUB").toUpperCase()}
@@ -201,7 +204,7 @@ export function OzonPanel({
                             <option value="USD">USD</option>
                           </select>
                         </td>
-                        <td className={styles.ymSourceCell}>
+                        <td data-label="Себестоимость" className={styles.ymSourceCell}>
                           <div className={styles.storeSourceCell}>
                             <div className={styles.storeSourceName}>
                               {sourceBinding?.cogsSource?.sourceName || "Не выбран"}
@@ -233,7 +236,7 @@ export function OzonPanel({
                             </button>
                           </div>
                         </td>
-                        <td className={styles.ymSourceCell}>
+                        <td data-label="Остаток" className={styles.ymSourceCell}>
                           <div className={styles.storeSourceCell}>
                             <div className={styles.storeSourceName}>
                               {sourceBinding?.stockSource?.sourceName || "Не выбран"}
@@ -265,7 +268,7 @@ export function OzonPanel({
                             </button>
                           </div>
                         </td>
-                        <td className={styles.ymToggleCell}>
+                        <td data-label="Импорт" className={styles.ymToggleCell}>
                           <div className={styles.ymToggleWrap}>
                             <span className={styles.ymToggleLabel}>OFF</span>
                             <button
@@ -292,7 +295,7 @@ export function OzonPanel({
                             <span className={styles.ymToggleLabel}>ON</span>
                           </div>
                         </td>
-                        <td className={styles.ymToggleCell}>
+                        <td data-label="Экспорт" className={styles.ymToggleCell}>
                           <div className={styles.ymToggleWrap}>
                             <span className={styles.ymToggleLabel}>OFF</span>
                             <button
@@ -319,7 +322,7 @@ export function OzonPanel({
                             <span className={styles.ymToggleLabel}>ON</span>
                           </div>
                         </td>
-                        <td className={styles.ymStatusCell}>
+                        <td data-label="Статус" className={styles.ymStatusCell}>
                           <div className={styles.ymStatusTop}>
                             <button
                               className="btn inline icon-only"
@@ -337,7 +340,7 @@ export function OzonPanel({
                             <div className={styles.ymStatusError}>{acc.health_message}</div>
                           ) : null}
                         </td>
-                        <td className={styles.ymDeleteCell}>
+                        <td data-label="Действия" className={styles.ymDeleteCell}>
                           <button
                             className={`btn inline ${styles.ymShopDeleteBtn}`}
                             onClick={() =>

@@ -153,23 +153,21 @@ export function YandexMarketPanel({
 
                       return (
                         <tr key={`${acc.business_id}-${shop.campaign_id}`}>
-                          {idx === 0 ? (
-                            <td
-                              rowSpan={shops.length}
-                              className={`${styles.ymBusinessCell} ${styles.ymClickableCell}`}
-                              onClick={() => openEditAccount(acc)}
-                              title="Открыть редактирование кабинета"
-                            >
-                              {acc.business_id}
-                            </td>
-                          ) : null}
-                          <td className={styles.ymClickableCell} onClick={() => openEditAccount(acc)} title="Открыть редактирование кабинета">
+                          <td
+                            data-label="Business ID"
+                            className={`${styles.ymBusinessCell} ${styles.ymClickableCell}`}
+                            onClick={() => openEditAccount(acc)}
+                            title="Открыть редактирование кабинета"
+                          >
+                            {acc.business_id}
+                          </td>
+                          <td data-label="Campaign ID" className={styles.ymClickableCell} onClick={() => openEditAccount(acc)} title="Открыть редактирование кабинета">
                             {shop.campaign_id}
                           </td>
-                          <td className={styles.ymClickableCell} onClick={() => openEditAccount(acc)} title="Открыть редактирование кабинета">
+                          <td data-label="Наименование" className={styles.ymClickableCell} onClick={() => openEditAccount(acc)} title="Открыть редактирование кабинета">
                             {shop.campaign_name || `Магазин ${shop.campaign_id}`}
                           </td>
-                          <td className={styles.ymCurrencyCell}>
+                          <td data-label="Модель" className={styles.ymCurrencyCell}>
                             <select
                               className={`input input-size-sm ${styles.sourceInlineSelect}`}
                               value={String(shop.fulfillment_model || "FBO").toUpperCase()}
@@ -189,7 +187,7 @@ export function YandexMarketPanel({
                               <option value="EXPRESS">EXPRESS</option>
                             </select>
                           </td>
-                          <td className={styles.ymCurrencyCell}>
+                          <td data-label="Валюта" className={styles.ymCurrencyCell}>
                             <select
                               className={`input input-size-sm ${styles.sourceInlineSelect}`}
                               value={(shop.currency_code || "RUB").toUpperCase()}
@@ -207,7 +205,7 @@ export function YandexMarketPanel({
                               <option value="USD">USD</option>
                             </select>
                           </td>
-                          <td className={styles.ymSourceCell}>
+                          <td data-label="Себестоимость" className={styles.ymSourceCell}>
                             <div className={styles.storeSourceCell}>
                               <div className={styles.storeSourceName}>
                                 {sourceBinding?.cogsSource?.sourceName || "Не выбран"}
@@ -239,7 +237,7 @@ export function YandexMarketPanel({
                               </button>
                             </div>
                           </td>
-                          <td className={styles.ymSourceCell}>
+                          <td data-label="Остаток" className={styles.ymSourceCell}>
                             <div className={styles.storeSourceCell}>
                               <div className={styles.storeSourceName}>
                                 {sourceBinding?.stockSource?.sourceName || "Не выбран"}
@@ -271,7 +269,7 @@ export function YandexMarketPanel({
                               </button>
                             </div>
                           </td>
-                          <td className={styles.ymToggleCell}>
+                          <td data-label="Импорт" className={styles.ymToggleCell}>
                             <div className={styles.ymToggleWrap}>
                               <span className={styles.ymToggleLabel}>OFF</span>
                               <button
@@ -299,7 +297,7 @@ export function YandexMarketPanel({
                               <span className={styles.ymToggleLabel}>ON</span>
                             </div>
                           </td>
-                          <td className={styles.ymToggleCell}>
+                          <td data-label="Экспорт" className={styles.ymToggleCell}>
                             <div className={styles.ymToggleWrap}>
                               <span className={styles.ymToggleLabel}>OFF</span>
                               <button
@@ -327,7 +325,7 @@ export function YandexMarketPanel({
                               <span className={styles.ymToggleLabel}>ON</span>
                             </div>
                           </td>
-                          <td className={styles.ymStatusCell}>
+                          <td data-label="Статус" className={styles.ymStatusCell}>
                             <div className={styles.ymStatusTop}>
                               <button
                                 className="btn inline icon-only"
@@ -345,7 +343,7 @@ export function YandexMarketPanel({
                               <div className={styles.ymStatusError}>{shop.health_message}</div>
                             ) : null}
                           </td>
-                          <td className={styles.ymDeleteCell}>
+                          <td data-label="Действия" className={styles.ymDeleteCell}>
                             <button
                               className={`btn inline ${styles.ymShopDeleteBtn}`}
                               onClick={() =>

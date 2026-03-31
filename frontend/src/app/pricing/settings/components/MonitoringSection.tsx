@@ -284,6 +284,10 @@ export function MonitoringSection({
     return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi) || a.localeCompare(b, "ru");
   });
 
+  function storesForPlatform(platform: string) {
+    return platformEntries.find(([platformKey]) => platformKey === String(platform || "").trim())?.[1] || [];
+  }
+
   return (
     <SectionBlock>
       {loading ? <div className="status">Загрузка мониторинга...</div> : null}
@@ -323,7 +327,8 @@ export function MonitoringSection({
           </div>
 
           {apiRows.length ? (
-            <div className={styles.pricingTableWrap}>
+            <>
+            <div className={`${styles.pricingTableWrap} ${styles.monitoringDesktopTable}`}>
               <div className={styles.monitoringGroupTitle}>API-методы по площадкам</div>
               <table className={`${styles.pricingTable} ${styles.monitoringTable}`}>
                 <thead>
@@ -469,10 +474,104 @@ export function MonitoringSection({
                 </tbody>
               </table>
             </div>
+            <div className={styles.monitoringMobileList}>
+              {apiRows.map((row) => {
+                const code = row.job_code;
+                const stores = storesForPlatform(String(row.platform || "").trim());
+                return (
+                  <article key={`mobile-${code}`} className={styles.monitoringMobileCard}>
+                    <div className={styles.monitoringMobileCardHead}>
+                      <div className={styles.monitoringMobileCardTitle}>{row.title}</div>
+                      <span className={`${styles.monitoringJobStatus} ${statusClass(row.last_status)}`}>
+                        <span className={styles.monitoringStatusDot} />
+                        {statusLabel(row)}
+                      </span>
+                    </div>
+                    <div className={styles.monitoringMobileField}>
+                      <span className={styles.monitoringMobileLabel}>Частота</span>
+                      {renderScheduleSelect(row, Boolean(savingMap[code]), onSaveJob)}
+                    </div>
+                    {stores.length ? (
+                      <div className={styles.monitoringMobileField}>
+                        <span className={styles.monitoringMobileLabel}>Магазины</span>
+                        <div className={styles.monitoringMobileStoreList}>
+                          {stores.map((store) => {
+                            const storeState = (row.store_statuses || []).find((entry) => String(entry.store_uid || "").trim() === store.store_uid);
+                            return (
+                              <div key={`${code}:${store.store_uid}`} className={styles.monitoringMobileStoreItem}>
+                                <div className={styles.monitoringMobileStoreName}>{store.store_name}</div>
+                                <span className={`${styles.monitoringStoreStatus} ${statusClass(storeState?.status)}`}>
+                                  <span className={styles.monitoringStatusDot} />
+                                  {storeStatusLabel(row, store.store_uid)}
+                                  {storeState?.status === "running" ? ` ${progressValue((storeState as { progress_percent?: number }).progress_percent)}%` : ""}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                    {supportsDateRange(row) ? (
+                      <div className={styles.monitoringMobileField}>
+                        <span className={styles.monitoringMobileLabel}>Диапазон</span>
+                        <div className={styles.monitoringDateRange}>
+                          <label className={styles.monitoringDateField}>
+                            <span>с</span>
+                            <input
+                              type="date"
+                              className={`input ${styles.monitoringSelect}`}
+                              value={dateDrafts[code]?.date_from ?? String(row.date_from || "")}
+                              disabled={Boolean(savingMap[code])}
+                              onChange={(e) => updateDateDraft(code, "date_from", e.target.value)}
+                              onBlur={() => void commitDateDraft(row, "date_from")}
+                            />
+                          </label>
+                          <label className={styles.monitoringDateField}>
+                            <span>по</span>
+                            <input
+                              type="date"
+                              className={`input ${styles.monitoringSelect}`}
+                              value={dateDrafts[code]?.date_to ?? String(row.date_to || "")}
+                              min={(dateDrafts[code]?.date_from ?? String(row.date_from || "")).trim() || undefined}
+                              disabled={Boolean(savingMap[code])}
+                              onChange={(e) => updateDateDraft(code, "date_to", e.target.value)}
+                              onBlur={() => void commitDateDraft(row, "date_to")}
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className={styles.monitoringMobileMetaGrid}>
+                      <div className={styles.monitoringMobileMetaItem}>
+                        <span className={styles.monitoringMobileLabel}>Последний запуск</span>
+                        <span>{formatTs(row.last_finished_at || row.last_started_at)}</span>
+                      </div>
+                      <div className={styles.monitoringMobileMetaItem}>
+                        <span className={styles.monitoringMobileLabel}>Действие</span>
+                        <button
+                          type="button"
+                          className="btn ghost"
+                          disabled={Boolean(runningMap[code]) || ["running", "queued"].includes(String(row.last_status || "").trim().toLowerCase())}
+                          onClick={() => void onRunJob(code)}
+                        >
+                          {String(row.last_status || "").trim().toLowerCase() === "queued"
+                            ? "В очереди"
+                            : runningMap[code]
+                              ? "Запуск..."
+                              : "Обновить"}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+            </>
           ) : null}
 
           {otherRows.length ? (
-            <div className={styles.pricingTableWrap}>
+            <>
+            <div className={`${styles.pricingTableWrap} ${styles.monitoringDesktopTable}`}>
               <div className={styles.monitoringGroupTitle}>Google и внутренние пересчеты</div>
               <table className={`${styles.pricingTable} ${styles.monitoringTable}`}>
                 <thead>
@@ -523,6 +622,49 @@ export function MonitoringSection({
                 </tbody>
               </table>
             </div>
+            <div className={styles.monitoringMobileList}>
+              {otherRows.map((row) => {
+                const code = row.job_code;
+                return (
+                  <article key={`mobile-other-${code}`} className={styles.monitoringMobileCard}>
+                    <div className={styles.monitoringMobileCardHead}>
+                      <div className={styles.monitoringMobileCardTitle}>{row.title}</div>
+                      <span className={`${styles.monitoringJobStatus} ${statusClass(row.last_status)}`}>
+                        <span className={styles.monitoringStatusDot} />
+                        {statusLabel(row)}
+                      </span>
+                    </div>
+                    <div className={styles.monitoringMobileMetaGrid}>
+                      <div className={styles.monitoringMobileMetaItem}>
+                        <span className={styles.monitoringMobileLabel}>Тип</span>
+                        <span>{String(row.kind || "").trim() === "google" ? "Google" : "Система"}</span>
+                      </div>
+                      <div className={styles.monitoringMobileMetaItem}>
+                        <span className={styles.monitoringMobileLabel}>Последний запуск</span>
+                        <span>{formatTs(row.last_finished_at || row.last_started_at)}</span>
+                      </div>
+                    </div>
+                    <div className={styles.monitoringMobileField}>
+                      <span className={styles.monitoringMobileLabel}>Частота обновлений</span>
+                      {renderScheduleSelect(row, Boolean(savingMap[code]), onSaveJob)}
+                    </div>
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      disabled={Boolean(runningMap[code]) || ["running", "queued"].includes(String(row.last_status || "").trim().toLowerCase())}
+                      onClick={() => void onRunJob(code)}
+                    >
+                      {String(row.last_status || "").trim().toLowerCase() === "queued"
+                        ? "В очереди"
+                        : runningMap[code]
+                          ? "Запуск..."
+                          : "Обновить"}
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+            </>
           ) : null}
         </>
       ) : null}

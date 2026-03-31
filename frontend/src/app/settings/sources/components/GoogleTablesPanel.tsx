@@ -74,9 +74,9 @@ export function GoogleTablesPanel({
                 <tbody>
                   {sources.map((it) => (
                     <tr key={it.id} className="clickable-row" onClick={() => openGsWizard(it)}>
-                      <td>{it.title || "-"}</td>
-                      <td>{it.worksheet || "-"}</td>
-                      <td className={styles.ymToggleCell}>
+                      <td data-label="Наименование">{it.title || "-"}</td>
+                      <td data-label="Лист">{it.worksheet || "-"}</td>
+                      <td data-label="Импорт" className={styles.ymToggleCell}>
                         <div className={styles.ymToggleWrap}>
                           <span className={styles.ymToggleLabel}>OFF</span>
                           <button
@@ -96,7 +96,7 @@ export function GoogleTablesPanel({
                           <span className={styles.ymToggleLabel}>ON</span>
                         </div>
                       </td>
-                      <td className={styles.ymToggleCell}>
+                      <td data-label="Экспорт" className={styles.ymToggleCell}>
                         <div className={styles.ymToggleWrap}>
                           <span className={styles.ymToggleLabel}>OFF</span>
                           <button
@@ -116,7 +116,7 @@ export function GoogleTablesPanel({
                           <span className={styles.ymToggleLabel}>ON</span>
                         </div>
                       </td>
-                      <td className={styles.ymStatusCell}>
+                      <td data-label="Статус" className={styles.ymStatusCell}>
                         <div className={styles.ymStatusTop}>
                           <button
                             className="btn inline icon-only"
@@ -139,7 +139,7 @@ export function GoogleTablesPanel({
                           <div className={styles.ymStatusError}>{it.health_message}</div>
                         ) : null}
                       </td>
-                      <td className={styles.ymDeleteCell}>
+                      <td data-label="Действия" className={styles.ymDeleteCell}>
                         <button
                           className={`btn inline ${styles.ymShopDeleteBtn}`}
                           onClick={(e) => {

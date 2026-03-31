@@ -1822,6 +1822,88 @@
   font-size: 12px;
 }
 
+.monitoringDesktopTable {
+  display: block;
+}
+
+.monitoringMobileList {
+  display: none;
+}
+
+.monitoringMobileCard {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(12, 23, 41, 0.9), rgba(8, 16, 30, 0.84));
+}
+
+.monitoringMobileCardHead {
+  display: grid;
+  gap: 8px;
+}
+
+.monitoringMobileCardTitle {
+  color: #eaf2ff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.monitoringMobileField {
+  display: grid;
+  gap: 8px;
+}
+
+.monitoringMobileLabel {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.monitoringMobileStoreList {
+  display: grid;
+  gap: 8px;
+}
+
+.monitoringMobileStoreItem {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 12px;
+  background: rgba(10, 18, 33, 0.42);
+}
+
+.monitoringMobileStoreName {
+  color: #dceaff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.monitoringMobileMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.monitoringMobileMetaItem {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 12px;
+  background: rgba(10, 18, 33, 0.42);
+  color: #dceaff;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .monitoringGroupTitle {
   padding: 10px 12px 0;
   color: #dceaff;
@@ -2651,6 +2733,31 @@
   }
 
   .monitoringExportMetaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .monitoringHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .monitoringRunAll,
+  .monitoringRunAllMeta,
+  .monitoringExportHeaderActions {
+    justify-items: stretch;
+    min-width: 0;
+  }
+
+  .monitoringDesktopTable {
+    display: none;
+  }
+
+  .monitoringMobileList {
+    display: grid;
+    gap: 14px;
+  }
+
+  .monitoringMobileMetaGrid {
     grid-template-columns: 1fr;
   }
 

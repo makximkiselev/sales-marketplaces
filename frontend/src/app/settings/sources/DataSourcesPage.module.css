@@ -499,3 +499,103 @@
 .ymActionHead {
   text-align: center !important;
 }
+
+.ymCardValue {
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  .ymTableWrap,
+  .ymTableScrollable {
+    overflow: visible;
+    max-height: none;
+  }
+
+  .ymTable,
+  .ymTable tbody,
+  .ymTable tr,
+  .ymTable td {
+    display: block;
+    width: 100%;
+  }
+
+  .ymTable colgroup,
+  .ymTable thead {
+    display: none;
+  }
+
+  .ymTable tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .ymTable tbody tr {
+    border: 1px solid rgba(132, 161, 214, 0.16);
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(12, 23, 41, 0.9), rgba(8, 16, 30, 0.84));
+    padding: 14px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .ymTable tbody td {
+    border: 0 !important;
+    padding: 0 !important;
+    display: grid;
+    grid-template-columns: minmax(104px, 42%) minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    text-align: left !important;
+  }
+
+  .ymTable tbody td::before {
+    content: attr(data-label);
+    color: var(--text-soft);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.3;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .ymBusinessCell,
+  .ymMutedCell,
+  .ymCurrencyCell,
+  .ymSourceCell,
+  .ymToggleCell,
+  .ymStatusCell,
+  .ymDeleteCell {
+    min-width: 0;
+  }
+
+  .ymToggleWrap,
+  .ymStatusTop {
+    justify-content: flex-start;
+  }
+
+  .ymStatusTime,
+  .ymStatusTimeValue,
+  .ymStatusError {
+    text-align: left;
+  }
+
+  .storeSourceButton,
+  .ymShopDeleteBtn {
+    justify-self: start;
+  }
+
+  .ymAccountActionsRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ymAccountActionsButtons {
+    width: 100%;
+  }
+
+  .ymAccountActionsButtons :global(.btn),
+  .ymDeleteAccountBtn,
+  .ymAddAccountBtn {
+    width: 100%;
+  }
+}
