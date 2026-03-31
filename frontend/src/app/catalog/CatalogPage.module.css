@@ -48,8 +48,8 @@
 
 .catalogWorkspace {
   display: grid;
-  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: minmax(296px, 336px) minmax(0, 1fr);
+  gap: 18px;
   align-items: start;
 }
 
@@ -166,7 +166,7 @@
 
 .catalogToolbar {
   display: grid;
-  grid-template-columns: minmax(280px, 1.2fr) minmax(220px, auto);
+  grid-template-columns: minmax(320px, 1.2fr) minmax(280px, auto);
   gap: 16px;
   align-items: end;
 }
@@ -192,14 +192,26 @@
 
 .catalogToolbarMeta {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  min-width: 0;
+}
+
+.catalogToolbarChipRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.catalogToolbarActions {
+  display: flex;
   align-items: end;
-  justify-content: stretch;
+  justify-content: flex-end;
   gap: 12px;
   min-width: 0;
 }
 
-.catalogToolbarMeta .catalogMetaChip {
+.catalogToolbarChipRow .catalogMetaChip {
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -230,6 +242,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .modeSwitch {
@@ -456,6 +469,7 @@
 
 .mobileCatalogStoreGrid {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 10px;
 }
 
@@ -504,6 +518,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .mobileCatalogPagerMeta {
@@ -535,6 +550,10 @@
     justify-content: flex-start;
   }
 
+  .catalogToolbarActions {
+    justify-content: flex-start;
+  }
+
   .catalogPager {
     flex-direction: column;
     align-items: stretch;
@@ -546,5 +565,14 @@
 
   .catalogToolbarMeta .catalogMetaChip {
     white-space: normal;
+  }
+
+  .mobileCatalogPager {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mobileCatalogPager > :global(.btn) {
+    width: 100%;
   }
 }

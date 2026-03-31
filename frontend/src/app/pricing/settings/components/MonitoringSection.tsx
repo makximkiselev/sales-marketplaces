@@ -311,7 +311,10 @@ export function MonitoringSection({
                   {runAllState.current_stage ? <span className={styles.monitoringRunAllStage}>{runAllState.current_stage}</span> : null}
                   {String(runAllState.last_status || "").trim().toLowerCase() === "running" ? (
                     <div className={styles.monitoringProgress}>
-                      <div className={styles.monitoringProgressBar} style={{ width: `${progressValue(runAllState.progress_percent)}%` }} />
+                      <div
+                        className={styles.monitoringProgressBar}
+                        style={{ "--monitoring-progress": `${progressValue(runAllState.progress_percent)}%` } as React.CSSProperties}
+                      />
                     </div>
                   ) : null}
                 </div>

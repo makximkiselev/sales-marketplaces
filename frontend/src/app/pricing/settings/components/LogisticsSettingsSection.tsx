@@ -137,6 +137,19 @@ export function LogisticsSettingsSection({
                   >
                     {catalogOpen ? "Скрыть каталог" : "Каталог"}
                   </button>
+                  <ControlField label="Поиск по SKU" className={styles.logisticsSearchField}>
+                    <div className={styles.inputWithSuffix}>
+                      <input
+                        className={`input input-size-fluid ${styles.settingInput}`}
+                        value={logisticsSearch}
+                        onChange={(e) => {
+                          setLogisticsSearch(e.target.value);
+                          setLogisticsPage(1);
+                        }}
+                        placeholder="Поиск по SKU или наименованию"
+                      />
+                    </div>
+                  </ControlField>
                   <div className={styles.logisticsToolbarChipRow}>
                     <span className={styles.logisticsBranchChip}>{selectedBranchLabel}</span>
                     {logisticsTreePath ? (
@@ -152,19 +165,6 @@ export function LogisticsSettingsSection({
                       </button>
                     ) : null}
                   </div>
-                  <ControlField label="Поиск по SKU" className={styles.logisticsSearchField}>
-                    <div className={styles.inputWithSuffix}>
-                      <input
-                        className={`input input-size-fluid ${styles.settingInput}`}
-                        value={logisticsSearch}
-                        onChange={(e) => {
-                          setLogisticsSearch(e.target.value);
-                          setLogisticsPage(1);
-                        }}
-                        placeholder="Поиск по SKU или наименованию"
-                      />
-                    </div>
-                  </ControlField>
                   <ControlField label="На странице" className={styles.logisticsPageSizeBox}>
                     <select
                       className={`input input-size-sm ${styles.logisticsPageSizeSelect}`}
@@ -269,7 +269,7 @@ export function LogisticsSettingsSection({
                                 <td key={cellKey}>
                                   <div className={styles.cellInputWrap}>
                                     <input
-                                      className={`input ${styles.cellInput}`}
+                                      className={`input input-size-sm ${styles.cellInput}`}
                                       value={draft ?? (value == null ? "" : String(value))}
                                       onChange={(e) => setLogisticsCellDraftByKey(cellKey, e.target.value)}
                                       onBlur={() => commitLogisticsCell(row, field)}
@@ -306,10 +306,13 @@ export function LogisticsSettingsSection({
                 </div>
 
                 <div className={styles.logisticsPager}>
-                  <div className={styles.inlineInfo}>Стр. {logisticsPage} / {totalPages}</div>
-                  <div className={styles.platformTabs}>
-                    <button type="button" className={`btn inline ${styles.tabButton}`} onClick={() => setLogisticsPage((p) => Math.max(1, p - 1))} disabled={logisticsPage <= 1}>Назад</button>
-                    <button type="button" className={`btn inline ${styles.tabButton}`} onClick={() => setLogisticsPage((p) => p + 1)} disabled={logisticsPage >= totalPages}>Вперед</button>
+                  <div className={styles.logisticsPagerMeta}>
+                    <div className={styles.inlineInfo}>Страница {logisticsPage} / {totalPages}</div>
+                    <div className={styles.logisticsPagerHint}>{logisticsTotal} SKU в выборке</div>
+                  </div>
+                  <div className={styles.logisticsPagerActions}>
+                    <button type="button" className="btn ghost" onClick={() => setLogisticsPage((p) => Math.max(1, p - 1))} disabled={logisticsPage <= 1}>Назад</button>
+                    <button type="button" className="btn ghost" onClick={() => setLogisticsPage((p) => p + 1)} disabled={logisticsPage >= totalPages}>Вперед</button>
                   </div>
                 </div>
             </div>

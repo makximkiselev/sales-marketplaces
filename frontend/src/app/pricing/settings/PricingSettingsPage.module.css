@@ -710,14 +710,14 @@
 }
 
 .categoryEditorHead {
-  padding: 0;
-}
-
-.categoryEditorHead {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(132, 161, 214, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(12, 22, 39, 0.48), rgba(8, 16, 30, 0.3));
 }
 
 .categoryEditorEyebrow {
@@ -744,6 +744,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .categoryEditorMetaChip {
@@ -761,8 +762,8 @@
 
 .categoryEditorGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
   align-items: start;
 }
 
@@ -772,11 +773,11 @@
 
 .categoryEditorField {
   display: grid;
-  gap: 8px;
-  padding: 12px;
+  gap: 10px;
+  padding: 14px;
   border-radius: 14px;
   border: 1px solid rgba(132, 161, 214, 0.14);
-  background: rgba(7, 14, 27, 0.36);
+  background: linear-gradient(180deg, rgba(10, 18, 33, 0.48), rgba(7, 14, 27, 0.4));
   align-content: start;
   min-width: 0;
 }
@@ -1166,7 +1167,7 @@
 
 .logisticsFilterBar {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(112px, auto) auto;
+  grid-template-columns: auto minmax(320px, 1fr) minmax(0, auto) minmax(112px, auto) auto;
   gap: 14px;
   align-items: end;
 }
@@ -1178,11 +1179,12 @@
 .logisticsToolbarChipRow {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 8px;
   min-height: 40px;
   min-width: 0;
   overflow: hidden;
-  justify-content: flex-start;
 }
 
 .logisticsCatalogInline {
@@ -1595,9 +1597,9 @@
 
 .salesPlanGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   align-items: stretch;
-  gap: 14px;
+  gap: 16px;
   max-width: 1320px;
   width: 100%;
   justify-self: stretch;
@@ -1609,9 +1611,9 @@
   background:
     radial-gradient(circle at top right, rgba(76, 201, 240, 0.07), transparent 32%),
     linear-gradient(180deg, rgba(13, 24, 42, 0.78), rgba(8, 16, 30, 0.9));
-  padding: 14px;
+  padding: 16px;
   display: grid;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
 }
 
@@ -1631,6 +1633,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .salesPlanCardEyebrow {
@@ -1670,6 +1673,7 @@
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
+  align-self: flex-start;
 }
 
 .salesPlanCardStateDirty {
@@ -1680,15 +1684,15 @@
 
 .salesPlanModeGrid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
 .salesPlanModeCard {
-  padding: 10px 12px;
+  padding: 12px;
   border-radius: 14px;
   border: 1px solid rgba(132, 161, 214, 0.12);
-  background: rgba(7, 14, 27, 0.42);
+  background: linear-gradient(180deg, rgba(9, 17, 31, 0.5), rgba(7, 14, 27, 0.42));
   display: grid;
   gap: 8px;
 }
@@ -1711,18 +1715,19 @@
 .salesPlanFields {
   display: grid;
   grid-template-columns: repeat(2, minmax(140px, 1fr));
-  gap: 10px;
+  gap: 12px;
   align-items: start;
 }
 
 .salesPlanField {
-  padding: 10px 12px;
+  padding: 12px;
   border-radius: 14px;
   border: 1px solid rgba(132, 161, 214, 0.12);
-  background: rgba(7, 14, 27, 0.34);
+  background: linear-gradient(180deg, rgba(10, 18, 33, 0.46), rgba(7, 14, 27, 0.34));
   display: grid;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
+  min-height: 88px;
 }
 
 .salesPlanFieldCompact {
@@ -1742,6 +1747,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
   padding: 10px 12px;
   border: 1px solid rgba(132, 161, 214, 0.18);
   border-radius: 16px;
@@ -1755,6 +1761,7 @@
 .salesPlanFloatingMeta {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   min-width: 0;
 }
@@ -2388,6 +2395,25 @@
   justify-content: space-between;
   gap: 12px;
   margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.logisticsPagerMeta {
+  display: grid;
+  gap: 4px;
+}
+
+.logisticsPagerHint {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.logisticsPagerActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .pricingTable {
@@ -2519,6 +2545,10 @@
     padding: 14px;
   }
 
+  .categoryEditorHead {
+    padding: 12px;
+  }
+
   .categoryEditorGrid {
     grid-template-columns: 1fr;
   }
@@ -2628,6 +2658,15 @@
   .logisticsPager {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .logisticsFilterBar {
+    grid-template-columns: 1fr;
+  }
+
+  .logisticsToolbarChipRow,
+  .logisticsPagerActions {
+    justify-content: flex-start;
   }
 
   .logisticsPageSizeBox {
@@ -2763,7 +2802,6 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .salesPlanGrid,
   .salesPlanFields {
     grid-template-columns: 1fr 1fr;
   }

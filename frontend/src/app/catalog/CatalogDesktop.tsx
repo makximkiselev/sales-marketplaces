@@ -131,22 +131,26 @@ export function CatalogDesktop({ controller, treeSelector, table }: Props) {
                 />
               </div>
               <div className={styles.catalogToolbarMeta}>
-                {selectedTreePath ? <span className={styles.catalogMetaChip}>{selectedTreePath}</span> : <span className={styles.catalogMetaChip}>Весь каталог</span>}
-                <div className={styles.catalogPageSizeBlock}>
-                  <label className={styles.catalogFieldLabel} htmlFor="catalog-desktop-page-size">На странице</label>
-                  <select
-                    id="catalog-desktop-page-size"
-                    className={`input input-size-sm ${styles.catalogPageSizeSelect}`}
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPage(1);
-                      setPageSize(Number(e.target.value) || 50);
-                    }}
-                  >
-                    {[25, 50, 100, 200, -1].map((n) => (
-                      <option key={n} value={n}>{n < 0 ? "Все" : n}</option>
-                    ))}
-                  </select>
+                <div className={styles.catalogToolbarChipRow}>
+                  {selectedTreePath ? <span className={styles.catalogMetaChip}>{selectedTreePath}</span> : <span className={styles.catalogMetaChip}>Весь каталог</span>}
+                </div>
+                <div className={styles.catalogToolbarActions}>
+                  <div className={styles.catalogPageSizeBlock}>
+                    <label className={styles.catalogFieldLabel} htmlFor="catalog-desktop-page-size">На странице</label>
+                    <select
+                      id="catalog-desktop-page-size"
+                      className={`input input-size-sm ${styles.catalogPageSizeSelect}`}
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPage(1);
+                        setPageSize(Number(e.target.value) || 50);
+                      }}
+                    >
+                      {[25, 50, 100, 200, -1].map((n) => (
+                        <option key={n} value={n}>{n < 0 ? "Все" : n}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
