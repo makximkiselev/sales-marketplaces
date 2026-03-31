@@ -1451,6 +1451,8 @@ select.input {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .account-shops {
@@ -1505,6 +1507,7 @@ select.input {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
 }
 
 .shop-status-col {
@@ -1632,6 +1635,26 @@ select.input {
   align-items: center;
   gap: 8px;
   font-size: 14px;
+}
+
+.wizard-inline-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wizard-inline-main {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.wizard-inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
 }
 
 
@@ -2359,6 +2382,55 @@ select.input {
 }
 
 @media (max-width: 640px) {
+  .account-top,
+  .shop-header,
+  .shop-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .account-controls-row,
+  .shop-controls-row,
+  .wizard-inline-actions {
+    width: 100%;
+  }
+
+  .account-controls-row > .btn,
+  .shop-controls-row > .btn,
+  .wizard-inline-actions > .btn:not(.icon-only) {
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .wizard-inline-row {
+    align-items: stretch;
+  }
+
+  .wizard-inline-main {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .wizard-inline-actions > .btn.icon-only {
+    flex: 0 0 40px;
+    width: 40px;
+  }
+
+  .campaign-checklist {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .campaign-item {
+    align-items: flex-start;
+    line-height: 1.35;
+  }
+
+  .campaign-item input {
+    margin-top: 2px;
+  }
+
   .app-shell-subnav {
     padding-inline: 10px;
   }

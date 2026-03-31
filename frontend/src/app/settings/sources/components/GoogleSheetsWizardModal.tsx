@@ -177,8 +177,12 @@ export function GoogleSheetsWizardModal({
       {step === 2 ? (
         <>
           <WizardLabel>Добавить существующий аккаунт</WizardLabel>
-          <div className="row" style={{ gap: 8 }}>
-            <select className="input input-size-fluid" value={selectedAccountId} onChange={(e) => onChangeSelectedAccountId(e.target.value)}>
+          <div className="wizard-inline-row">
+            <select
+              className="input input-size-fluid wizard-inline-main"
+              value={selectedAccountId}
+              onChange={(e) => onChangeSelectedAccountId(e.target.value)}
+            >
               <option value="">Выбери аккаунт</option>
               {(integrations.google?.accounts || []).map((acc) => (
                 <option key={acc.id} value={acc.id}>
@@ -186,18 +190,20 @@ export function GoogleSheetsWizardModal({
                 </option>
               ))}
             </select>
-            <button className="btn inline" disabled={!selectedAccountId || loading} onClick={onUseExistingAccount}>
-              Использовать
-            </button>
-            <button
-              className="btn inline icon-only delete-btn"
-              disabled={!selectedAccountId || loading}
-              onClick={() => onDeleteGoogleAccount(selectedAccountId)}
-              title="Удалить аккаунт"
-              aria-label="Удалить аккаунт"
-            >
-              <DeleteIcon />
-            </button>
+            <div className="wizard-inline-actions">
+              <button className="btn inline" disabled={!selectedAccountId || loading} onClick={onUseExistingAccount}>
+                Использовать
+              </button>
+              <button
+                className="btn inline icon-only delete-btn"
+                disabled={!selectedAccountId || loading}
+                onClick={() => onDeleteGoogleAccount(selectedAccountId)}
+                title="Удалить аккаунт"
+                aria-label="Удалить аккаунт"
+              >
+                <DeleteIcon />
+              </button>
+            </div>
           </div>
 
           <WizardLabel>Создать новый</WizardLabel>
