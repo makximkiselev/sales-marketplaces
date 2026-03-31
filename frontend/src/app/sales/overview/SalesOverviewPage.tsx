@@ -198,6 +198,15 @@ const ORDERS_PERIOD_OPTIONS: Array<{ value: OrdersPeriod; label: string }> = [
   { value: "quarter", label: "90 дней" },
 ];
 
+function getInitialSearchParams() {
+  if (typeof window === "undefined") return new URLSearchParams();
+  return new URLSearchParams(window.location.search);
+}
+
+function latestTimestamp(values: Array<string | undefined>) {
+  return values.filter(Boolean).sort().at(-1) || "";
+}
+
 function moneySign(currencyCode: string | null | undefined) {
   return String(currencyCode || "").trim().toUpperCase() === "USD" ? "$" : "₽";
 }
@@ -281,6 +290,130 @@ async function fetchJson<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+function mergeOrdersResponses(responses: OrdersResp[], page: number, pageSize: number): OrdersResp {
+  const rows = responses.flatMap((response) => response.rows || []);
+  const statuses = Array.from(new Set(responses.flatMap((response) => response.available_statuses || []))).sort((a, b) => a.localeCompare(b, "ru"));
+  const sortedRows = [...rows].sort((a, b) => String(b.order_created_at || b.order_created_date || "").localeCompare(String(a.order_created_at || a.order_created_date || "")));
+  const start = Math.max(0, (page - 1) * pageSize);
+  const pageRows = sortedRows.slice(start, start + pageSize);
+  const totalRevenue = sortedRows.reduce((acc, row) => acc + Number(row.sale_price || 0), 0);
+  const coinvestAmount = sortedRows.reduce((acc, row) => {
+    const revenue = Number(row.sale_price || 0);
+    const buyerPrice = Number(row.sale_price_with_coinvest ?? row.sale_price ?? 0);
+    if (revenue <= 0) return acc;
+    return acc + Math.max(0, revenue - buyerPrice);
+  }, 0);
+  return {
+    ok: true,
+    rows: pageRows,
+    total_count: sortedRows.length,
+    page,
+    page_size: pageSize,
+    available_statuses: statuses,
+    min_date: responses.map((response) => response.min_date).filter(Boolean).sort().at(0),
+    max_date: responses.map((response) => response.max_date).filter(Boolean).sort().at(-1),
+    date_from: responses.map((response) => response.date_from).filter(Boolean).sort().at(0),
+    date_to: responses.map((response) => response.date_to).filter(Boolean).sort().at(-1),
+    loaded_at: latestTimestamp(responses.map((response) => response.loaded_at)),
+    kpis: {
+      orders_count: sortedRows.length,
+      avg_coinvest_pct: totalRevenue > 0 ? Number(((coinvestAmount / totalRevenue) * 100).toFixed(2)) : 0,
+      additional_ads: responses.reduce((acc, response) => acc + Number(response.kpis?.additional_ads || 0), 0),
+      operational_errors: responses.reduce((acc, response) => acc + Number(response.kpis?.operational_errors || 0), 0),
+    },
+  };
+}
+
+function mergeProblemResponses(responses: ProblemOrdersResp[], page: number, pageSize: number): ProblemOrdersResp {
+  const rows = responses.flatMap((response) => response.rows || []);
+  const sortedRows = [...rows].sort((a, b) => String(b.order_created_at || b.order_created_date || "").localeCompare(String(a.order_created_at || a.order_created_date || "")));
+  const start = Math.max(0, (page - 1) * pageSize);
+  return {
+    ok: true,
+    rows: sortedRows.slice(start, start + pageSize),
+    total_count: sortedRows.length,
+    page,
+    page_size: pageSize,
+    date_from: responses.map((response) => response.date_from).filter(Boolean).sort().at(0),
+    date_to: responses.map((response) => response.date_to).filter(Boolean).sort().at(-1),
+    loaded_at: latestTimestamp(responses.map((response) => response.loaded_at)),
+    kpis: {
+      problem_orders_count: sortedRows.length,
+    },
+  };
+}
+
+function mergeRetrospectiveResponses(responses: RetrospectiveResp[]): RetrospectiveResp {
+  const grouped = new Map<string, RetrospectiveRow>();
+  for (const response of responses) {
+    for (const row of response.rows || []) {
+      const key = String(row.key || row.label || row.sku || row.category_path || "").trim();
+      if (!key) continue;
+      const current = grouped.get(key);
+      if (!current) {
+        grouped.set(key, {
+          ...row,
+          revenue: Number(row.revenue || 0),
+          profit_amount: Number(row.profit_amount || 0),
+          coinvest_amount: Number(row.coinvest_amount || 0),
+          ads_amount: Number(row.ads_amount || 0),
+          order_count_total: Number(row.order_count_total || 0),
+          periods: [...(row.periods || [])],
+        });
+        continue;
+      }
+      const periodMap = new Map<string, RetrospectivePeriod>();
+      for (const period of current.periods || []) periodMap.set(period.period_key, { ...period });
+      for (const period of row.periods || []) {
+        const existing = periodMap.get(period.period_key);
+        if (!existing) {
+          periodMap.set(period.period_key, { ...period });
+          continue;
+        }
+        const revenue = Number(existing.revenue || 0) + Number(period.revenue || 0);
+        const profit = Number(existing.profit_amount || 0) + Number(period.profit_amount || 0);
+        periodMap.set(period.period_key, {
+          ...existing,
+          revenue,
+          profit_amount: profit,
+          profit_pct: revenue > 0 ? Number(((profit / revenue) * 100).toFixed(2)) : null,
+          coinvest_amount: Number(existing.coinvest_amount || 0) + Number(period.coinvest_amount || 0),
+          ads_amount: Number(existing.ads_amount || 0) + Number(period.ads_amount || 0),
+          order_count_total: Number(existing.order_count_total || 0) + Number(period.order_count_total || 0),
+          returns_pct: period.returns_pct ?? existing.returns_pct,
+        });
+      }
+      const nextRevenue = Number(current.revenue || 0) + Number(row.revenue || 0);
+      const nextProfit = Number(current.profit_amount || 0) + Number(row.profit_amount || 0);
+      grouped.set(key, {
+        ...current,
+        revenue: nextRevenue,
+        profit_amount: nextProfit,
+        profit_pct: nextRevenue > 0 ? Number(((nextProfit / nextRevenue) * 100).toFixed(2)) : null,
+        coinvest_amount: Number(current.coinvest_amount || 0) + Number(row.coinvest_amount || 0),
+        ads_amount: Number(current.ads_amount || 0) + Number(row.ads_amount || 0),
+        order_count_total: Number(current.order_count_total || 0) + Number(row.order_count_total || 0),
+        periods: Array.from(periodMap.values()).sort((a, b) => String(b.period_key).localeCompare(String(a.period_key))),
+      });
+    }
+  }
+  const rows = Array.from(grouped.values()).sort((a, b) => Number(b.revenue || 0) - Number(a.revenue || 0));
+  return { ok: true, rows, total_count: rows.length };
+}
+
+function mergeDataFlowResponses(responses: DataFlowResp[]): DataFlowResp {
+  const grouped = new Map<string, DataFlowItem>();
+  for (const response of responses) {
+    for (const flow of response.flows || []) {
+      const current = grouped.get(flow.code);
+      if (!current || String(flow.loaded_at || "") > String(current.loaded_at || "")) {
+        grouped.set(flow.code, flow);
+      }
+    }
+  }
+  return { ok: true, flows: Array.from(grouped.values()) };
+}
+
 function SummaryCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
     <div className={styles.summaryCard}>
@@ -292,19 +425,28 @@ function SummaryCard({ label, value, detail }: { label: string; value: string; d
 }
 
 export default function SalesOverviewPage() {
+  const initialParams = getInitialSearchParams();
   const [isMobile, setIsMobile] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [context, setContext] = useState<ContextResp | null>(null);
-  const [tab, setTab] = useState<TabKey>("orders");
-  const [storeId, setStoreId] = useState("");
-  const [dateMode, setDateMode] = useState<DateMode>("created");
-  const [period, setPeriod] = useState<OrdersPeriod>("today");
-  const [itemStatus, setItemStatus] = useState("");
+  const [tab, setTab] = useState<TabKey>((() => {
+    const value = initialParams.get("tab");
+    return value === "tracking" || value === "orders" || value === "problems" || value === "sku" || value === "category" ? value : "orders";
+  })());
+  const [storeId, setStoreId] = useState(initialParams.get("storeId") || "");
+  const [dateMode, setDateMode] = useState<DateMode>(initialParams.get("dateMode") === "delivery" ? "delivery" : "created");
+  const [period, setPeriod] = useState<OrdersPeriod>((() => {
+    const value = initialParams.get("period");
+    return value === "today" || value === "yesterday" || value === "week" || value === "month" || value === "quarter" ? value : "today";
+  })());
+  const [itemStatus, setItemStatus] = useState(initialParams.get("itemStatus") || "");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
-  const [grain, setGrain] = useState<RetrospectiveGrain>("month");
-  const [trackingStoreId, setTrackingStoreId] = useState("all");
+  const [grain, setGrain] = useState<RetrospectiveGrain>(initialParams.get("grain") === "day" ? "day" : "month");
+  const [trackingStoreId, setTrackingStoreId] = useState(initialParams.get("trackingStoreId") || "all");
+  const [customDateFrom] = useState(initialParams.get("date_from") || "");
+  const [customDateTo] = useState(initialParams.get("date_to") || "");
   const [tracking, setTracking] = useState<TrackingResp | null>(null);
   const [orders, setOrders] = useState<OrdersResp | null>(null);
   const [problemOrders, setProblemOrders] = useState<ProblemOrdersResp | null>(null);
@@ -338,29 +480,46 @@ export default function SalesOverviewPage() {
   }, []);
 
   useEffect(() => {
-    if (!storeId) return;
+    if (!storeId || (storeId === "all" && !context)) return;
     let cancelled = false;
     async function loadOverview() {
       setLoading(true);
       setError("");
       try {
-        const [trackingData, ordersData, problemOrdersData, dataFlowData, skuData, categoryData] = await Promise.all([
+        const fetchScoped = async (sid: string) => {
+          const rangeQuery = customDateFrom || customDateTo
+            ? `&date_from=${encodeURIComponent(customDateFrom)}&date_to=${encodeURIComponent(customDateTo)}`
+            : "";
+          const [ordersData, problemOrdersData, dataFlowData, skuData, categoryData] = await Promise.all([
+            fetchJson<OrdersResp>(
+              `/api/sales/overview/united-orders?store_id=${encodeURIComponent(sid)}&period=${encodeURIComponent(period)}&item_status=${encodeURIComponent(itemStatus)}&page=${page}&page_size=${pageSize}`,
+            ),
+            fetchJson<ProblemOrdersResp>(
+              `/api/sales/overview/problem-orders?store_id=${encodeURIComponent(sid)}&period=${encodeURIComponent(period)}&page=${page}&page_size=${pageSize}`,
+            ),
+            fetchJson<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(sid)}`),
+            fetchJson<RetrospectiveResp>(
+              `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=sku&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}${rangeQuery}&limit=120`,
+            ),
+            fetchJson<RetrospectiveResp>(
+              `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=category&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}${rangeQuery}&limit=120`,
+            ),
+          ]);
+          return { ordersData, problemOrdersData, dataFlowData, skuData, categoryData };
+        };
+
+        const [trackingData, scoped] = await Promise.all([
           fetchJson<TrackingResp>(`/api/sales/overview/tracking?store_id=${encodeURIComponent(tab === "tracking" ? trackingStoreId : storeId)}&date_mode=${encodeURIComponent(dateMode)}`),
-          fetchJson<OrdersResp>(
-            `/api/sales/overview/united-orders?store_id=${encodeURIComponent(storeId)}&period=${encodeURIComponent(period)}&item_status=${encodeURIComponent(itemStatus)}&page=${page}&page_size=${pageSize}`,
-          ),
-          fetchJson<ProblemOrdersResp>(
-            `/api/sales/overview/problem-orders?store_id=${encodeURIComponent(storeId)}&period=${encodeURIComponent(period)}&page=${page}&page_size=${pageSize}`,
-          ),
-          fetchJson<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(storeId)}`),
-          fetchJson<RetrospectiveResp>(
-            `/api/sales/overview/retrospective?store_id=${encodeURIComponent(storeId)}&group_by=sku&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}&limit=120`,
-          ),
-          fetchJson<RetrospectiveResp>(
-            `/api/sales/overview/retrospective?store_id=${encodeURIComponent(storeId)}&group_by=category&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}&limit=120`,
-          ),
+          storeId === "all"
+            ? Promise.all((context?.marketplace_stores || []).map((store) => fetchScoped(store.store_id)))
+            : fetchScoped(storeId),
         ]);
         if (cancelled) return;
+        const ordersData = Array.isArray(scoped) ? mergeOrdersResponses(scoped.map((item) => item.ordersData), page, pageSize) : scoped.ordersData;
+        const problemOrdersData = Array.isArray(scoped) ? mergeProblemResponses(scoped.map((item) => item.problemOrdersData), page, pageSize) : scoped.problemOrdersData;
+        const dataFlowData = Array.isArray(scoped) ? mergeDataFlowResponses(scoped.map((item) => item.dataFlowData)) : scoped.dataFlowData;
+        const skuData = Array.isArray(scoped) ? mergeRetrospectiveResponses(scoped.map((item) => item.skuData)) : scoped.skuData;
+        const categoryData = Array.isArray(scoped) ? mergeRetrospectiveResponses(scoped.map((item) => item.categoryData)) : scoped.categoryData;
         setTracking(trackingData);
         setOrders(ordersData);
         setProblemOrders(problemOrdersData);
@@ -379,12 +538,15 @@ export default function SalesOverviewPage() {
     return () => {
       cancelled = true;
     };
-  }, [storeId, trackingStoreId, tab, dateMode, period, itemStatus, page, pageSize, grain]);
+  }, [context, storeId, trackingStoreId, tab, dateMode, period, itemStatus, page, pageSize, grain, customDateFrom, customDateTo]);
 
-  const stores = useMemo(() => context?.marketplace_stores || [], [context]);
+  const stores = useMemo<StoreCtx[]>(
+    () => [{ store_uid: "all", store_id: "all", platform: "multi", platform_label: "Все магазины", label: "Все магазины", currency_code: "RUB" }, ...(context?.marketplace_stores || [])],
+    [context],
+  );
   const trackingStores = useMemo<StoreCtx[]>(
-    () => [{ store_uid: "all", store_id: "all", platform: "yandex_market", platform_label: "Яндекс Маркет", label: "Все магазины", currency_code: "RUB" }, ...stores],
-    [stores],
+    () => [{ store_uid: "all", store_id: "all", platform: "yandex_market", platform_label: "Яндекс Маркет", label: "Все магазины", currency_code: "RUB" }, ...((context?.marketplace_stores || []))],
+    [context],
   );
   const availableStatuses = useMemo(() => orders?.available_statuses || [], [orders]);
   const activeStore = useMemo(() => stores.find((store) => String(store.store_id) === String(storeId)) || null, [stores, storeId]);
@@ -412,6 +574,21 @@ export default function SalesOverviewPage() {
     return () => media.removeEventListener("change", sync);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || !storeId) return;
+    const params = new URLSearchParams();
+    params.set("tab", tab);
+    params.set("storeId", storeId);
+    params.set("trackingStoreId", trackingStoreId);
+    params.set("dateMode", dateMode);
+    params.set("period", period);
+    params.set("grain", grain);
+    if (itemStatus) params.set("itemStatus", itemStatus);
+    if (customDateFrom) params.set("date_from", customDateFrom);
+    if (customDateTo) params.set("date_to", customDateTo);
+    window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
+  }, [customDateFrom, customDateTo, dateMode, grain, itemStatus, period, storeId, tab, trackingStoreId]);
+
   const summaryCards = useMemo(() => {
     if (tab === "tracking") {
       return [
@@ -425,7 +602,7 @@ export default function SalesOverviewPage() {
       const profit = skuRows.reduce((acc, row) => acc + Number(row.profit_amount || 0), 0);
       return [
         { label: "SKU в срезе", value: formatNumber(skuRetrospective?.total_count), detail: `Период: ${grain === "month" ? "по месяцам" : "по дням"}` },
-        { label: "Оборот", value: formatMoney(revenue, activeStoreCurrencyCode), detail: `Дата: ${dateMode === "created" ? "по заказу" : "по доставке"}` },
+        { label: "Оборот", value: formatMoney(revenue, activeStoreCurrencyCode), detail: customDateFrom && customDateTo ? `${formatDate(customDateFrom)} - ${formatDate(customDateTo)}` : `Дата: ${dateMode === "created" ? "по заказу" : "по доставке"}` },
         { label: "Прибыль", value: formatMoney(profit, activeStoreCurrencyCode), detail: `Рентабельность: ${revenue > 0 ? formatPercent((profit / revenue) * 100) : "—"}` },
       ];
     }
@@ -434,7 +611,7 @@ export default function SalesOverviewPage() {
       const profit = categoryRows.reduce((acc, row) => acc + Number(row.profit_amount || 0), 0);
       return [
         { label: "Категорий в срезе", value: formatNumber(categoryRetrospective?.total_count), detail: `Период: ${grain === "month" ? "по месяцам" : "по дням"}` },
-        { label: "Оборот", value: formatMoney(revenue, activeStoreCurrencyCode), detail: `Дата: ${dateMode === "created" ? "по заказу" : "по доставке"}` },
+        { label: "Оборот", value: formatMoney(revenue, activeStoreCurrencyCode), detail: customDateFrom && customDateTo ? `${formatDate(customDateFrom)} - ${formatDate(customDateTo)}` : `Дата: ${dateMode === "created" ? "по заказу" : "по доставке"}` },
         { label: "Прибыль", value: formatMoney(profit, activeStoreCurrencyCode), detail: `Рентабельность: ${revenue > 0 ? formatPercent((profit / revenue) * 100) : "—"}` },
       ];
     }
@@ -450,7 +627,7 @@ export default function SalesOverviewPage() {
       { label: "Средний соинвест", value: formatPercent(orders?.kpis?.avg_coinvest_pct), detail: orders?.date_from && orders?.date_to ? `${formatDate(orders.date_from)} - ${formatDate(orders.date_to)}` : undefined },
       { label: "Доп. реклама", value: formatMoney(orders?.kpis?.additional_ads, activeStoreCurrencyCode), detail: `Ошибки: ${formatMoney(orders?.kpis?.operational_errors, activeStoreCurrencyCode)}` },
     ];
-  }, [activeStoreCurrencyCode, activeTrackingCurrencyCode, categoryRetrospective?.total_count, categoryRows, dateMode, grain, orders, problemOrders, skuRetrospective?.total_count, skuRows, tab, tracking]);
+  }, [activeStoreCurrencyCode, activeTrackingCurrencyCode, categoryRetrospective?.total_count, categoryRows, customDateFrom, customDateTo, dateMode, grain, orders, problemOrders, skuRetrospective?.total_count, skuRows, tab, tracking]);
 
   const vm = {
     stylesRef: styles,

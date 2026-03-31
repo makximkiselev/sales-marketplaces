@@ -224,6 +224,27 @@
   margin-bottom: 14px;
 }
 
+.panelHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.panelAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(8, 16, 30, 0.46);
+  color: #d6e5ff;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .panelTitle {
   color: #f2f7ff;
   font-size: 18px;
@@ -593,6 +614,7 @@
 
   .kpiHead,
   .chartHead,
+  .panelHead,
   .rankingRowHead,
   .storeRowHead {
     flex-direction: column;
