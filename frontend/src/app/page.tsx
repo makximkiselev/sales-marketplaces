@@ -914,9 +914,8 @@ export default function Page() {
   const currentRange = getCurrentPeriodRange(period);
   const previousRange = getPreviousPeriodRange(period);
   const trendDays = useMemo(() => {
-    const scoped = allTrendDays.filter((day) => day.date >= currentRange.start && day.date <= currentRange.end);
-    return scoped.length ? scoped : (activeMonth?.days || []).filter((day) => day.date);
-  }, [activeMonth?.days, allTrendDays, currentRange.end, currentRange.start]);
+    return allTrendDays.filter((day) => day.date >= currentRange.start && day.date <= currentRange.end);
+  }, [allTrendDays, currentRange.end, currentRange.start]);
   const revenueSpark = trendDays.map((day) => Number(day.revenue || 0));
   const profitSpark = trendDays.map((day) => Number(day.profit_amount || 0));
   const marginSpark = trendDays.map((day) => Number(day.profit_pct || 0));

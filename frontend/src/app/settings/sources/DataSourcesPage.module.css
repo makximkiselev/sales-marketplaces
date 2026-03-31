@@ -208,14 +208,16 @@
 .ymContent {
   width: 100%;
   margin-inline: auto;
+  display: grid;
+  gap: 14px;
 }
 
 .ymTableWrap {
-  margin-top: 12px;
   border: 1px solid rgba(132, 161, 214, 0.24);
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: auto;
   width: 100%;
+  background: linear-gradient(180deg, rgba(10, 18, 33, 0.86), rgba(7, 14, 27, 0.82));
 }
 
 .ymTableScrollable {
@@ -226,60 +228,61 @@
 .ymTable {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  min-width: 1440px;
+  table-layout: auto;
 }
 
 .ymColBusiness {
-  width: 13%;
+  width: 8.5rem;
 }
 
 .ymColCampaign {
-  width: 13%;
+  width: 8.5rem;
 }
 
 .ymColName {
-  width: 14%;
+  width: 14rem;
 }
 
 .ymColModel {
-  width: 8%;
+  width: 7rem;
 }
 
 .ymColCurrency {
-  width: 8%;
+  width: 6.5rem;
 }
 
 .ymColSource {
-  width: 14%;
+  width: 15rem;
 }
 
 .ymColToggle {
-  width: 9%;
+  width: 7rem;
 }
 
 .ymColStatus {
-  width: 18%;
+  width: 14rem;
 }
 
 .ymColDelete {
-  width: 8%;
+  width: 7rem;
 }
 
 .ozColClient {
-  width: 13%;
+  width: 8.5rem;
 }
 
 .ozColSeller {
-  width: 13%;
+  width: 8.5rem;
 }
 
 .gsColSheet {
-  width: 18%;
+  width: 16rem;
 }
 
 .ymTable thead th {
   padding: 12px 10px;
-  text-align: center;
+  text-align: left;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -304,7 +307,7 @@
   vertical-align: middle;
   line-height: 1.3;
   border-bottom: 1px solid rgba(132, 161, 214, 0.16);
-  text-align: center;
+  text-align: left;
 }
 
 .ymTable tbody tr:last-child td {
@@ -314,6 +317,7 @@
 .ymBusinessCell {
   font-weight: 700;
   color: #e5efff;
+  white-space: nowrap;
 }
 
 .ymMutedCell {
@@ -355,15 +359,15 @@
 
 .ymStatusCell {
   min-width: 0;
-  text-align: center;
-  padding-left: 20px !important;
-  padding-right: 20px !important;
+  text-align: left;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
 }
 
 .ymToggleWrap {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
   gap: 6px;
 }
@@ -377,30 +381,31 @@
 }
 
 .ymStatusTop {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .ymStatusTime {
   margin-top: 4px;
   font-size: 12px;
   color: var(--text-soft);
-  text-align: center;
+  text-align: left;
 }
 
 .ymStatusTimeValue {
   font-size: 12px;
   color: #d4e3ff;
-  text-align: center;
+  text-align: left;
 }
 
 .ymStatusError {
   margin-top: 4px;
   font-size: 12px;
   color: #ff9090;
-  text-align: center;
+  text-align: left;
 }
 
 .storeSourceCell {
@@ -437,20 +442,19 @@
 }
 
 .ymAccountActionsList {
-  margin-top: 10px;
   display: grid;
   gap: 8px;
   width: 100%;
   border-top: 1px solid rgba(132, 161, 214, 0.18);
-  padding-top: 8px;
+  padding-top: 12px;
 }
 
 .ymAccountActionsRow {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 12px;
-  padding: 4px 2px;
+  padding: 4px 0;
   flex-wrap: wrap;
 }
 
@@ -465,6 +469,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .ymAccountActionsButtons :global(.btn) {
@@ -532,9 +537,9 @@
 }
 
 .ymStatusHead {
-  text-align: center !important;
-  padding-left: 20px !important;
-  padding-right: 20px !important;
+  text-align: left !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
 }
 
 .ymActionHead {
