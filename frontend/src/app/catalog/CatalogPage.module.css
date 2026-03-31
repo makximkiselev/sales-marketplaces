@@ -110,6 +110,7 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  padding-left: var(--catalog-tree-indent, 0px);
 }
 
 .catalogTreeExpand {
@@ -165,7 +166,7 @@
 
 .catalogToolbar {
   display: grid;
-  grid-template-columns: minmax(360px, 1fr) auto;
+  grid-template-columns: minmax(280px, 1.2fr) minmax(220px, auto);
   gap: 16px;
   align-items: end;
 }
@@ -190,11 +191,20 @@
 }
 
 .catalogToolbarMeta {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
-  justify-content: flex-end;
+  justify-content: stretch;
   gap: 12px;
-  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.catalogToolbarMeta .catalogMetaChip {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .catalogTableWrap {
@@ -502,6 +512,8 @@
   gap: 10px;
   color: #d9e6fb;
   font-size: 13px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .mobileCatalogPageSize {
@@ -519,6 +531,7 @@
   }
 
   .catalogToolbarMeta {
+    grid-template-columns: 1fr;
     justify-content: flex-start;
   }
 
@@ -529,5 +542,9 @@
 
   .catalogPagerActions {
     justify-content: space-between;
+  }
+
+  .catalogToolbarMeta .catalogMetaChip {
+    white-space: normal;
   }
 }

@@ -376,7 +376,10 @@ export function MonitoringSection({
                                 </span>
                                 {storeState?.status === "running" ? (
                                   <div className={styles.monitoringProgress}>
-                                    <div className={styles.monitoringProgressBar} style={{ width: `${progressValue((storeState as { progress_percent?: number }).progress_percent)}%` }} />
+                                    <div
+                                      className={styles.monitoringProgressBar}
+                                      style={{ "--monitoring-progress": `${progressValue((storeState as { progress_percent?: number }).progress_percent)}%` } as React.CSSProperties}
+                                    />
                                   </div>
                                 ) : null}
                               </td>
@@ -385,8 +388,8 @@ export function MonitoringSection({
                         )}
                         <td>
                           {supportsDateRange(row) ? (
-                            <div style={{ display: "grid", gap: 8 }}>
-                              <label style={{ display: "grid", gridTemplateColumns: "18px minmax(0, 1fr)", alignItems: "center", gap: 8 }}>
+                            <div className={styles.monitoringDateRange}>
+                              <label className={styles.monitoringDateField}>
                                 <span>с</span>
                                 <input
                                   type="date"
@@ -402,7 +405,7 @@ export function MonitoringSection({
                                   }}
                                 />
                               </label>
-                              <label style={{ display: "grid", gridTemplateColumns: "18px minmax(0, 1fr)", alignItems: "center", gap: 8 }}>
+                              <label className={styles.monitoringDateField}>
                                 <span>по</span>
                                 <input
                                   type="date"
@@ -436,7 +439,10 @@ export function MonitoringSection({
                           </span>
                           {String(row.last_status || "").trim().toLowerCase() === "running" ? (
                             <div className={styles.monitoringProgress}>
-                              <div className={styles.monitoringProgressBar} style={{ width: `${progressValue(row.progress_percent)}%` }} />
+                              <div
+                                className={styles.monitoringProgressBar}
+                                style={{ "--monitoring-progress": `${progressValue(row.progress_percent)}%` } as React.CSSProperties}
+                              />
                             </div>
                           ) : null}
                         </td>

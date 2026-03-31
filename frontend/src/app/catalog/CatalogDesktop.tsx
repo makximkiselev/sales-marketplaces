@@ -90,7 +90,7 @@ export function CatalogDesktop({ controller, treeSelector, table }: Props) {
                     <div
                       key={node.path}
                       className={styles.catalogTreeRow}
-                      style={{ paddingLeft: `${node.depth * 16}px` }}
+                      style={{ "--catalog-tree-indent": `${node.depth * 16}px` } as React.CSSProperties}
                     >
                       {node.hasChildren ? (
                         <button
