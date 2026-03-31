@@ -28,6 +28,7 @@ export function SalesOverviewMobile({ vm }: Props) {
     setDateMode,
     grain,
     setGrain,
+    setPage,
     trackingStoreId,
     setTrackingStoreId,
     orderRows,
@@ -43,6 +44,11 @@ export function SalesOverviewMobile({ vm }: Props) {
 
   const rows = tab === "orders" ? orderRows : tab === "problems" ? problemRows : tab === "sku" ? skuRows : categoryRows;
   const currentStoreLabel = tab === "tracking" ? activeTrackingStore?.label : activeStore?.label;
+  const modeLabel = dateMode === "delivery" ? "Дата доставки" : "Дата заказа";
+  const grainLabel = grain === "day" ? "По дням" : "По месяцам";
+  const periodLabel = ORDERS_PERIOD_OPTIONS.find((option: any) => option.value === period)?.label || "Период";
+
+  const resetPage = () => setPage(1);
 
   return (
     <PageFrame
@@ -72,54 +78,82 @@ export function SalesOverviewMobile({ vm }: Props) {
         />
           <WorkspaceToolbar className={styles.overviewToolbarMobile}>
             {tab === "tracking" ? (
-              <>
-                <select className={`input input-size-fluid ${styles.dateInput}`} value={trackingStoreId} onChange={(e) => setTrackingStoreId(e.target.value)}>
-                  {trackingStores.map((store: any) => (
-                    <option key={store.store_uid} value={store.store_id}>{store.label}</option>
-                  ))}
-                </select>
-                <select className={`input input-size-fluid ${styles.dateInput}`} value={dateMode} onChange={(e) => setDateMode(e.target.value)}>
-                  <option value="created">Дата заказа</option>
-                  <option value="delivery">Дата доставки</option>
-                </select>
-              </>
-            ) : (
-              <>
-                <select className={`input input-size-fluid ${styles.dateInput}`} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-                  {stores.map((store: any) => (
-                    <option key={store.store_uid} value={store.store_id}>{store.label}</option>
-                  ))}
-                </select>
-                {tab === "orders" || tab === "problems" ? (
-                  <select className={`input input-size-fluid ${styles.dateInput}`} value={period} onChange={(e) => setPeriod(e.target.value)}>
-                    {ORDERS_PERIOD_OPTIONS.map((option: any) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
+              <div className={styles.mobileFilterGrid}>
+                <div className={styles.mobileFilterGroup}>
+                  <div className={styles.mobileFilterLabel}>Магазин</div>
+                  <select className={`input input-size-fluid ${styles.dateInput}`} value={trackingStoreId} onChange={(e) => setTrackingStoreId(e.target.value)}>
+                    {trackingStores.map((store: any) => (
+                      <option key={store.store_uid} value={store.store_id}>{store.label}</option>
                     ))}
                   </select>
+                </div>
+                <div className={styles.mobileFilterGroup}>
+                  <div className={styles.mobileFilterLabel}>Срез</div>
+                  <select className={`input input-size-fluid ${styles.dateInput}`} value={dateMode} onChange={(e) => setDateMode(e.target.value)}>
+                    <option value="created">Дата заказа</option>
+                    <option value="delivery">Дата доставки</option>
+                  </select>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.mobileFilterGrid}>
+                <div className={styles.mobileFilterGroup}>
+                  <div className={styles.mobileFilterLabel}>Магазин</div>
+                  <select className={`input input-size-fluid ${styles.dateInput}`} value={storeId} onChange={(e) => { resetPage(); setStoreId(e.target.value); }}>
+                    {stores.map((store: any) => (
+                      <option key={store.store_uid} value={store.store_id}>{store.label}</option>
+                    ))}
+                  </select>
+                </div>
+                {tab === "orders" || tab === "problems" ? (
+                  <div className={styles.mobileFilterGroup}>
+                    <div className={styles.mobileFilterLabel}>Период</div>
+                    <select className={`input input-size-fluid ${styles.dateInput}`} value={period} onChange={(e) => { resetPage(); setPeriod(e.target.value); }}>
+                      {ORDERS_PERIOD_OPTIONS.map((option: any) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
                 ) : null}
                 {tab === "orders" ? (
-                  <select className={`input input-size-fluid ${styles.dateInput}`} value={itemStatus} onChange={(e) => setItemStatus(e.target.value)}>
-                    <option value="">Все статусы</option>
-                    {availableStatuses.map((status: string) => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                  </select>
+                  <div className={styles.mobileFilterGroup}>
+                    <div className={styles.mobileFilterLabel}>Статус</div>
+                    <select className={`input input-size-fluid ${styles.dateInput}`} value={itemStatus} onChange={(e) => { resetPage(); setItemStatus(e.target.value); }}>
+                      <option value="">Все статусы</option>
+                      {availableStatuses.map((status: string) => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </div>
                 ) : null}
                 {tab === "sku" || tab === "category" ? (
                   <>
-                    <select className={`input input-size-fluid ${styles.dateInput}`} value={dateMode} onChange={(e) => setDateMode(e.target.value)}>
-                      <option value="created">Дата заказа</option>
-                      <option value="delivery">Дата доставки</option>
-                    </select>
-                    <select className={`input input-size-fluid ${styles.dateInput}`} value={grain} onChange={(e) => setGrain(e.target.value)}>
-                      <option value="month">По месяцам</option>
-                      <option value="day">По дням</option>
-                    </select>
+                    <div className={styles.mobileFilterGroup}>
+                      <div className={styles.mobileFilterLabel}>Срез</div>
+                      <select className={`input input-size-fluid ${styles.dateInput}`} value={dateMode} onChange={(e) => { resetPage(); setDateMode(e.target.value); }}>
+                        <option value="created">Дата заказа</option>
+                        <option value="delivery">Дата доставки</option>
+                      </select>
+                    </div>
+                    <div className={styles.mobileFilterGroup}>
+                      <div className={styles.mobileFilterLabel}>Гранулярность</div>
+                      <select className={`input input-size-fluid ${styles.dateInput}`} value={grain} onChange={(e) => { resetPage(); setGrain(e.target.value); }}>
+                        <option value="month">По месяцам</option>
+                        <option value="day">По дням</option>
+                      </select>
+                    </div>
                   </>
                 ) : null}
-              </>
+              </div>
             )}
           </WorkspaceToolbar>
+          <div className={styles.mobileFilterChips}>
+            {currentStoreLabel ? <span className={styles.overviewMetaChip}>{currentStoreLabel}</span> : null}
+            {tab === "orders" || tab === "problems" ? <span className={styles.overviewMetaChip}>{periodLabel}</span> : null}
+            {tab === "tracking" || tab === "sku" || tab === "category" ? <span className={styles.overviewMetaChip}>{modeLabel}</span> : null}
+            {tab === "sku" || tab === "category" ? <span className={styles.overviewMetaChip}>{grainLabel}</span> : null}
+            {tab === "orders" && itemStatus ? <span className={styles.overviewMetaChip}>{itemStatus}</span> : null}
+          </div>
         </WorkspaceSurface>
 
         <div className={styles.summaryGrid}>
