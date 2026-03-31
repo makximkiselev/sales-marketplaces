@@ -42,9 +42,9 @@ type IssuedPasswordState = {
 };
 
 const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
-  { value: "owner", label: "Owner" },
-  { value: "manager", label: "Manager" },
-  { value: "viewer", label: "Viewer" },
+  { value: "owner", label: "Владельцы" },
+  { value: "manager", label: "Менеджеры" },
+  { value: "viewer", label: "Наблюдатели" },
 ];
 
 function generatePassword(length = 14) {
@@ -70,12 +70,21 @@ function buildAccessMessage(identifier: string, password: string) {
   return `Доступ к платформе\nЛогин: ${login}\nПароль: ${secret}`;
 }
 
+function formatDate(value?: string) {
+  return value ? new Date(value).toLocaleString("ru-RU") : "—";
+}
+
+function initialGroupState(): Record<UserRole, boolean> {
+  return { owner: true, manager: true, viewer: true };
+}
+
 export default function SettingsAdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [form, setForm] = useState<UserFormState>(() => ({ ...emptyForm(), password: generatePassword() }));
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editUser, setEditUser] = useState<AdminUser | null>(null);
   const [editForm, setEditForm] = useState<UserFormState | null>(null);
   const [resetUser, setResetUser] = useState<AdminUser | null>(null);
@@ -83,6 +92,7 @@ export default function SettingsAdminPage() {
   const [confirmUser, setConfirmUser] = useState<AdminUser | null>(null);
   const [issuedPassword, setIssuedPassword] = useState<IssuedPasswordState | null>(null);
   const [filters, setFilters] = useState<FilterState>({ role: "all", status: "all", search: "" });
+  const [openGroups, setOpenGroups] = useState<Record<UserRole, boolean>>(() => initialGroupState());
 
   async function loadUsers() {
     setLoading(true);
@@ -103,6 +113,7 @@ export default function SettingsAdminPage() {
 
   const ownersCount = useMemo(() => users.filter((user) => user.role === "owner" && user.is_active).length, [users]);
   const activeUsersCount = useMemo(() => users.filter((user) => user.is_active).length, [users]);
+
   const filteredUsers = useMemo(() => {
     const query = filters.search.trim().toLowerCase();
     return users.filter((user) => {
@@ -114,19 +125,37 @@ export default function SettingsAdminPage() {
     });
   }, [filters, users]);
 
+  const groupedUsers = useMemo(() => {
+    return ROLE_OPTIONS.map((option) => {
+      const groupUsers = filteredUsers.filter((user) => user.role === option.value);
+      return {
+        role: option.value,
+        label: option.label,
+        users: groupUsers,
+        total: groupUsers.length,
+        active: groupUsers.filter((user) => user.is_active).length,
+      };
+    });
+  }, [filteredUsers]);
+
+  function openCreateModal() {
+    setForm({ ...emptyForm(), password: generatePassword() });
+    setCreateModalOpen(true);
+  }
+
   async function handleCreate() {
     setSaving(true);
     setError("");
     try {
-      const nextIssuedPassword = form.password;
+      const nextIssuedPassword = form.password.trim();
       const nextIdentifier = form.identifier.trim();
       const nextDisplayName = form.display_name.trim() || nextIdentifier;
       await apiPostOk("/api/admin/users", {
-        identifier: form.identifier,
-        display_name: form.display_name,
+        identifier: nextIdentifier,
+        display_name: nextDisplayName,
         role: form.role,
         is_active: form.is_active,
-        password: form.password,
+        password: nextIssuedPassword,
       });
       setIssuedPassword({
         user_id: nextIdentifier,
@@ -135,7 +164,9 @@ export default function SettingsAdminPage() {
         password: nextIssuedPassword,
         issued_at: new Date().toISOString(),
       });
+      setCreateModalOpen(false);
       setForm({ ...emptyForm(), password: generatePassword() });
+      setOpenGroups((prev) => ({ ...prev, [form.role]: true }));
       await loadUsers();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -201,6 +232,7 @@ export default function SettingsAdminPage() {
       }
       setEditUser(null);
       setEditForm(null);
+      setOpenGroups((prev) => ({ ...prev, [editForm.role]: true }));
       await loadUsers();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -248,6 +280,10 @@ export default function SettingsAdminPage() {
     }
   }
 
+  function toggleGroup(role: UserRole) {
+    setOpenGroups((prev) => ({ ...prev, [role]: !prev[role] }));
+  }
+
   return (
     <PageFrame
       title="Администрирование"
@@ -275,127 +311,52 @@ export default function SettingsAdminPage() {
 
         <SectionBlock>
           <div className={styles.layout}>
-            <div className={styles.createCard}>
-              <div className={styles.sectionIntro}>
-                <PageSectionTitle title="Новый пользователь" />
-                <div className={styles.sectionHint}>
-                  Создание пользователя, генерация пароля и выдача готового сообщения с доступом в одном месте.
+            <div className={styles.toolbarCard}>
+              <div className={styles.toolbarHead}>
+                <div className={styles.sectionIntro}>
+                  <PageSectionTitle title="Управление доступом" />
+                  <div className={styles.sectionHint}>
+                    Создание вынесено в модалку, а пользователи сгруппированы по ролям. Так экран держит масштаб и не превращается в длинную форму.
+                  </div>
+                </div>
+                <div className={styles.toolbarActions}>
+                  <button type="button" className="btn primary" onClick={openCreateModal}>
+                    Добавить пользователя
+                  </button>
                 </div>
               </div>
-              <div className={styles.createShell}>
-                <div className={styles.createFormPanel}>
-                  <div className={styles.formGrid}>
-                    <label className={`${styles.field} ${styles.fieldSpan3}`}>
-                      <span className={styles.label}>Логин</span>
-                      <input
-                        className="input input-size-lg"
-                        value={form.identifier}
-                        onChange={(e) => setForm((prev) => ({ ...prev, identifier: e.target.value }))}
-                        placeholder="например, manager"
-                      />
-                    </label>
-                    <label className={`${styles.field} ${styles.fieldSpan3}`}>
-                      <span className={styles.label}>Имя</span>
-                      <input
-                        className="input input-size-lg"
-                        value={form.display_name}
-                        onChange={(e) => setForm((prev) => ({ ...prev, display_name: e.target.value }))}
-                        placeholder="Имя в интерфейсе"
-                      />
-                    </label>
-                    <label className={`${styles.field} ${styles.fieldSpan2}`}>
-                      <span className={styles.label}>Роль</span>
-                      <select
-                        className="input input-size-md"
-                        value={form.role}
-                        onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as UserRole }))}
-                      >
-                        {ROLE_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className={`${styles.field} ${styles.fieldSpan2}`}>
-                      <span className={styles.label}>Статус</span>
-                      <select
-                        className="input input-size-md"
-                        value={form.is_active ? "active" : "disabled"}
-                        onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.value === "active" }))}
-                      >
-                        <option value="active">Активен</option>
-                        <option value="disabled">Отключен</option>
-                      </select>
-                    </label>
-                    <label className={`${styles.field} ${styles.fieldWide}`}>
-                      <span className={styles.label}>Пароль</span>
-                      <div className={styles.passwordRow}>
-                        <input
-                          className="input input-size-fluid"
-                          value={form.password}
-                          onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-                          placeholder="Введите пароль"
-                        />
-                        <button type="button" className="btn ghost" onClick={() => setForm((prev) => ({ ...prev, password: generatePassword() }))}>
-                          Сгенерировать
-                        </button>
-                        <button
-                          type="button"
-                          className="btn ghost"
-                          onClick={() => void copyAccessMessage(form.identifier, form.password)}
-                          disabled={!form.identifier.trim() || !form.password.trim()}
-                        >
-                          Скопировать доступ
-                        </button>
+              {issuedPassword ? (
+                <div className={styles.issuedCard}>
+                  <div className={styles.issuedHead}>
+                    <div>
+                      <div className={styles.issuedTitle}>Последний выданный доступ</div>
+                      <div className={styles.issuedMeta}>
+                        {issuedPassword.display_name || issuedPassword.identifier} · @{issuedPassword.identifier}
                       </div>
-                      <div className={styles.passwordHint}>
-                        Кнопка копирует логин и пароль вместе в готовом виде для отправки пользователю.
-                      </div>
-                    </label>
+                    </div>
+                    <span className={styles.issuedBadge}>Только для администратора</span>
                   </div>
-                  <div className={styles.actions}>
+                  <div className={styles.issuedPassword}>{issuedPassword.password}</div>
+                  <div className={styles.issuedHint}>
+                    Сгенерирован {new Date(issuedPassword.issued_at).toLocaleString("ru-RU")}. После перезагрузки страницы восстановить его нельзя.
+                  </div>
+                  <div className={styles.issuedActions}>
+                    <button type="button" className="btn ghost" onClick={() => void copyPassword(issuedPassword.password)}>
+                      Скопировать пароль
+                    </button>
                     <button
                       type="button"
-                      className="btn primary"
-                      disabled={saving || !form.identifier.trim() || !form.password.trim()}
-                      onClick={() => void handleCreate()}
+                      className="btn ghost"
+                      onClick={() => void copyAccessMessage(issuedPassword.identifier, issuedPassword.password)}
                     >
-                      Создать пользователя
+                      Скопировать доступ
+                    </button>
+                    <button type="button" className="btn ghost" onClick={() => setIssuedPassword(null)}>
+                      Скрыть
                     </button>
                   </div>
                 </div>
-                {issuedPassword ? (
-                  <div className={styles.issuedCard}>
-                    <div className={styles.issuedHead}>
-                      <div>
-                        <div className={styles.issuedTitle}>Последний выданный доступ</div>
-                        <div className={styles.issuedMeta}>
-                          {issuedPassword.display_name || issuedPassword.identifier} · @{issuedPassword.identifier}
-                        </div>
-                      </div>
-                      <span className={styles.issuedBadge}>Только для администратора</span>
-                    </div>
-                    <div className={styles.issuedPassword}>{issuedPassword.password}</div>
-                    <div className={styles.issuedHint}>
-                      Сгенерирован {new Date(issuedPassword.issued_at).toLocaleString("ru-RU")}. После закрытия страницы восстановить его нельзя.
-                    </div>
-                    <div className={styles.issuedActions}>
-                      <button type="button" className="btn ghost" onClick={() => void copyPassword(issuedPassword.password)}>
-                        Скопировать пароль
-                      </button>
-                      <button
-                        type="button"
-                        className="btn ghost"
-                        onClick={() => void copyAccessMessage(issuedPassword.identifier, issuedPassword.password)}
-                      >
-                        Скопировать доступ
-                      </button>
-                      <button type="button" className="btn ghost" onClick={() => setIssuedPassword(null)}>
-                        Скрыть
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
+              ) : null}
             </div>
 
             <div className={styles.listCard}>
@@ -437,42 +398,201 @@ export default function SettingsAdminPage() {
                   </select>
                 </label>
               </div>
-              <div className={styles.userList}>
-                {filteredUsers.map((user) => (
-                  <article key={user.user_id} className={styles.userCard}>
-                    <div className={styles.userHead}>
-                      <div className={styles.userMain}>
-                        <div className={styles.userName}>{user.display_name || user.identifier}</div>
-                        <div className={styles.userLogin}>@{user.identifier}</div>
-                      </div>
-                      <div className={styles.userBadges}>
-                        <span className={styles.roleBadge}>{user.role}</span>
-                        <span className={user.is_active ? styles.activeBadge : styles.disabledBadge}>
-                          {user.is_active ? "Активен" : "Отключен"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className={styles.userMeta}>
-                      <span>Создан: {user.created_at ? new Date(user.created_at).toLocaleString("ru-RU") : "—"}</span>
-                      <span>Обновлен: {user.updated_at ? new Date(user.updated_at).toLocaleString("ru-RU") : "—"}</span>
-                    </div>
-                    <div className={styles.userActions}>
-                      <button type="button" className="btn ghost" onClick={() => startEdit(user)}>Редактировать</button>
-                      <button type="button" className="btn ghost" onClick={() => startResetPassword(user)}>Сбросить пароль</button>
-                      {user.is_active ? (
-                        <button type="button" className="btn danger" onClick={() => setConfirmUser(user)}>
-                          Отключить
-                        </button>
+
+              <div className={styles.groupList}>
+                {groupedUsers.map((group) => {
+                  const isOpen = openGroups[group.role];
+                  return (
+                    <section key={group.role} className={styles.groupCard}>
+                      <button
+                        type="button"
+                        className={styles.groupToggle}
+                        onClick={() => toggleGroup(group.role)}
+                        aria-expanded={isOpen}
+                      >
+                        <div className={styles.groupToggleMain}>
+                          <div className={styles.groupTitle}>{group.label}</div>
+                          <div className={styles.groupMeta}>
+                            <span>{group.total} всего</span>
+                            <span>{group.active} активных</span>
+                          </div>
+                        </div>
+                        <div className={styles.groupToggleSide}>
+                          <span className={styles.groupCount}>{group.total}</span>
+                          <span className={`${styles.groupChevron} ${isOpen ? styles.groupChevronOpen : ""}`} aria-hidden="true">
+                            +
+                          </span>
+                        </div>
+                      </button>
+
+                      {isOpen ? (
+                        group.users.length ? (
+                          <div className={styles.userGrid}>
+                            {group.users.map((user) => (
+                              <article key={user.user_id} className={styles.userCard}>
+                                <div className={styles.userHead}>
+                                  <div className={styles.userMain}>
+                                    <div className={styles.userEyebrow}>{group.label}</div>
+                                    <div className={styles.userName}>{user.display_name || user.identifier}</div>
+                                    <div className={styles.userLogin}>@{user.identifier}</div>
+                                  </div>
+                                  <div className={styles.userBadges}>
+                                    <span className={styles.roleBadge}>{user.role}</span>
+                                    <span className={user.is_active ? styles.activeBadge : styles.disabledBadge}>
+                                      {user.is_active ? "Активен" : "Отключен"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className={styles.userMeta}>
+                                  <span>Создан: {formatDate(user.created_at)}</span>
+                                  <span>Обновлен: {formatDate(user.updated_at)}</span>
+                                </div>
+                                <div className={styles.userFooter}>
+                                  <div className={styles.userDates}>
+                                    <span>ID: {user.user_id}</span>
+                                  </div>
+                                  <div className={styles.userActions}>
+                                    <button
+                                      type="button"
+                                      className={styles.iconButton}
+                                      title="Редактировать"
+                                      aria-label={`Редактировать ${user.identifier}`}
+                                      onClick={() => startEdit(user)}
+                                    >
+                                      <span aria-hidden="true">✎</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={styles.iconButton}
+                                      title="Сбросить пароль"
+                                      aria-label={`Сбросить пароль ${user.identifier}`}
+                                      onClick={() => startResetPassword(user)}
+                                    >
+                                      <span aria-hidden="true">⌁</span>
+                                    </button>
+                                    {user.is_active ? (
+                                      <button
+                                        type="button"
+                                        className={`${styles.iconButton} ${styles.iconButtonDanger}`}
+                                        title="Отключить"
+                                        aria-label={`Отключить ${user.identifier}`}
+                                        onClick={() => setConfirmUser(user)}
+                                      >
+                                        <span aria-hidden="true">×</span>
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              </article>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className={styles.groupEmpty}>В этой группе сейчас нет пользователей по выбранным фильтрам.</div>
+                        )
                       ) : null}
-                    </div>
-                  </article>
-                ))}
+                    </section>
+                  );
+                })}
                 {!loading && !filteredUsers.length ? <div className={styles.emptyState}>Пользователи по текущему фильтру не найдены.</div> : null}
               </div>
             </div>
           </div>
         </SectionBlock>
       </div>
+
+      {createModalOpen ? (
+        <ModalShell
+          title="Новый пользователь"
+          subtitle="Создание доступа"
+          onClose={() => setCreateModalOpen(false)}
+          width="min(92vw, 760px)"
+        >
+          <div className={styles.sectionHint}>
+            Создай пользователя, сгенерируй пароль и сразу скопируй готовое сообщение для отправки.
+          </div>
+          <div className={styles.formGrid}>
+            <label className={`${styles.field} ${styles.fieldSpan3}`}>
+              <span className={styles.label}>Логин</span>
+              <input
+                className="input input-size-lg"
+                value={form.identifier}
+                onChange={(e) => setForm((prev) => ({ ...prev, identifier: e.target.value }))}
+                placeholder="например, manager"
+              />
+            </label>
+            <label className={`${styles.field} ${styles.fieldSpan3}`}>
+              <span className={styles.label}>Имя</span>
+              <input
+                className="input input-size-lg"
+                value={form.display_name}
+                onChange={(e) => setForm((prev) => ({ ...prev, display_name: e.target.value }))}
+                placeholder="Имя в интерфейсе"
+              />
+            </label>
+            <label className={`${styles.field} ${styles.fieldSpan2}`}>
+              <span className={styles.label}>Роль</span>
+              <select
+                className="input input-size-md"
+                value={form.role}
+                onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as UserRole }))}
+              >
+                {ROLE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className={`${styles.field} ${styles.fieldSpan2}`}>
+              <span className={styles.label}>Статус</span>
+              <select
+                className="input input-size-md"
+                value={form.is_active ? "active" : "disabled"}
+                onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.value === "active" }))}
+              >
+                <option value="active">Активен</option>
+                <option value="disabled">Отключен</option>
+              </select>
+            </label>
+            <label className={`${styles.field} ${styles.fieldWide}`}>
+              <span className={styles.label}>Пароль</span>
+              <div className={styles.passwordRow}>
+                <input
+                  className="input input-size-fluid"
+                  value={form.password}
+                  onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+                  placeholder="Введите пароль"
+                />
+                <button type="button" className="btn ghost" onClick={() => setForm((prev) => ({ ...prev, password: generatePassword() }))}>
+                  Сгенерировать
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => void copyAccessMessage(form.identifier, form.password)}
+                  disabled={!form.identifier.trim() || !form.password.trim()}
+                >
+                  Скопировать доступ
+                </button>
+              </div>
+              <div className={styles.passwordHint}>
+                Кнопка копирует логин и пароль вместе, чтобы админ не пересобирал сообщение вручную.
+              </div>
+            </label>
+          </div>
+          <div className={styles.modalActions}>
+            <button type="button" className="btn ghost" onClick={() => setCreateModalOpen(false)}>
+              Отмена
+            </button>
+            <button
+              type="button"
+              className="btn primary"
+              disabled={saving || !form.identifier.trim() || !form.password.trim()}
+              onClick={() => void handleCreate()}
+            >
+              Создать пользователя
+            </button>
+          </div>
+        </ModalShell>
+      ) : null}
 
       {editUser && editForm ? (
         <ModalShell
