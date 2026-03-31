@@ -22,11 +22,6 @@
   letter-spacing: 0.04em;
 }
 
-.select {
-  height: 40px;
-  min-width: 100%;
-}
-
 .searchBlock {
   width: 100%;
   border: 1px solid rgba(132, 161, 214, 0.2);
@@ -41,10 +36,6 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-}
-
-.searchInput {
-  height: 40px;
 }
 
 .tabsRow {
@@ -86,26 +77,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.tabBtn {
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.tabBtnActive {
-  border-color: rgba(43, 214, 255, 0.55);
-  background: linear-gradient(180deg, rgba(34, 113, 140, 0.38), rgba(23, 43, 73, 0.9));
-}
-
-.tabBadge {
-  border: 1px solid rgba(132, 161, 214, 0.28);
-  border-radius: 999px;
-  padding: 1px 8px;
-  font-size: 11px;
-  color: var(--text-soft);
 }
 
 .errorBox {
@@ -381,8 +352,6 @@
 }
 
 .pageInput {
-  width: 52px;
-  height: 32px;
   text-align: center;
   padding: 0 8px;
 }

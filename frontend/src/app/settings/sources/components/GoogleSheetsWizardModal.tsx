@@ -147,7 +147,7 @@ export function GoogleSheetsWizardModal({
             <>
               <WizardLabel>Выберите существующую таблицу</WizardLabel>
               <select
-                className="input"
+                className="input input-size-fluid"
                 value={editingSourceId}
                 onChange={(e) => {
                   const nextId = e.target.value;
@@ -166,9 +166,9 @@ export function GoogleSheetsWizardModal({
           ) : (
             <>
               <WizardLabel>Название источника</WizardLabel>
-              <input className="input" value={title} onChange={(e) => onChangeTitle(e.target.value)} placeholder="Например: Каталог + прайс" />
+              <input className="input input-size-fluid" value={title} onChange={(e) => onChangeTitle(e.target.value)} placeholder="Например: Каталог + прайс" />
               <WizardLabel>Ссылка/ID таблицы</WizardLabel>
-              <input className="input" value={spreadsheet} onChange={(e) => onChangeSpreadsheet(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/..." />
+              <input className="input input-size-fluid" value={spreadsheet} onChange={(e) => onChangeSpreadsheet(e.target.value)} placeholder="https://docs.google.com/spreadsheets/d/..." />
             </>
           )}
         </>
@@ -178,7 +178,7 @@ export function GoogleSheetsWizardModal({
         <>
           <WizardLabel>Добавить существующий аккаунт</WizardLabel>
           <div className="row" style={{ gap: 8 }}>
-            <select className="input" value={selectedAccountId} onChange={(e) => onChangeSelectedAccountId(e.target.value)}>
+            <select className="input input-size-fluid" value={selectedAccountId} onChange={(e) => onChangeSelectedAccountId(e.target.value)}>
               <option value="">Выбери аккаунт</option>
               {(integrations.google?.accounts || []).map((acc) => (
                 <option key={acc.id} value={acc.id}>
@@ -257,7 +257,7 @@ export function GoogleSheetsWizardModal({
       {step === 3 ? (
         <>
           <WizardLabel>Лист таблицы</WizardLabel>
-          <select className="input" value={worksheet} onChange={(e) => onChangeWorksheet(e.target.value)}>
+          <select className="input input-size-fluid" value={worksheet} onChange={(e) => onChangeWorksheet(e.target.value)}>
             {worksheets.map((w) => <option key={w} value={w}>{w}</option>)}
           </select>
         </>

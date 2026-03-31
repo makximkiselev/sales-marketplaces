@@ -51,7 +51,7 @@
 }
 
 .tableSearchWrap {
-  min-width: 320px;
+  min-width: 0;
   flex: 1 1 420px;
 }
 
@@ -66,4 +66,16 @@
 .tableFilterBlock {
   display: grid;
   gap: 8px;
+}
+
+@media (max-width: 960px) {
+  .tableControlRow {
+    align-items: stretch;
+  }
+
+  .tableSearchWrap,
+  .tableFilterWrap,
+  .tableFilterBlock {
+    width: 100%;
+  }
 }

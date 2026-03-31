@@ -171,7 +171,7 @@ export function YandexMarketPanel({
                           </td>
                           <td className={styles.ymCurrencyCell}>
                             <select
-                              className={`input ${styles.ymCurrencySelect}`}
+                              className={`input input-size-sm ${styles.sourceInlineSelect}`}
                               value={String(shop.fulfillment_model || "FBO").toUpperCase()}
                               disabled={fulfillmentSavingKey === `fulfill-ym-${acc.business_id}-${shop.campaign_id}`}
                               onChange={(e) =>
@@ -191,7 +191,7 @@ export function YandexMarketPanel({
                           </td>
                           <td className={styles.ymCurrencyCell}>
                             <select
-                              className={`input ${styles.ymCurrencySelect}`}
+                              className={`input input-size-sm ${styles.sourceInlineSelect}`}
                               value={(shop.currency_code || "RUB").toUpperCase()}
                               disabled={currencySavingKey === `currency-ym-${acc.business_id}-${shop.campaign_id}`}
                               onChange={(e) =>
@@ -374,7 +374,7 @@ export function YandexMarketPanel({
               <div className={styles.ymAccountActionsRow}>
                 {accounts.length > 1 ? (
                   <select
-                    className={`input ${styles.ymAccountSelect}`}
+                    className={`input input-size-md ${styles.sourceAccountSelect}`}
                     value={ymActionBusinessId || ""}
                     onChange={(e) => setYmActionBusinessId(e.target.value)}
                   >

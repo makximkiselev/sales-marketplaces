@@ -90,9 +90,9 @@ export function YandexWizardModal({
       {step === 1 ? (
         <>
           <WizardLabel>Токен API</WizardLabel>
-          <input className="input" value={apiKey} onChange={(e) => onChangeApiKey(e.target.value)} placeholder="Введите токен" />
+          <input className="input input-size-fluid" value={apiKey} onChange={(e) => onChangeApiKey(e.target.value)} placeholder="Введите токен" />
           <WizardLabel>Business ID</WizardLabel>
-          <input className="input" value={businessId} onChange={(e) => onChangeBusinessId(e.target.value)} placeholder="Введите ID" />
+          <input className="input input-size-md" value={businessId} onChange={(e) => onChangeBusinessId(e.target.value)} placeholder="Введите ID" />
         </>
       ) : (
         <>

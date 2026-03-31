@@ -31,7 +31,7 @@ export default function CatalogTreeControls(props: Props) {
           <label className={commonStyles.fieldLabel} htmlFor={selectId}>Магазин для каталога</label>
           <select
             id={selectId}
-            className={`input ${commonStyles.select}`}
+            className={`input input-size-md ${commonStyles.select}`}
             value={treeSourceStoreId}
             onChange={(e) => onTreeSourceStoreChange(e.target.value)}
           >
@@ -48,7 +48,7 @@ export default function CatalogTreeControls(props: Props) {
           <label className={commonStyles.fieldLabel} htmlFor={`${selectId}-stock-filter`}>Наличие</label>
           <select
             id={`${selectId}-stock-filter`}
-            className={`input ${commonStyles.select}`}
+            className={`input input-size-md ${commonStyles.select}`}
             value={stockFilter || "all"}
             onChange={(e) => onStockFilterChange(e.target.value as StockFilterValue)}
           >

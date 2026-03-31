@@ -350,9 +350,9 @@ export default function SalesElasticityPage() {
       </div>
       {period === "custom" ? (
         <div className={styles.dateRange}>
-          <input className={`input ${styles.dateInput}`} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          <input className={`input input-size-md ${styles.dateInput}`} type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
           <span className={styles.dateDivider}>—</span>
-          <input className={`input ${styles.dateInput}`} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <input className={`input input-size-md ${styles.dateInput}`} type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
         </div>
       ) : null}
       </div>
@@ -459,7 +459,7 @@ export default function SalesElasticityPage() {
       <div className={commonStyles.tableSearchWrap}>
         <input
           id="elasticity-table-search"
-          className={`input ${commonStyles.select}`}
+          className={`input input-size-xl ${commonStyles.select}`}
           value={searchDraft}
           onChange={(e) => setSearchDraft(e.target.value)}
           placeholder="Поиск по SKU или наименованию"

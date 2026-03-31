@@ -46,10 +46,10 @@ export function OzonWizardModal({
       }
     >
       <WizardLabel>Client ID</WizardLabel>
-      <input className="input" value={clientId} onChange={(e) => onChangeClientId(e.target.value)} placeholder="Введите Client ID" />
+      <input className="input input-size-md" value={clientId} onChange={(e) => onChangeClientId(e.target.value)} placeholder="Введите Client ID" />
 
       <WizardLabel>API key</WizardLabel>
-      <input className="input" value={apiKey} onChange={(e) => onChangeApiKey(e.target.value)} placeholder="Введите API key" />
+      <input className="input input-size-fluid" value={apiKey} onChange={(e) => onChangeApiKey(e.target.value)} placeholder="Введите API key" />
 
       {sellerId ? (
         <div className="source-row">

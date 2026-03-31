@@ -154,7 +154,7 @@ export default function PromosPage() {
       <div className={commonStyles.tableSearchWrap}>
         <input
           id="promos-table-search"
-          className={`input ${commonStyles.select}`}
+          className={`input input-size-xl ${commonStyles.select}`}
           value={searchDraft}
           onChange={(e) => setSearchDraft(e.target.value)}
           placeholder="Поиск по SKU или наименованию"

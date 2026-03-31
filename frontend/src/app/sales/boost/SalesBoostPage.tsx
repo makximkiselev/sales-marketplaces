@@ -162,7 +162,7 @@ export default function SalesBoostPage() {
         <div className={commonStyles.tableSearchWrap}>
         <input
           id="boost-table-search"
-          className={`input ${commonStyles.select}`}
+          className={`input input-size-xl ${commonStyles.select}`}
           value={searchDraft}
           onChange={(e) => setSearchDraft(e.target.value)}
           placeholder="Поиск по SKU или наименованию"
@@ -174,7 +174,7 @@ export default function SalesBoostPage() {
             <input
               id="boost-report-date"
               type="date"
-              className={`input ${commonStyles.select}`}
+              className={`input input-size-md ${commonStyles.select}`}
               value={reportDate}
               onChange={(e) => {
                 setPage(1);

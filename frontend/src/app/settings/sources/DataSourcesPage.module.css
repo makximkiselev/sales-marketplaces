@@ -304,10 +304,9 @@
   vertical-align: top !important;
 }
 
-.ymCurrencySelect {
+.sourceInlineSelect {
   height: 34px;
-  min-width: 74px;
-  width: 84px;
+  min-width: 0;
   padding: 0 28px 0 10px;
   margin: 0 auto;
   text-align: center;
@@ -472,12 +471,19 @@
   padding-inline: 12px;
 }
 
-.ymAccountSelect {
-  width: 220px;
+.sourceAccountSelect {
   height: 32px;
   min-height: 32px;
   font-size: 13px;
   padding-block: 0;
+}
+
+@media (max-width: 960px) {
+  .sourceInlineSelect,
+  .sourceAccountSelect {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 .ymToggleHead {

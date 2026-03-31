@@ -249,8 +249,7 @@ export default function SalesCoinvestPage() {
                   <div key={promoId} className={styles.storeMetricRow}>
                     <span className={styles.storeMetricName}>{item?.promo_name || promoId}</span>
                     <input
-                      className={`input ${styles.dateInput}`}
-                      style={{ maxWidth: 120 }}
+                      className={`input input-size-sm ${styles.dateInput}`}
                       value={promoDraftsByStore[activeStoreUid]?.[promoId] ?? ""}
                       onChange={(e) =>
                         setPromoDraftsByStore((prev) => ({
@@ -341,7 +340,7 @@ export default function SalesCoinvestPage() {
       <div className={commonStyles.tableSearchWrap}>
         <input
           id="coinvest-table-search"
-          className={`input ${commonStyles.select}`}
+          className={`input input-size-xl ${commonStyles.select}`}
           value={searchDraft}
           onChange={(e) => setSearchDraft(e.target.value)}
           placeholder="Поиск по SKU или наименованию"

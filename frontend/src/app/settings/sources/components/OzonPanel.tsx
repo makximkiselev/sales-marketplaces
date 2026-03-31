@@ -167,7 +167,7 @@ export function OzonPanel({
                         </td>
                         <td className={styles.ymCurrencyCell}>
                           <select
-                            className={`input ${styles.ymCurrencySelect}`}
+                            className={`input input-size-sm ${styles.sourceInlineSelect}`}
                             value={String(acc.fulfillment_model || "FBO").toUpperCase()}
                             disabled={fulfillmentSavingKey === `fulfill-oz-${acc.client_id}`}
                             onChange={(e) =>
@@ -186,7 +186,7 @@ export function OzonPanel({
                         </td>
                         <td className={styles.ymCurrencyCell}>
                           <select
-                            className={`input ${styles.ymCurrencySelect}`}
+                            className={`input input-size-sm ${styles.sourceInlineSelect}`}
                             value={(acc.currency_code || "RUB").toUpperCase()}
                             disabled={currencySavingKey === `currency-oz-${acc.client_id}`}
                             onChange={(e) =>
@@ -362,7 +362,7 @@ export function OzonPanel({
               <div className={styles.ymAccountActionsRow}>
                 {accounts.length > 1 ? (
                   <select
-                    className={`input ${styles.ymAccountSelect}`}
+                    className={`input input-size-md ${styles.sourceAccountSelect}`}
                     value={ozActionClientId || ""}
                     onChange={(e) => setOzActionClientId(e.target.value)}
                   >

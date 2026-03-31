@@ -114,7 +114,7 @@ export default function PricingCatalogFrame(props: Props) {
               <label className={styles.fieldLabel} htmlFor="pricing-frame-search">Поиск</label>
               <input
                 id="pricing-frame-search"
-                className={`input ${styles.searchInput}`}
+                className="input input-size-xl"
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder={searchPlaceholder}
@@ -178,7 +178,7 @@ export default function PricingCatalogFrame(props: Props) {
           <div className={styles.paginationRow}>
             <div className={styles.pageLeft}>
               <span>На странице</span>
-              <select className={`input ${styles.pageSizeSelect}`} value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value) || 50)}>
+              <select className={`input input-size-sm ${styles.pageSizeSelect}`} value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value) || 50)}>
                 {pageSizeOptions.map((n) => (
                   <option key={n} value={n}>{n < 0 ? "Все" : n}</option>
                 ))}
@@ -191,7 +191,7 @@ export default function PricingCatalogFrame(props: Props) {
                 <button className={styles.arrowBtn} onClick={onPrevPage} disabled={!canPrev} aria-label="Предыдущая страница">‹</button>
                 <div className={styles.pageInfo}>
                   <input
-                    className={`input ${styles.pageInput}`}
+                    className={`input input-size-sm ${styles.pageInput}`}
                     value={pageInput}
                     onChange={(e) => setPageInput(e.target.value.replace(/[^\d]/g, ""))}
                     onBlur={commitPageInput}
