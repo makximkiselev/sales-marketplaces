@@ -1,63 +1,65 @@
 .browserShell {
   display: grid;
-  gap: 12px;
+  gap: 16px;
   align-content: start;
   min-height: 0;
 }
 
 .browserHead {
   display: grid;
-  gap: 4px;
+  gap: 6px;
 }
 
 .browserTitle {
   color: #edf4ff;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
+  line-height: 1.08;
 }
 
 .browserSubtitle {
   color: var(--text-soft);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .browserControls {
   display: grid;
-  gap: 8px;
-  align-content: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
 }
 
 .browserSearch {
-  height: 38px;
+  height: 42px;
 }
 
 .browserAction {
-  justify-self: start;
-  min-height: 38px;
+  min-height: 42px;
+  padding-inline: 16px;
 }
 
 .browserList {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   min-height: 0;
   overflow: auto;
-  padding-right: 2px;
+  padding-right: 4px;
   align-content: start;
 }
 
 .browserRow {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
 }
 
 .browserExpand {
-  flex: 0 0 28px;
-  height: 28px;
-  margin-top: 4px;
+  flex: 0 0 32px;
+  height: 32px;
+  margin-top: 6px;
   border: 1px solid rgba(132, 161, 214, 0.16);
-  border-radius: 10px;
+  border-radius: 12px;
   background: rgba(8, 16, 30, 0.52);
   color: #dbe9ff;
   cursor: pointer;
@@ -71,22 +73,24 @@
 .browserNode {
   flex: 1 1 auto;
   border: 1px solid rgba(132, 161, 214, 0.14);
-  border-radius: 12px;
+  border-radius: 14px;
   background: rgba(7, 14, 27, 0.42);
   color: inherit;
   text-align: left;
-  padding: 10px 12px;
+  padding: 12px 14px;
   display: grid;
-  gap: 6px;
+  gap: 8px;
   cursor: pointer;
   transition:
     border-color 0.16s ease,
-    background 0.16s ease;
+    background 0.16s ease,
+    transform 0.16s ease;
 }
 
 .browserNode:hover {
   border-color: rgba(76, 201, 240, 0.32);
   background: rgba(12, 24, 44, 0.78);
+  transform: translateY(-1px);
 }
 
 .browserNodeActive {
@@ -98,7 +102,7 @@
 
 .browserLabel {
   color: #edf4ff;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -114,14 +118,14 @@
 .browserMeta {
   color: var(--text-soft);
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 1.45;
 }
 
 .browserBadge {
   display: inline-flex;
   align-items: center;
-  min-height: 22px;
-  padding: 0 8px;
+  min-height: 24px;
+  padding: 0 10px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
@@ -144,5 +148,15 @@
   color: var(--text-soft);
   font-size: 13px;
   line-height: 1.45;
-  padding: 8px 0;
+  padding: 10px 0;
+}
+
+@media (max-width: 960px) {
+  .browserControls {
+    grid-template-columns: 1fr;
+  }
+
+  .browserAction {
+    width: 100%;
+  }
 }

@@ -527,7 +527,7 @@
 .categoryWorkspace {
   display: grid;
   grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
-  gap: 14px;
+  gap: 16px;
   align-items: start;
 }
 
@@ -541,7 +541,7 @@
   border-radius: 18px;
   background:
     linear-gradient(180deg, rgba(12, 23, 41, 0.88), rgba(8, 16, 30, 0.84));
-  padding: 16px;
+  padding: 18px;
 }
 
 .categoryEditor {
@@ -554,7 +554,7 @@
 
 .categorySidebar {
   display: grid;
-  gap: 12px;
+  gap: 16px;
   align-content: start;
 }
 
@@ -575,13 +575,15 @@
 
 .categorySidebarTitle {
   color: #edf4ff;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
+  line-height: 1.08;
 }
 
 .categorySidebarMeta {
   color: var(--text-soft);
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .categorySidebarList {
@@ -720,7 +722,7 @@
 
 .categoryEditor {
   display: grid;
-  gap: 6px;
+  gap: 12px;
 }
 
 .categoryEditorHead {
@@ -743,15 +745,15 @@
 
 .categoryEditorTitle {
   margin: 2px 0;
-  font-size: 21px;
+  font-size: 24px;
   line-height: 1.08;
   color: #f1f6ff;
 }
 
 .categoryEditorPath {
   color: #abc3e8;
-  font-size: 12px;
-  line-height: 1.28;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .categoryEditorMeta {
@@ -776,7 +778,7 @@
 .categoryEditorGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 12px;
 }
 
 .categoryEditorGridMobile {
@@ -785,9 +787,9 @@
 
 .categoryEditorField {
   display: grid;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 12px;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
   border: 1px solid rgba(132, 161, 214, 0.14);
   background: rgba(7, 14, 27, 0.36);
   align-content: start;
@@ -802,7 +804,7 @@
 
 .categoryEditorFieldLabel {
   color: #e4eeff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1.28;
 }
@@ -1084,7 +1086,7 @@
 .logisticsTablePane {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: 16px;
   min-height: min(64vh, 760px);
 }
 
@@ -1105,10 +1107,10 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
   color: var(--text-soft);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.35;
 }
 
@@ -1194,9 +1196,9 @@
 
 .logisticsCatalogInline {
   border: 1px solid rgba(132, 161, 214, 0.16);
-  border-radius: 14px;
+  border-radius: 18px;
   background: rgba(10, 18, 34, 0.54);
-  padding: 16px;
+  padding: 18px;
   max-height: 320px;
   overflow: hidden;
 }
@@ -2391,7 +2393,7 @@
   font-size: 12px;
   font-weight: 700;
   text-align: center;
-  padding: 12px 12px;
+  padding: 14px 14px;
   border-bottom: 1px solid rgba(132, 161, 214, 0.2);
   white-space: normal;
   line-height: 1.2;
@@ -2401,7 +2403,7 @@
 .pricingTable tbody td {
   text-align: center;
   vertical-align: middle;
-  padding: 12px 12px;
+  padding: 14px 14px;
   border-bottom: 1px solid rgba(132, 161, 214, 0.12);
 }
 
@@ -2425,9 +2427,9 @@
 
 .logisticsProductName {
   color: #edf4ff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .logisticsRowMeta {
@@ -2459,7 +2461,7 @@
 .cellInput {
   width: 100%;
   min-width: 112px;
-  height: 34px;
+  height: 38px;
   text-align: center;
   padding-right: 12px;
 }
