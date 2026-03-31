@@ -19,6 +19,15 @@ export function SalesOverviewMobile({ vm }: Props) {
     setTab,
     storeId,
     setStoreId,
+    period,
+    setPeriod,
+    itemStatus,
+    setItemStatus,
+    availableStatuses,
+    dateMode,
+    setDateMode,
+    grain,
+    setGrain,
     trackingStoreId,
     setTrackingStoreId,
     orderRows,
@@ -29,6 +38,7 @@ export function SalesOverviewMobile({ vm }: Props) {
     formatPercent,
     formatDateTime,
     activeStoreCurrencyCode,
+    ORDERS_PERIOD_OPTIONS,
   } = vm;
 
   const rows = tab === "orders" ? orderRows : tab === "problems" ? problemRows : tab === "sku" ? skuRows : categoryRows;
@@ -62,17 +72,52 @@ export function SalesOverviewMobile({ vm }: Props) {
         />
           <WorkspaceToolbar className={styles.overviewToolbarMobile}>
             {tab === "tracking" ? (
-              <select className={`input input-size-fluid ${styles.dateInput}`} value={trackingStoreId} onChange={(e) => setTrackingStoreId(e.target.value)}>
-                {trackingStores.map((store: any) => (
-                  <option key={store.store_uid} value={store.store_id}>{store.label}</option>
-                ))}
-              </select>
+              <>
+                <select className={`input input-size-fluid ${styles.dateInput}`} value={trackingStoreId} onChange={(e) => setTrackingStoreId(e.target.value)}>
+                  {trackingStores.map((store: any) => (
+                    <option key={store.store_uid} value={store.store_id}>{store.label}</option>
+                  ))}
+                </select>
+                <select className={`input input-size-fluid ${styles.dateInput}`} value={dateMode} onChange={(e) => setDateMode(e.target.value)}>
+                  <option value="created">Дата заказа</option>
+                  <option value="delivery">Дата доставки</option>
+                </select>
+              </>
             ) : (
-              <select className={`input input-size-fluid ${styles.dateInput}`} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-                {stores.map((store: any) => (
-                  <option key={store.store_uid} value={store.store_id}>{store.label}</option>
-                ))}
-              </select>
+              <>
+                <select className={`input input-size-fluid ${styles.dateInput}`} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+                  {stores.map((store: any) => (
+                    <option key={store.store_uid} value={store.store_id}>{store.label}</option>
+                  ))}
+                </select>
+                {tab === "orders" || tab === "problems" ? (
+                  <select className={`input input-size-fluid ${styles.dateInput}`} value={period} onChange={(e) => setPeriod(e.target.value)}>
+                    {ORDERS_PERIOD_OPTIONS.map((option: any) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                ) : null}
+                {tab === "orders" ? (
+                  <select className={`input input-size-fluid ${styles.dateInput}`} value={itemStatus} onChange={(e) => setItemStatus(e.target.value)}>
+                    <option value="">Все статусы</option>
+                    {availableStatuses.map((status: string) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                ) : null}
+                {tab === "sku" || tab === "category" ? (
+                  <>
+                    <select className={`input input-size-fluid ${styles.dateInput}`} value={dateMode} onChange={(e) => setDateMode(e.target.value)}>
+                      <option value="created">Дата заказа</option>
+                      <option value="delivery">Дата доставки</option>
+                    </select>
+                    <select className={`input input-size-fluid ${styles.dateInput}`} value={grain} onChange={(e) => setGrain(e.target.value)}>
+                      <option value="month">По месяцам</option>
+                      <option value="day">По дням</option>
+                    </select>
+                  </>
+                ) : null}
+              </>
             )}
           </WorkspaceToolbar>
         </WorkspaceSurface>

@@ -299,7 +299,7 @@ export default function SalesOverviewPage() {
   const [tab, setTab] = useState<TabKey>("orders");
   const [storeId, setStoreId] = useState("");
   const [dateMode, setDateMode] = useState<DateMode>("created");
-  const [period, setPeriod] = useState<OrdersPeriod>("month");
+  const [period, setPeriod] = useState<OrdersPeriod>("today");
   const [itemStatus, setItemStatus] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
