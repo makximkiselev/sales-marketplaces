@@ -1,5 +1,5 @@
-import PricingCatalogFrame from "../pricing/_components/PricingCatalogFrame";
-import commonStyles from "../pricing/_components/PricingPageCommon.module.css";
+import { PageFrame } from "../../components/page/PageKit";
+import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs } from "../../components/page/WorkspaceKit";
 import styles from "./CatalogPage.module.css";
 import type { CatalogController } from "./CatalogRendererTypes";
 
@@ -35,56 +35,138 @@ export function CatalogDesktop({ controller, treeSelector, table }: Props) {
   } = controller;
 
   return (
-    <PricingCatalogFrame
+    <PageFrame
       title="Список товаров"
-      subtitle="Быстрый свод по товарам, размещению и будущим ценовым/рекламным метрикам."
-      tabs={(
-        <>
-          {tabItems.map((item) => (
-            <button
-              key={item.id}
-              className={`btn inline ${commonStyles.tabBtn} ${tab === item.id ? commonStyles.tabBtnActive : ""}`}
-              onClick={() => setTab(item.id)}
-            >
-              <span>{item.label}</span>
-              {"badge" in item && item.badge ? <span className={commonStyles.tabBadge}>{item.badge}</span> : null}
-            </button>
-          ))}
-        </>
-      )}
-      searchValue={searchDraft}
-      onSearchChange={setSearchDraft}
-      searchPlaceholder="Поиск по SKU или наименованию"
-      error={error}
-      treeSelector={treeSelector}
-      treeMeta={tab === "all" ? "Сводный список товаров" : activeStoreLabel}
-      flatTree={flatTree}
-      selectedTreePath={selectedTreePath}
-      expandedSize={expandedSize}
-      isExpanded={isExpanded}
-      onToggleExpandAll={onToggleExpandAll}
-      onToggleExpand={onToggleExpand}
-      onToggleTree={onToggleTree}
-      treeLoadingText={flatTree.length === 0 ? (tableLoading ? "Загрузка..." : "Нет данных для дерева") : ""}
-      tableTitle="Товары"
-      tableMeta={
-        <>
-          {tableLoading ? "Обновление..." : `Всего: ${totalCount}`}
-          {selectedTreePath ? ` • Фильтр: ${selectedTreePath}` : ""}
-        </>
-      }
-      table={table}
-      page={page}
-      totalPages={totalPages}
-      onPrevPage={() => setPage((current) => Math.max(1, current - 1))}
-      onNextPage={() => setPage((current) => Math.min(totalPages, current + 1))}
-      canPrev={page > 1}
-      canNext={page < totalPages}
-      pageSize={pageSize}
-      onPageSizeChange={(value) => {
-        setPage(1);
-        setPageSize(value);
-      }}
-    />
+      subtitle="Единый каталог товаров с древом категорий, размещением и будущими ценовыми метриками."
+      className={styles.catalogPageCard}
+    >
+      <div className={styles.catalogShell}>
+        <WorkspaceSurface className={styles.catalogHeroSurface}>
+          <WorkspaceTabs
+            className={styles.catalogTabs}
+            items={tabItems.map((item) => ({
+              id: item.id,
+              label: item.label,
+              meta: "badge" in item ? item.badge : undefined,
+            }))}
+            activeId={tab}
+            onChange={setTab}
+          />
+          <WorkspaceHeader
+            title="Каталог"
+            subtitle="Чистый product-workspace для фильтрации, навигации по древу и работы с таблицей товаров."
+            meta={
+              <div className={styles.catalogHeaderMeta}>
+                <span className={styles.catalogMetaChip}>{tab === "all" ? "Все магазины" : activeStoreLabel}</span>
+                <span className={styles.catalogMetaChip}>{tableLoading ? "Обновление..." : `Всего: ${totalCount}`}</span>
+              </div>
+            }
+          />
+        </WorkspaceSurface>
+
+        {error ? <div className="status error">{error}</div> : null}
+
+        <div className={styles.catalogWorkspace}>
+          <WorkspaceSurface className={styles.catalogSidebarSurface}>
+            <div className={styles.catalogSidebarBlock}>
+              {treeSelector}
+            </div>
+            <div className={styles.catalogSidebarHeader}>
+              <div>
+                <div className={styles.catalogSidebarTitle}>Древо каталога</div>
+                <div className={styles.catalogSidebarMeta}>{tab === "all" ? "Сводный список товаров" : activeStoreLabel}</div>
+              </div>
+              <button type="button" className="btn ghost" onClick={onToggleExpandAll}>
+                {expandedSize ? "Свернуть все" : "Развернуть все"}
+              </button>
+            </div>
+            <div className={styles.catalogTreeList}>
+              {flatTree.length === 0 ? (
+                <div className={styles.catalogTreeEmpty}>{tableLoading ? "Загрузка..." : "Нет данных для дерева"}</div>
+              ) : (
+                flatTree.map((node) => {
+                  const selected = selectedTreePath === node.path;
+                  return (
+                    <div
+                      key={node.path}
+                      className={styles.catalogTreeRow}
+                      style={{ paddingLeft: `${node.depth * 16}px` }}
+                    >
+                      {node.hasChildren ? (
+                        <button
+                          type="button"
+                          className={styles.catalogTreeExpand}
+                          onClick={() => onToggleExpand(node.path)}
+                        >
+                          {isExpanded(node.path) ? "−" : "+"}
+                        </button>
+                      ) : (
+                        <span className={styles.catalogTreeDot}>•</span>
+                      )}
+                      <button
+                        type="button"
+                        className={`${styles.catalogTreeNode} ${selected ? styles.catalogTreeNodeActive : ""}`.trim()}
+                        onClick={() => onToggleTree(node.path)}
+                        title={node.path}
+                      >
+                        {node.name}
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </WorkspaceSurface>
+
+          <WorkspaceSurface className={styles.catalogTableSurface}>
+            <div className={styles.catalogToolbar}>
+              <div className={styles.catalogSearchBlock}>
+                <label className={styles.catalogFieldLabel} htmlFor="catalog-desktop-search">Поиск по SKU</label>
+                <input
+                  id="catalog-desktop-search"
+                  className={`input ${styles.catalogSearchInput}`}
+                  value={searchDraft}
+                  onChange={(e) => setSearchDraft(e.target.value)}
+                  placeholder="Поиск по SKU или наименованию"
+                />
+              </div>
+              <div className={styles.catalogToolbarMeta}>
+                {selectedTreePath ? <span className={styles.catalogMetaChip}>{selectedTreePath}</span> : <span className={styles.catalogMetaChip}>Весь каталог</span>}
+                <div className={styles.catalogPageSizeBlock}>
+                  <label className={styles.catalogFieldLabel} htmlFor="catalog-desktop-page-size">На странице</label>
+                  <select
+                    id="catalog-desktop-page-size"
+                    className={`input ${styles.catalogPageSizeSelect}`}
+                    value={pageSize}
+                    onChange={(e) => {
+                      setPage(1);
+                      setPageSize(Number(e.target.value) || 50);
+                    }}
+                  >
+                    {[25, 50, 100, 200, -1].map((n) => (
+                      <option key={n} value={n}>{n < 0 ? "Все" : n}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.catalogTableWrap}>{table}</div>
+
+            <div className={styles.catalogPager}>
+              <div className={styles.catalogPagerMeta}>Страница {page} / {totalPages}</div>
+              <div className={styles.catalogPagerActions}>
+                <button type="button" className="btn ghost" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
+                  Назад
+                </button>
+                <button type="button" className="btn ghost" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page >= totalPages}>
+                  Дальше
+                </button>
+              </div>
+            </div>
+          </WorkspaceSurface>
+        </div>
+      </div>
+    </PageFrame>
   );
 }

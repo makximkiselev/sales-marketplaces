@@ -1,6 +1,5 @@
 import { PageFrame } from "../../components/page/PageKit";
-import { ControlTabs } from "../../components/page/ControlKit";
-import commonStyles from "../pricing/_components/PricingPageCommon.module.css";
+import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs } from "../../components/page/WorkspaceKit";
 import styles from "./CatalogPage.module.css";
 import type { CatalogController } from "./CatalogRendererTypes";
 
@@ -30,31 +29,37 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
 
   return (
     <PageFrame
-      title="Список товаров"
-      subtitle="Каталог в мобильном формате без горизонтальной таблицы."
+      title="Каталог"
+      subtitle="Мобильный конструктор каталога без горизонтального скролла."
       className={styles.mobilePageCard}
     >
       <div className={styles.mobileCatalogShell}>
-        <ControlTabs
-          className={styles.mobileCatalogTabs}
-          items={tabItems.map((item) => ({ id: item.id, label: item.label, badge: "badge" in item ? item.badge : undefined }))}
-          activeId={tab}
-          onChange={setTab}
-        />
-
-        <div className={styles.mobileCatalogControls}>
-          <div className={styles.treeSourcePanel}>{treeSelector}</div>
-          <div className={styles.mobileSearchBlock}>
-            <label className={commonStyles.fieldLabel} htmlFor="catalog-mobile-search">Поиск</label>
-            <input
-              id="catalog-mobile-search"
-              className={`input ${styles.mobileSearchInput}`}
-              value={searchDraft}
-              onChange={(e) => setSearchDraft(e.target.value)}
-              placeholder="Поиск по SKU или наименованию"
-            />
+        <WorkspaceSurface className={styles.mobileCatalogHero}>
+          <WorkspaceTabs
+            className={styles.mobileCatalogTabs}
+            items={tabItems.map((item) => ({ id: item.id, label: item.label, meta: "badge" in item ? item.badge : undefined }))}
+            activeId={tab}
+            onChange={setTab}
+          />
+          <WorkspaceHeader
+            title="Каталог"
+            subtitle="Все фильтры и карточки товаров собраны в один мобильный workspace."
+            meta={<span className={styles.catalogMetaChip}>{tableLoading ? "Обновление..." : `Всего: ${totalCount}`}</span>}
+          />
+          <div className={styles.mobileCatalogControls}>
+            <div className={styles.treeSourcePanel}>{treeSelector}</div>
+            <div className={styles.mobileSearchBlock}>
+              <label className={styles.catalogFieldLabel} htmlFor="catalog-mobile-search">Поиск</label>
+              <input
+                id="catalog-mobile-search"
+                className={`input ${styles.mobileSearchInput}`}
+                value={searchDraft}
+                onChange={(e) => setSearchDraft(e.target.value)}
+                placeholder="Поиск по SKU или наименованию"
+              />
+            </div>
           </div>
-        </div>
+        </WorkspaceSurface>
 
         {error ? <div className="status error">{error}</div> : null}
 
@@ -99,7 +104,7 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
         </div>
 
         <div className={styles.mobileCatalogPager}>
-          <button className="btn ghost" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
+          <button type="button" className="btn ghost" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
             Назад
           </button>
           <div className={styles.mobileCatalogPagerMeta}>
