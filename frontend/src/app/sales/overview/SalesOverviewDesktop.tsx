@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { PageFrame, PageSectionTitle } from "../../../components/page/PageKit";
+import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
 import styles from "./SalesOverviewPage.module.css";
 
 type Props = {
@@ -64,6 +65,17 @@ export function SalesOverviewDesktop({ vm }: Props) {
   } = vm;
 
   const s = stylesRef as typeof styles;
+  const overviewTabs = [
+    { id: "orders", label: "По заказам" },
+    { id: "problems", label: "Проблемные" },
+    { id: "tracking", label: "Трекинг" },
+    { id: "sku", label: "Товары" },
+    { id: "category", label: "Категории" },
+  ] as const;
+  const currentStoreLabel = tab === "tracking" ? activeTrackingStore?.label : activeStore?.label;
+  const currentCurrencySymbol = String(tab === "tracking" ? activeTrackingCurrencyCode : activeStoreCurrencyCode).trim().toUpperCase() === "USD"
+    ? "$"
+    : "₽";
 
   return (
     <PageFrame
@@ -71,53 +83,73 @@ export function SalesOverviewDesktop({ vm }: Props) {
       innerClassName={s.pageFrameInner}
       title="Обзор продаж"
       subtitle="Единый слой 'по заказам': история загружается один раз, текущий месяц пополняется инкрементально, а в течение дня заказы донасыщаются оперативной экономикой."
-      toolbarLeft={(
-        <div className={s.toolbar}>
-          <select className={`input ${s.dateInput}`} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-            {stores.map((store: any) => (
-              <option key={store.store_uid} value={store.store_id}>{store.label}</option>
-            ))}
-          </select>
-          <div className={s.segmented}>
-            <button className={`btn inline ${tab === "orders" ? s.segmentedActive : ""}`} onClick={() => setTab("orders")}>По заказам</button>
-            <button className={`btn inline ${tab === "problems" ? s.segmentedActive : ""}`} onClick={() => setTab("problems")}>Проблемные</button>
-            <button className={`btn inline ${tab === "tracking" ? s.segmentedActive : ""}`} onClick={() => setTab("tracking")}>Трекинг</button>
-            <button className={`btn inline ${tab === "sku" ? s.segmentedActive : ""}`} onClick={() => setTab("sku")}>Товары</button>
-            <button className={`btn inline ${tab === "category" ? s.segmentedActive : ""}`} onClick={() => setTab("category")}>Категории</button>
-          </div>
-        </div>
-      )}
-      toolbarRight={(
-        tab === "tracking" || tab === "sku" || tab === "category" ? (
-          <div className={s.toolbar}>
-            <select className={`input ${s.dateInput}`} value={dateMode} onChange={(e) => setDateMode(e.target.value)}>
-              <option value="created">По дате заказа</option>
-              <option value="delivery">По дате доставки</option>
-            </select>
-            {tab === "sku" || tab === "category" ? (
-              <select className={`input ${s.dateInput}`} value={grain} onChange={(e) => setGrain(e.target.value)}>
-                <option value="month">По месяцам</option>
-                <option value="day">По дням</option>
-              </select>
-            ) : null}
-          </div>
-        ) : (
-          <div className={s.toolbar}>
-            <select className={`input ${s.dateInput}`} value={period} onChange={(e) => { setPage(1); setPeriod(e.target.value); }}>
-              {ORDERS_PERIOD_OPTIONS.map((option: any) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-            <select className={`input ${s.dateInput}`} value={itemStatus} onChange={(e) => { setPage(1); setItemStatus(e.target.value); }}>
-              <option value="">Все статусы</option>
-              {availableStatuses.map((status: string) => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
-          </div>
-        )
-      )}
     >
+      <WorkspaceSurface className={s.overviewHeroSurface}>
+        <WorkspaceTabs
+          className={s.overviewTabs}
+          items={overviewTabs.map((item) => ({ id: item.id, label: item.label }))}
+          activeId={tab}
+          onChange={setTab}
+        />
+        <WorkspaceHeader
+          title="Аналитика продаж"
+          subtitle="Операционный sales workspace для заказов, проблемных кейсов, трекинга и ретроспектив по товарам и категориям."
+          meta={(
+            <div className={s.overviewHeroMeta}>
+              {currentStoreLabel ? <span className={s.overviewMetaChip}>{currentStoreLabel}</span> : null}
+              <span className={s.overviewMetaChip}>{currentCurrencySymbol}</span>
+            </div>
+          )}
+        />
+        <WorkspaceToolbar className={s.overviewToolbar}>
+          <div className={s.toolbarGroup}>
+            {tab === "tracking" ? (
+              <select className={`input input-size-xl ${s.dateInput}`} value={trackingStoreId} onChange={(e) => setTrackingStoreId(e.target.value)}>
+                {trackingStores.map((store: any) => (
+                  <option key={store.store_uid} value={store.store_id}>{store.label}</option>
+                ))}
+              </select>
+            ) : (
+              <select className={`input input-size-xl ${s.dateInput}`} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+                {stores.map((store: any) => (
+                  <option key={store.store_uid} value={store.store_id}>{store.label}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          <div className={s.toolbarGroup}>
+            {tab === "tracking" || tab === "sku" || tab === "category" ? (
+              <>
+                <select className={`input input-size-md ${s.dateInput}`} value={dateMode} onChange={(e) => setDateMode(e.target.value)}>
+                  <option value="created">По дате заказа</option>
+                  <option value="delivery">По дате доставки</option>
+                </select>
+                {tab === "sku" || tab === "category" ? (
+                  <select className={`input input-size-sm ${s.dateInput}`} value={grain} onChange={(e) => setGrain(e.target.value)}>
+                    <option value="month">По месяцам</option>
+                    <option value="day">По дням</option>
+                  </select>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <select className={`input input-size-md ${s.dateInput}`} value={period} onChange={(e) => { setPage(1); setPeriod(e.target.value); }}>
+                  {ORDERS_PERIOD_OPTIONS.map((option: any) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <select className={`input input-size-lg ${s.dateInput}`} value={itemStatus} onChange={(e) => { setPage(1); setItemStatus(e.target.value); }}>
+                  <option value="">Все статусы</option>
+                  {availableStatuses.map((status: string) => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+              </>
+            )}
+          </div>
+        </WorkspaceToolbar>
+      </WorkspaceSurface>
+
       <div className={s.summaryGrid}>
         {summaryCards.map((card: any) => (
           <div key={card.label} className={s.summaryCard}>
@@ -143,19 +175,17 @@ export function SalesOverviewDesktop({ vm }: Props) {
       ) : null}
 
       {tab === "tracking" ? (
-        <div className={s.toolbar}>
-          <div className={s.segmented}>
-            {trackingStores.map((store: any) => (
-              <button
-                key={store.store_uid}
-                className={`btn inline ${trackingStoreId === store.store_id ? s.segmentedActive : ""}`}
-                onClick={() => setTrackingStoreId(store.store_id)}
-              >
-                {store.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <WorkspaceSurface className={s.trackingStoreSurface}>
+          <WorkspaceTabs
+            className={s.trackingStoreTabs}
+            items={trackingStores.map((store: any) => ({
+              id: store.store_id,
+              label: store.label,
+            }))}
+            activeId={trackingStoreId}
+            onChange={setTrackingStoreId}
+          />
+        </WorkspaceSurface>
       ) : null}
       {tab === "tracking"
         ? (activeTrackingStore ? <div className={s.pageInfo}>Магазин: {activeTrackingStore.label}</div> : null)
@@ -211,7 +241,7 @@ export function SalesOverviewDesktop({ vm }: Props) {
             </div>
             <label className={s.pageSize}>
               На странице
-              <select className={`input ${s.dateInput}`} value={pageSize} onChange={(e) => { setPage(1); setPageSize(Number(e.target.value) || 50); }}>
+              <select className={`input input-size-sm ${s.dateInput}`} value={pageSize} onChange={(e) => { setPage(1); setPageSize(Number(e.target.value) || 50); }}>
                 {[25, 50, 100, 200].map((value) => <option key={value} value={value}>{value}</option>)}
               </select>
             </label>

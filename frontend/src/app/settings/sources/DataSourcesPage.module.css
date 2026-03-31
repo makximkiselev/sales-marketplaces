@@ -2,6 +2,11 @@
   padding: 16px 18px 10px;
 }
 
+.sourcesShell {
+  display: grid;
+  gap: 14px;
+}
+
 .sourcesLayout {
   display: grid;
   gap: 14px;
@@ -11,39 +16,43 @@
   gap: 12px;
 }
 
-.sourcesTopbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+.sourcesHeroSurface {
+  padding: 20px;
+  gap: 18px;
 }
 
-.sourcesTopbarMeta {
-  display: grid;
-  justify-items: end;
-  gap: 10px;
-  min-width: 280px;
+.sourcesHeroSurfaceMobile {
+  padding: 16px;
 }
 
-.sourcesTopbarMobile {
-  display: grid;
-  gap: 10px;
-}
-
-.sourcesMobileControls {
-  display: grid;
-  gap: 10px;
-}
-
-.sourcesHeadInner {
+.sourcesHeroMeta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.sourcesHeadTitle {
-  margin-bottom: 4px;
+.sourcesMetaChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(7, 14, 27, 0.28);
+  color: #cfe0f8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sourcesToolbar {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sourcesToolbarMobile {
+  display: grid;
+  gap: 10px;
 }
 
 .refreshBlock {
@@ -72,77 +81,6 @@
 
 .sourcesTabs {
   gap: 10px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  width: fit-content;
-  max-width: 100%;
-  padding: 0 0 10px;
-  border: 0;
-  border-bottom: 1px solid rgba(132, 161, 214, 0.14);
-  border-radius: 0;
-  background: transparent;
-}
-
-.sourcesTabs :global(.btn),
-.sourcesTabsMobile :global(.btn) {
-  height: 34px;
-  min-height: 0;
-  padding: 0 2px 8px;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent;
-  color: #8ea5c4;
-  font-size: 13px;
-  font-weight: 700;
-  position: relative;
-  transition:
-    color 0.16s ease,
-    opacity 0.16s ease;
-}
-
-.sourcesTabs :global(.btn)::after,
-.sourcesTabsMobile :global(.btn)::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -8px;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #55c8ff, #9fe4ff);
-  opacity: 0;
-  transform: scaleX(0.35);
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
-}
-
-.sourcesTabs :global(button[data-active="true"]),
-.sourcesTabsMobile :global(button[data-active="true"]) {
-  color: #eef5ff !important;
-}
-
-.sourcesTabs :global(button[data-active="true"])::after,
-.sourcesTabsMobile :global(button[data-active="true"])::after {
-  opacity: 1;
-  transform: scaleX(1);
-}
-
-.sourcesTabsMobile {
-  gap: 14px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  width: 100%;
-  padding: 0 0 10px;
-  border: 0;
-  border-bottom: 1px solid rgba(132, 161, 214, 0.14);
-  border-radius: 0;
-  background: transparent;
-  scrollbar-width: none;
-}
-
-.sourcesTabsMobile::-webkit-scrollbar {
-  display: none;
 }
 
 .flowInline {
@@ -177,12 +115,9 @@
 }
 
 @media (max-width: 960px) {
-  .sourcesTopbar {
-    display: none;
-  }
-
-  .sourcesTopbarMeta {
-    min-width: 0;
+  .sourcesHeroSurface {
+    padding: 16px;
+    gap: 14px;
   }
 
   .flowInline {
@@ -198,6 +133,14 @@
   .refreshButton {
     width: 100%;
     min-width: 0;
+  }
+
+  .sourcesToolbar {
+    align-items: stretch;
+  }
+
+  .sourcesHeroMeta {
+    gap: 8px;
   }
 }
 

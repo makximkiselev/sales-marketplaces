@@ -1,0 +1,96 @@
+.shell {
+  display: grid;
+  gap: 16px;
+}
+
+.heroSurface {
+  padding: 20px;
+  gap: 18px;
+}
+
+.heroMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.metaChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(7, 14, 27, 0.28);
+  color: #cfe0f8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.section {
+  gap: 14px;
+}
+
+.sectionNote {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.tableCard {
+  background: rgba(8, 16, 30, 0.88);
+}
+
+.table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #dce7ff;
+  background: rgba(11, 20, 36, 0.98);
+  border-bottom: 1px solid rgba(157, 182, 230, 0.16);
+}
+
+.table td {
+  padding: 13px 14px;
+  border-bottom: 1px solid rgba(157, 182, 230, 0.12);
+  color: #e6eefc;
+  vertical-align: middle;
+}
+
+.table tbody tr:hover td {
+  background: rgba(92, 126, 189, 0.08);
+}
+
+.cellStrong {
+  font-weight: 700;
+  color: #f3f7ff;
+}
+
+.cellMuted {
+  color: var(--text-soft);
+}
+
+.cellRight {
+  text-align: right;
+}
+
+@media (max-width: 960px) {
+  .heroSurface {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .table {
+    min-width: 640px;
+  }
+}

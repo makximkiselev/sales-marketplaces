@@ -52,7 +52,7 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
               <label className={styles.catalogFieldLabel} htmlFor="catalog-mobile-search">Поиск</label>
               <input
                 id="catalog-mobile-search"
-                className={`input ${styles.mobileSearchInput}`}
+                className={`input input-size-fluid ${styles.mobileSearchInput}`}
                 value={searchDraft}
                 onChange={(e) => setSearchDraft(e.target.value)}
                 placeholder="Поиск по SKU или наименованию"
@@ -110,7 +110,7 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
           <div className={styles.mobileCatalogPagerMeta}>
             <span>{page} / {totalPages}</span>
             <select
-              className={`input ${styles.mobileCatalogPageSize}`}
+              className={`input input-size-sm ${styles.mobileCatalogPageSize}`}
               value={pageSize}
               onChange={(e) => {
                 setPage(1);

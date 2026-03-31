@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../../lib/api";
-import { ControlField, ControlTabs, LoadingButton } from "../../../components/page/ControlKit";
+import { LoadingButton } from "../../../components/page/ControlKit";
 import { PageFrame } from "../../../components/page/PageKit";
+import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
 import styles from "./PricingFxRatesPage.module.css";
+import layoutStyles from "../../_shared/AppPageLayout.module.css";
 
 type RateRow = { date: string; rate: number };
 type FxResp = {
@@ -90,87 +92,99 @@ export default function PricingFxRatesPage() {
       title="Курс валют"
       subtitle="Курс USD к RUB: ЦБ РФ и таблицы Ozon (для продаж / для услуг)."
       className={styles.pageCard}
-      actions={
-        <LoadingButton loading={loading} idleLabel="Обновить данные" loadingLabel="Обновление..." onClick={() => void loadRates()} />
-      }
-      meta={
-        <>
-          <div>{loading ? "Обновление..." : "Данные по выбранному периоду"}</div>
-          <div>{updatedAt ? `Обновлено: ${updatedAt}` : "Еще не загружено"}</div>
-        </>
-      }
-      toolbarLeft={
-        <ControlTabs
-          items={[
-            { id: "7d", label: "7 дней" },
-            { id: "14d", label: "14 дней" },
-            { id: "30d", label: "30 дней" },
-            { id: "custom", label: "Период" },
-          ]}
-          activeId={period}
-          onChange={setPeriod}
-        />
-      }
-      toolbarRight={
-        period === "custom" ? (
-          <>
-            <ControlField label="Дата с" className={styles.dateField}>
-              <input
-                type="date"
-                className={`input ${styles.dateInput}`}
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-              />
-            </ControlField>
-            <ControlField label="Дата по" className={styles.dateField}>
-              <input
-                type="date"
-                className={`input ${styles.dateInput}`}
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-              />
-            </ControlField>
-          </>
-        ) : null
-      }
     >
+      <div className={layoutStyles.shell}>
+        <WorkspaceSurface className={layoutStyles.heroSurface}>
+          <WorkspaceTabs
+            items={[
+              { id: "7d", label: "7 дней" },
+              { id: "14d", label: "14 дней" },
+              { id: "30d", label: "30 дней" },
+              { id: "custom", label: "Период" },
+            ]}
+            activeId={period}
+            onChange={setPeriod}
+          />
+          <WorkspaceHeader
+            title="FX workspace"
+            subtitle="Сводная зона для сравнения курса ЦБ и таблиц Ozon по выбранному временному диапазону."
+            meta={(
+              <div className={layoutStyles.heroMeta}>
+                <span className={layoutStyles.metaChip}>{titleLabel}</span>
+                <span className={layoutStyles.metaChip}>{updatedAt ? `Обновлено: ${updatedAt}` : "Еще не загружено"}</span>
+              </div>
+            )}
+          />
+          <WorkspaceToolbar className={layoutStyles.toolbar}>
+            <div className={layoutStyles.toolbarGroup}>
+              {period === "custom" ? (
+                <>
+                  <label className={styles.dateField}>
+                    <span className={styles.fieldLabel}>Дата с</span>
+                    <input
+                      type="date"
+                      className={`input input-size-md ${styles.dateInput}`}
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                    />
+                  </label>
+                  <label className={styles.dateField}>
+                    <span className={styles.fieldLabel}>Дата по</span>
+                    <input
+                      type="date"
+                      className={`input input-size-md ${styles.dateInput}`}
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                    />
+                  </label>
+                </>
+              ) : (
+                <div className={styles.toolbarHint}>{loading ? "Обновление..." : "Данные по выбранному периоду"}</div>
+              )}
+            </div>
+            <div className={layoutStyles.toolbarGroup}>
+              <LoadingButton loading={loading} idleLabel="Обновить данные" loadingLabel="Обновление..." onClick={() => void loadRates()} />
+            </div>
+          </WorkspaceToolbar>
+        </WorkspaceSurface>
       {error ? <div className={`status error ${styles.statusBox}`}>{error}</div> : null}
       <div className={styles.tablesGrid}>
-          {tableList.map((tbl) => (
-            <section key={tbl.key} className={styles.tableCard}>
-              <div className={styles.tableHead}>
-                <h2 className={styles.tableTitle}>{tbl.label}</h2>
-                <div className={styles.tableMeta}>
-                  {titleLabel} • строк: {tbl.rows.length}
-                </div>
+        {tableList.map((tbl) => (
+          <section key={tbl.key} className={styles.tableCard}>
+            <div className={styles.tableHead}>
+              <h2 className={styles.tableTitle}>{tbl.label}</h2>
+              <div className={styles.tableMeta}>
+                {titleLabel} • строк: {tbl.rows.length}
               </div>
-              <div className={styles.tableWrap}>
-                <table className={styles.ratesTable}>
-                  <thead>
-                    <tr>
-                      <th>Дата</th>
-                      <th>$ к ₽</th>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.ratesTable}>
+                <thead>
+                  <tr>
+                    <th>Дата</th>
+                    <th>$ к ₽</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tbl.rows.map((row) => (
+                    <tr key={`${tbl.key}-${row.date}`}>
+                      <td className={styles.dateCell}>{formatRuDate(row.date)}</td>
+                      <td className={styles.rateCell}>{formatRate(row.rate)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {tbl.rows.map((row) => (
-                      <tr key={`${tbl.key}-${row.date}`}>
-                        <td className={styles.dateCell}>{formatRuDate(row.date)}</td>
-                        <td className={styles.rateCell}>{formatRate(row.rate)}</td>
-                      </tr>
-                    ))}
-                    {!tbl.rows.length ? (
-                      <tr>
-                        <td colSpan={2} className="emptyCell">
-                          Нет данных за выбранный период
-                        </td>
-                      </tr>
-                    ) : null}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          ))}
+                  ))}
+                  {!tbl.rows.length ? (
+                    <tr>
+                      <td colSpan={2} className="emptyCell">
+                        Нет данных за выбранный период
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))}
+      </div>
       </div>
     </PageFrame>
   );

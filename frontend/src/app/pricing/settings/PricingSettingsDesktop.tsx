@@ -82,9 +82,9 @@ export function PricingSettingsDesktop({
   } = controller;
 
   return (
-    <div className={`${styles.settingsShell} ${isSalesPlanSection ? styles.settingsShellFull : ""}`}>
-      <div className={`${styles.settingsMain} ${isSalesPlanSection ? styles.settingsMainCompact : ""}`}>
-        <WorkspaceStack className={`${styles.pricingWorkspace} ${isSalesPlanSection ? styles.workspaceHeroCompact : ""}`}>
+    <div className={styles.settingsShell}>
+      <div className={styles.settingsMain}>
+        <WorkspaceStack className={styles.pricingWorkspace}>
           <WorkspaceSurface className={styles.pricingHeroSurface}>
             <WorkspaceTabs
               className={styles.pricingPrimaryTabs}

@@ -1,6 +1,6 @@
 import styles from "./DataSourcesPage.module.css";
-import { ControlTabs } from "../../../components/page/ControlKit";
 import { PanelGrid, SectionBlock } from "../../../components/page/SectionKit";
+import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
 import { ExternalSystemsPanel } from "./components/ExternalSystemsPanel";
 import { GoogleTablesPanel } from "./components/GoogleTablesPanel";
 import { OzonPanel } from "./components/OzonPanel";
@@ -64,15 +64,29 @@ export function DataSourcesDesktop({ controller, sectionItems }: Props) {
   } = controller;
 
   return (
-    <div className={styles.sourcesLayout}>
-      <div className={styles.sourcesTopbar}>
-        <ControlTabs
+    <div className={styles.sourcesShell}>
+      <WorkspaceSurface className={styles.sourcesHeroSurface}>
+        <WorkspaceTabs
           className={styles.sourcesTabs}
-          items={sectionItems}
+          items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
           activeId={sectionTab}
           onChange={setSectionTab}
         />
-        <div className={styles.sourcesTopbarMeta}>
+        <WorkspaceHeader
+          title="Источники данных"
+          subtitle="Единое рабочее пространство для маркетплейсов, таблиц и внешних систем с общим управлением обменом."
+          meta={(
+            <div className={styles.sourcesHeroMeta}>
+              <span className={styles.sourcesMetaChip}>
+                {sectionTab === "all" ? "Все источники" : sectionItems.find((item) => item.id === sectionTab)?.label ?? "Источники"}
+              </span>
+              <span className={styles.sourcesMetaChip}>
+                {refreshAllLoading ? "Проверка статусов..." : `Обновлено: ${controller.formatRefreshLabel(lastRefreshAt)}`}
+              </span>
+            </div>
+          )}
+        />
+        <WorkspaceToolbar className={styles.sourcesToolbar}>
           <div className={styles.flowInline}>
             <span className={styles.flowInlineTitle}>Режим обмена</span>
             <div className={styles.flowInlineItem}>
@@ -114,8 +128,8 @@ export function DataSourcesDesktop({ controller, sectionItems }: Props) {
             </button>
             <div className={styles.refreshMeta}>Последнее обновление: {controller.formatRefreshLabel(lastRefreshAt)}</div>
           </div>
-        </div>
-      </div>
+        </WorkspaceToolbar>
+      </WorkspaceSurface>
 
       {flowError ? <div className={`status error ${styles.flowErrorInline}`}>{flowError}</div> : null}
 

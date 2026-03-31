@@ -7,10 +7,6 @@
   gap: 16px;
 }
 
-.headCardInnerCompact {
-  max-width: 1120px;
-}
-
 .headCardInner :global(.hero) {
   gap: 6px;
 }
@@ -61,6 +57,26 @@
   gap: 16px;
 }
 
+.fieldSizeSm {
+  width: 100%;
+  max-width: 140px;
+}
+
+.fieldSizeMd {
+  width: 100%;
+  max-width: 220px;
+}
+
+.fieldSizeLg {
+  width: 100%;
+  max-width: 320px;
+}
+
+.fieldSizeFluid {
+  width: 100%;
+  max-width: 100%;
+}
+
 .recalculateButton {
   white-space: nowrap;
 }
@@ -73,10 +89,6 @@
   max-width: 1320px;
   width: 100%;
   margin-inline: auto;
-}
-
-.settingsShellFull {
-  grid-template-columns: minmax(0, 1fr);
 }
 
 .mobileSettingsShell {
@@ -116,6 +128,7 @@
 
 .pricingWorkspace {
   gap: 18px;
+  width: 100%;
 }
 
 .pricingHeroSurface {
@@ -303,21 +316,10 @@
   padding-bottom: 88px;
 }
 
-.settingsMainCompact {
-  max-width: 1120px;
-  width: 100%;
-  justify-self: center;
-}
-
 .workspaceHero {
   padding: 0;
   display: grid;
   gap: 8px;
-}
-
-.workspaceHeroCompact {
-  max-width: 1120px;
-  width: 100%;
 }
 
 .workspaceHeroMain {
@@ -546,6 +548,8 @@
 
 .categoryEditor {
   align-self: start;
+  width: 100%;
+  max-width: 980px;
 }
 
 .categoryEditorMobile {
@@ -777,8 +781,9 @@
 
 .categoryEditorGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .categoryEditorGridMobile {
@@ -793,6 +798,7 @@
   border: 1px solid rgba(132, 161, 214, 0.14);
   background: rgba(7, 14, 27, 0.36);
   align-content: start;
+  min-width: 0;
 }
 
 .categoryEditorFieldHead {
@@ -952,6 +958,8 @@
 .logisticsPanelShell {
   display: grid;
   gap: 14px;
+  width: 100%;
+  max-width: 1120px;
 }
 
 .logisticsPanelHead {
@@ -997,8 +1005,9 @@
 
 .logisticsStoreGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
   gap: 14px;
+  align-items: start;
 }
 
 .logisticsStoreCard {
@@ -1033,7 +1042,7 @@
 
 .logisticsStoreCardGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
   gap: 8px;
 }
 
@@ -1045,10 +1054,14 @@
   display: grid;
   gap: 4px;
   min-width: 0;
+  max-width: 220px;
+  width: 100%;
 }
 
 .logisticsMetricFieldInline {
   align-content: start;
+  max-width: 320px;
+  width: 100%;
 }
 
 .logisticsMetricLabel {
@@ -1466,6 +1479,8 @@
 
 .settingInput {
   height: 36px;
+  width: 100%;
+  max-width: 220px;
 }
 
 .inputSuffix {
@@ -1605,9 +1620,9 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
   gap: 14px;
-  max-width: 1120px;
-  width: min(100%, 1120px);
-  justify-self: start;
+  max-width: 1320px;
+  width: 100%;
+  justify-self: stretch;
 }
 
 .salesPlanCard {
@@ -1619,6 +1634,7 @@
   padding: 14px;
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .salesPlanCardHead {
@@ -1716,8 +1732,9 @@
 
 .salesPlanFields {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
   gap: 10px;
+  align-items: start;
 }
 
 .salesPlanField {
@@ -1727,10 +1744,15 @@
   background: rgba(7, 14, 27, 0.34);
   display: grid;
   gap: 8px;
+  min-width: 0;
 }
 
 .salesPlanFieldCompact {
   min-width: 0;
+}
+
+.salesPlanFieldWide {
+  grid-column: span 2;
 }
 
 .salesPlanFloatingBar {
@@ -2454,13 +2476,14 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
 }
 
 .cellInput {
   width: 100%;
   min-width: 112px;
+  max-width: 220px;
   height: 38px;
   text-align: center;
   padding-right: 12px;
@@ -2476,10 +2499,6 @@
   .mobileStoreTabs,
   .headCardInner :global(.toolbar) {
     display: none;
-  }
-
-  .headCardInnerCompact {
-    max-width: none;
   }
 
   .headInner {
@@ -2515,6 +2534,18 @@
 
   .categoryEditorGridMobile {
     grid-template-columns: 1fr;
+  }
+
+  .fieldSizeSm,
+  .fieldSizeMd,
+  .fieldSizeLg,
+  .fieldSizeFluid,
+  .settingInput,
+  .cellInput,
+  .cellInputWrap,
+  .logisticsMetricField,
+  .logisticsMetricFieldInline {
+    max-width: none;
   }
 
   .refreshBlock {
@@ -2642,6 +2673,10 @@
   .salesPlanModeGrid,
   .salesPlanFields {
     grid-template-columns: 1fr;
+  }
+
+  .salesPlanFieldWide {
+    grid-column: auto;
   }
 
   .salesPlanGrid {

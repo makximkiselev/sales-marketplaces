@@ -1177,6 +1177,37 @@ td.source-col {
   color: #89a0c9;
 }
 
+.input-size-sm {
+  max-width: 140px;
+}
+
+.input-size-md {
+  max-width: 220px;
+}
+
+.input-size-lg {
+  max-width: 320px;
+}
+
+.input-size-xl {
+  max-width: 420px;
+}
+
+.input-size-fluid {
+  max-width: min(100%, 640px);
+}
+
+.controls-row {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.controls-row > * {
+  flex: 0 0 auto;
+}
+
 select.input {
   appearance: none;
   -webkit-appearance: none;
@@ -1186,6 +1217,24 @@ select.input {
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 14px;
+}
+
+@media (max-width: 960px) {
+  .input-size-sm,
+  .input-size-md,
+  .input-size-lg,
+  .input-size-xl,
+  .input-size-fluid {
+    max-width: none;
+  }
+
+  .controls-row {
+    align-items: stretch;
+  }
+
+  .controls-row > * {
+    flex: 1 1 180px;
+  }
 }
 
 .source-row {

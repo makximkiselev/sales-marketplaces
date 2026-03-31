@@ -1,6 +1,6 @@
 import styles from "./DataSourcesPage.module.css";
-import { ControlTabs } from "../../../components/page/ControlKit";
 import { PanelGrid, SectionBlock } from "../../../components/page/SectionKit";
+import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
 import { ExternalSystemsPanel } from "./components/ExternalSystemsPanel";
 import { GoogleTablesPanel } from "./components/GoogleTablesPanel";
 import { OzonPanel } from "./components/OzonPanel";
@@ -64,15 +64,26 @@ export function DataSourcesMobile({ controller, sectionItems }: Props) {
   } = controller;
 
   return (
-    <div className={`${styles.sourcesLayout} ${styles.sourcesLayoutMobile}`}>
-      <div className={styles.sourcesTopbarMobile}>
-        <ControlTabs
-          className={styles.sourcesTabsMobile}
-          items={sectionItems}
+    <div className={`${styles.sourcesShell} ${styles.sourcesLayoutMobile}`}>
+      <WorkspaceSurface className={`${styles.sourcesHeroSurface} ${styles.sourcesHeroSurfaceMobile}`}>
+        <WorkspaceTabs
+          className={styles.sourcesTabs}
+          items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
           activeId={sectionTab}
           onChange={setSectionTab}
         />
-        <div className={styles.sourcesMobileControls}>
+        <WorkspaceHeader
+          title="Источники данных"
+          subtitle="Мобильная рабочая зона для статусов интеграций, таблиц и внешних систем."
+          meta={(
+            <div className={styles.sourcesHeroMeta}>
+              <span className={styles.sourcesMetaChip}>
+                {sectionTab === "all" ? "Все источники" : sectionItems.find((item) => item.id === sectionTab)?.label ?? "Источники"}
+              </span>
+            </div>
+          )}
+        />
+        <WorkspaceToolbar className={styles.sourcesToolbarMobile}>
           <div className={styles.flowInline}>
             <span className={styles.flowInlineTitle}>Режим обмена</span>
             <div className={styles.flowInlineItem}>
@@ -112,8 +123,8 @@ export function DataSourcesMobile({ controller, sectionItems }: Props) {
             {refreshAllLoading ? "Обновление..." : "Обновить источники"}
           </button>
           <div className={styles.refreshMeta}>Последнее обновление: {controller.formatRefreshLabel(lastRefreshAt)}</div>
-        </div>
-      </div>
+        </WorkspaceToolbar>
+      </WorkspaceSurface>
 
       {flowError ? <div className={`status error ${styles.flowErrorInline}`}>{flowError}</div> : null}
 

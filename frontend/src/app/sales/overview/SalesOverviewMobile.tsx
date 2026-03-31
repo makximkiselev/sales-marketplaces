@@ -1,5 +1,5 @@
 import { PageFrame } from "../../../components/page/PageKit";
-import { ControlTabs } from "../../../components/page/ControlKit";
+import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
 import styles from "./SalesOverviewPage.module.css";
 
 type Props = {
@@ -32,6 +32,7 @@ export function SalesOverviewMobile({ vm }: Props) {
   } = vm;
 
   const rows = tab === "orders" ? orderRows : tab === "problems" ? problemRows : tab === "sku" ? skuRows : categoryRows;
+  const currentStoreLabel = tab === "tracking" ? activeTrackingStore?.label : activeStore?.label;
 
   return (
     <PageFrame
@@ -41,32 +42,40 @@ export function SalesOverviewMobile({ vm }: Props) {
       subtitle="Мобильный слой продаж без широких таблиц."
     >
       <div className={styles.mobileOverviewShell}>
-        <ControlTabs
-          className={styles.mobileOverviewTabs}
-          items={[
-            { id: "orders", label: "Заказы" },
-            { id: "problems", label: "Проблемные" },
-            { id: "tracking", label: "Трекинг" },
-            { id: "sku", label: "Товары" },
-            { id: "category", label: "Категории" },
-          ]}
-          activeId={tab}
-          onChange={setTab}
-        />
-
-        {tab === "tracking" ? (
-          <select className={`input ${styles.dateInput}`} value={trackingStoreId} onChange={(e) => setTrackingStoreId(e.target.value)}>
-            {trackingStores.map((store: any) => (
-              <option key={store.store_uid} value={store.store_id}>{store.label}</option>
-            ))}
-          </select>
-        ) : (
-          <select className={`input ${styles.dateInput}`} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-            {stores.map((store: any) => (
-              <option key={store.store_uid} value={store.store_id}>{store.label}</option>
-            ))}
-          </select>
-        )}
+        <WorkspaceSurface className={styles.overviewHeroSurface}>
+          <WorkspaceTabs
+            className={styles.overviewTabs}
+            items={[
+              { id: "orders", label: "Заказы" },
+              { id: "problems", label: "Проблемные" },
+              { id: "tracking", label: "Трекинг" },
+              { id: "sku", label: "Товары" },
+              { id: "category", label: "Категории" },
+            ]}
+            activeId={tab}
+            onChange={setTab}
+          />
+          <WorkspaceHeader
+            title="Аналитика продаж"
+            subtitle="Компактный mobile-workspace для быстрых срезов по заказам и ретроспективам."
+            meta={currentStoreLabel ? <span className={styles.overviewMetaChip}>{currentStoreLabel}</span> : undefined}
+          />
+          <WorkspaceToolbar className={styles.overviewToolbarMobile}>
+            {tab === "tracking" ? (
+              <select className={`input input-size-fluid ${styles.dateInput}`} value={trackingStoreId} onChange={(e) => setTrackingStoreId(e.target.value)}>
+                {trackingStores.map((store: any) => (
+                  <option key={store.store_uid} value={store.store_id}>{store.label}</option>
+                ))}
+              </select>
+            ) : (
+              <select className={`input input-size-fluid ${styles.dateInput}`} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+                {stores.map((store: any) => (
+                  <option key={store.store_uid} value={store.store_id}>{store.label}</option>
+                ))}
+              </select>
+            )}
+          </WorkspaceToolbar>
+        </WorkspaceSurface>
 
         <div className={styles.summaryGrid}>
           {summaryCards.map((card: any) => (

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ErrorBox } from "../../../components/ErrorBox";
-import { ControlTabs } from "../../../components/page/ControlKit";
 import { PageFrame } from "../../../components/page/PageKit";
+import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import {
   fetchPricingMonitoring,
   fetchPricingMonitoringExports,
@@ -23,6 +23,7 @@ import type {
   RefreshMonitoringStoreApi,
 } from "../../pricing/settings/types";
 import { showAppToast } from "../../../components/ui/toastBus";
+import layoutStyles from "../../_shared/AppPageLayout.module.css";
 
 export default function MonitoringPage() {
   const [tab, setTab] = useState<"import" | "export">("import");
@@ -212,12 +213,13 @@ export default function MonitoringPage() {
   }
 
   return (
-    <>
-      <PageFrame
-        title="Мониторинг"
-        subtitle="Единый центр управления обновлениями данных, отчетов и пересчётов ценообразования."
-        toolbarLeft={
-          <ControlTabs
+    <PageFrame
+      title="Мониторинг"
+      subtitle="Единый центр управления обновлениями данных, отчетов и пересчётов ценообразования."
+    >
+      <div className={layoutStyles.shell}>
+        <WorkspaceSurface className={layoutStyles.heroSurface}>
+          <WorkspaceTabs
             items={[
               { id: "import", label: "Импорт данных" },
               { id: "export", label: "Экспорт данных" },
@@ -225,10 +227,19 @@ export default function MonitoringPage() {
             activeId={tab}
             onChange={setTab}
           />
-        }
-      />
-      {tab === "import" ? <>{error ? <ErrorBox message={error} /> : null}</> : null}
-      {tab === "export" ? <>{exportError ? <ErrorBox message={exportError} /> : null}</> : null}
+          <WorkspaceHeader
+            title="Monitoring workspace"
+            subtitle="Операционный центр для расписаний обновления, ручных запусков и контроля экспортных задач."
+            meta={(
+              <div className={layoutStyles.heroMeta}>
+                <span className={layoutStyles.metaChip}>{tab === "import" ? "Импорт" : "Экспорт"}</span>
+                <span className={layoutStyles.metaChip}>{tab === "import" ? `${rows.length} задач` : `${exportRows.length} экспортов`}</span>
+              </div>
+            )}
+          />
+        </WorkspaceSurface>
+        {tab === "import" ? <>{error ? <ErrorBox message={error} /> : null}</> : null}
+        {tab === "export" ? <>{exportError ? <ErrorBox message={exportError} /> : null}</> : null}
       {tab === "import" ? (
         <MonitoringSection
           loading={loading}
@@ -257,6 +268,7 @@ export default function MonitoringPage() {
           onRunExport={onRunExport}
         />
       )}
-    </>
+      </div>
+    </PageFrame>
   );
 }

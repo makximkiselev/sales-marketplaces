@@ -124,7 +124,7 @@ export function CatalogDesktop({ controller, treeSelector, table }: Props) {
                 <label className={styles.catalogFieldLabel} htmlFor="catalog-desktop-search">Поиск по SKU</label>
                 <input
                   id="catalog-desktop-search"
-                  className={`input ${styles.catalogSearchInput}`}
+                  className={`input input-size-xl ${styles.catalogSearchInput}`}
                   value={searchDraft}
                   onChange={(e) => setSearchDraft(e.target.value)}
                   placeholder="Поиск по SKU или наименованию"
@@ -136,7 +136,7 @@ export function CatalogDesktop({ controller, treeSelector, table }: Props) {
                   <label className={styles.catalogFieldLabel} htmlFor="catalog-desktop-page-size">На странице</label>
                   <select
                     id="catalog-desktop-page-size"
-                    className={`input ${styles.catalogPageSizeSelect}`}
+                    className={`input input-size-sm ${styles.catalogPageSizeSelect}`}
                     value={pageSize}
                     onChange={(e) => {
                       setPage(1);

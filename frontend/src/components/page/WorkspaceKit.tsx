@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { ControlTabs } from "./ControlKit";
 import styles from "./WorkspaceKit.module.css";
 
 type TabItem<T extends string> = {
@@ -68,20 +69,16 @@ export function WorkspaceTabs<T extends string>({
   className?: string;
 }) {
   return (
-    <div className={`${styles.tabs} ${className}`.trim()}>
-      {items.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          className={`${styles.tab} ${activeId === item.id ? styles.tabActive : ""}`.trim()}
-          onClick={() => onChange(item.id)}
-          data-active={activeId === item.id ? "true" : "false"}
-        >
-          <span className={styles.tabLabel}>{item.label}</span>
-          {item.meta ? <span className={styles.tabMeta}>{item.meta}</span> : null}
-        </button>
-      ))}
-    </div>
+    <ControlTabs
+      className={`${styles.tabs} ${className}`.trim()}
+      items={items.map((item) => ({
+        id: item.id,
+        label: item.label,
+        badge: item.meta,
+      }))}
+      activeId={activeId}
+      onChange={onChange}
+    />
   );
 }
 
@@ -94,4 +91,3 @@ export function WorkspaceToolbar({
 }) {
   return <div className={`${styles.toolbar} ${className}`.trim()}>{children}</div>;
 }
-

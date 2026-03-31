@@ -3,7 +3,9 @@ import { apiGet } from "../../../lib/api";
 import { ErrorBox } from "../../../components/ErrorBox";
 import { PageFrame } from "../../../components/page/PageKit";
 import { SectionBlock } from "../../../components/page/SectionKit";
-import { TableCard } from "../../../components/page/DataKit";
+import { KpiCard, KpiGrid, TableCard } from "../../../components/page/DataKit";
+import { WorkspaceHeader, WorkspaceSurface } from "../../../components/page/WorkspaceKit";
+import styles from "../_shared/SalesSimplePage.module.css";
 
 type SalesDashboardResponse = {
   current?: Record<string, { turnover?: number; op_profit?: number; qty?: number }>;
@@ -33,34 +35,60 @@ export default function Page() {
     return <ErrorBox message={error} />;
   }
 
-  return (
-    <>
-      <PageFrame title="ABC-анализ продаж" subtitle={`Топ артикулов по обороту и прибыли. Показаны первые ${rows.length}.`} />
+  const totalTurnover = rows.reduce((sum, [, values]) => sum + Number(values.turnover || 0), 0);
+  const totalProfit = rows.reduce((sum, [, values]) => sum + Number(values.op_profit || 0), 0);
+  const totalQty = rows.reduce((sum, [, values]) => sum + Number(values.qty || 0), 0);
 
-      <SectionBlock title="Таблица">
-        <TableCard>
-          <table className="table-wrap">
+  return (
+    <PageFrame
+      title="ABC-анализ продаж"
+      subtitle={`Топ артикулов по обороту и прибыли. Показаны первые ${rows.length}.`}
+    >
+      <div className={styles.shell}>
+        <WorkspaceSurface className={styles.heroSurface}>
+          <WorkspaceHeader
+            title="ABC workspace"
+            subtitle="Быстрый обзор топовых артикулов по обороту, операционной прибыли и количеству без локального page-specific layout."
+            meta={(
+              <div className={styles.heroMeta}>
+                <span className={styles.metaChip}>Топ: {rows.length}</span>
+                <span className={styles.metaChip}>Артикулы</span>
+              </div>
+            )}
+          />
+          <KpiGrid>
+            <KpiCard label="Оборот" value={Math.round(totalTurnover).toLocaleString("ru-RU")} />
+            <KpiCard label="OP" value={Math.round(totalProfit).toLocaleString("ru-RU")} />
+            <KpiCard label="Количество" value={Math.round(totalQty).toLocaleString("ru-RU")} />
+          </KpiGrid>
+        </WorkspaceSurface>
+
+        <SectionBlock title="Таблица" className={styles.section}>
+          <div className={styles.sectionNote}>Список показывает первые 200 артикулов из текущего среза.</div>
+          <TableCard>
+            <table className={styles.table}>
             <thead>
               <tr>
                 <th>Артикул</th>
-                <th>Оборот</th>
-                <th>OP</th>
-                <th>Количество</th>
+                <th className={styles.cellRight}>Оборот</th>
+                <th className={styles.cellRight}>OP</th>
+                <th className={styles.cellRight}>Количество</th>
               </tr>
             </thead>
             <tbody>
               {rows.map(([article, values]) => (
                 <tr key={article}>
-                  <td>{article}</td>
-                  <td>{values.turnover ?? 0}</td>
-                  <td>{values.op_profit ?? 0}</td>
-                  <td>{values.qty ?? 0}</td>
+                  <td className={styles.cellStrong}>{article}</td>
+                  <td className={styles.cellRight}>{Math.round(Number(values.turnover || 0)).toLocaleString("ru-RU")}</td>
+                  <td className={styles.cellRight}>{Math.round(Number(values.op_profit || 0)).toLocaleString("ru-RU")}</td>
+                  <td className={styles.cellRight}>{Math.round(Number(values.qty || 0)).toLocaleString("ru-RU")}</td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        </TableCard>
-      </SectionBlock>
-    </>
+            </table>
+          </TableCard>
+        </SectionBlock>
+      </div>
+    </PageFrame>
   );
 }

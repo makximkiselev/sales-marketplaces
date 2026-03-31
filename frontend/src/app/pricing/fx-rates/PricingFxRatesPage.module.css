@@ -6,10 +6,26 @@
 
 .dateField {
   min-width: 180px;
+  display: grid;
+  gap: 8px;
+}
+
+.fieldLabel {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .dateInput {
-  height: 38px;
+  height: 40px;
+}
+
+.toolbarHint {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .tablesGrid {
@@ -99,7 +115,7 @@
 }
 
 .statusBox {
-  margin-top: 2px;
+  margin-top: 0;
 }
 
 @media (max-width: 1200px) {
