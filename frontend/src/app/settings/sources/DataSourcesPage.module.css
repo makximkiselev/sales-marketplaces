@@ -591,8 +591,8 @@
     border: 0 !important;
     padding: 0 !important;
     display: grid;
-    grid-template-columns: minmax(92px, 38%) minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: minmax(88px, 34%) minmax(0, 1fr);
+    gap: 10px;
     align-items: start;
     text-align: left !important;
   }
@@ -620,6 +620,7 @@
   .ymToggleWrap,
   .ymStatusTop {
     justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
   .ymTable tbody td[data-label="Статус"],
@@ -660,5 +661,46 @@
   .ymDeleteAccountBtn,
   .ymAddAccountBtn {
     width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .ymTable tbody tr {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .ymTable tbody td {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .ymTable tbody td::before {
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .ymToggleWrap {
+    gap: 8px;
+  }
+
+  .ymStatusTop {
+    gap: 6px;
+  }
+
+  .ymStatusCell {
+    padding-top: 0 !important;
+  }
+
+  .ymDeleteCell :global(.btn),
+  .storeSourceButton,
+  .ymShopDeleteBtn,
+  .sourceInlineSelect {
+    width: 100%;
+  }
+
+  .storeSourceButton,
+  .ymShopDeleteBtn {
+    justify-self: stretch;
   }
 }

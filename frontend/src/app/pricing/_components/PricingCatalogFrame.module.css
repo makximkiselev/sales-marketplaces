@@ -467,6 +467,25 @@
     padding: 8px;
   }
 
+  .tableTitleControls,
+  .pageLeft,
+  .pageRightStack,
+  .pageRight {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pageInfo {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .pageSizeSelect,
+  .pageInput {
+    width: 100%;
+  }
+
   .treeRow {
     min-height: 34px;
   }

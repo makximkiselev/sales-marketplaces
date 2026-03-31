@@ -108,9 +108,6 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
         </div>
 
         <div className={styles.mobileCatalogPager}>
-          <button type="button" className="btn ghost" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
-            Назад
-          </button>
           <div className={styles.mobileCatalogPagerMeta}>
             <span>Страница {page} / {totalPages}</span>
             <select
@@ -126,9 +123,14 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
               ))}
             </select>
           </div>
-          <button className="btn ghost" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page >= totalPages}>
-            Дальше
-          </button>
+          <div className={styles.mobileCatalogPagerActions}>
+            <button type="button" className="btn ghost" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={page <= 1}>
+              Назад
+            </button>
+            <button className="btn ghost" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={page >= totalPages}>
+              Дальше
+            </button>
+          </div>
         </div>
       </div>
     </PageFrame>
