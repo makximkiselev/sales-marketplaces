@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
@@ -22,7 +21,6 @@ from backend.services.auth_service import (
 
 
 router = APIRouter()
-logger = logging.getLogger("uvicorn.error")
 
 
 class LoginPayload(BaseModel):
@@ -64,22 +62,18 @@ async def auth_me(request: Request):
 
 @router.post("/api/auth/login")
 async def auth_login(payload: LoginPayload, request: Request, response: Response):
-    logger.warning("[auth] login request received")
     identifier = str(payload.identifier or "").strip()
     password = str(payload.password or "")
     if not identifier or not password:
         return JSONResponse({"ok": False, "message": "identifier и password обязательны"}, status_code=400)
     try:
-        logger.warning("[auth] authenticating identifier=%s", identifier)
         user = await asyncio.to_thread(authenticate_user, identifier=identifier, password=password)
-        logger.warning("[auth] authenticated identifier=%s user_id=%s", identifier, user.get("user_id"))
         session_token, expires_at = await asyncio.to_thread(
             create_session_for_user,
             user_id=user["user_id"],
             user_agent=str(request.headers.get("user-agent") or "")[:500],
             ip_address=_client_ip(request),
         )
-        logger.warning("[auth] session created identifier=%s", identifier)
     except ValueError as exc:
         return JSONResponse({"ok": False, "message": str(exc)}, status_code=400)
     response.set_cookie(
@@ -100,7 +94,6 @@ async def auth_login(payload: LoginPayload, request: Request, response: Response
         max_age=60 * 60 * 24 * 30,
         path="/",
     )
-    logger.warning("[auth] login response ready identifier=%s", identifier)
     return {"ok": True, "user": user, "expires_at": expires_at}
 
 
