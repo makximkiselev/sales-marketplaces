@@ -8,6 +8,7 @@ import { APP_TOAST_EVENT, type AppToastDetail } from "./ui/toastBus";
 type NavItem = { href: string; label: string };
 type NavSection = { title: string; items: NavItem[] };
 type NavGroup = { title: string; shortLabel: string; items?: NavItem[]; sections?: NavSection[] };
+const adminItem: NavItem = { href: "/settings/admin", label: "Пользователи" };
 const groups: NavGroup[] = [
   { title: "Сводка", shortLabel: "Сводка", items: [{ href: "/", label: "Дашборд" }] },
   {
@@ -107,18 +108,23 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const currentGroup = useMemo(
     () => {
-      if (pathname.startsWith("/settings/admin")) {
-        return groups.find((group) => group.title === "Настройки") ?? groups[0];
-      }
       return groups.find((group) => groupItems(group).some((item) => isActive(pathname, item.href))) ?? groups[0];
     },
     [pathname],
   );
   const currentItem = useMemo(
-    () => groupItems(currentGroup).find((item) => isActive(pathname, item.href)) ?? groupItems(currentGroup)[0],
+    () => {
+      if (pathname.startsWith("/settings/admin")) {
+        return adminItem;
+      }
+      return groupItems(currentGroup).find((item) => isActive(pathname, item.href)) ?? groupItems(currentGroup)[0];
+    },
     [currentGroup, pathname],
   );
-  const currentSections = useMemo(() => flattenCurrentGroupSections(currentGroup), [currentGroup]);
+  const currentSections = useMemo(() => {
+    if (pathname.startsWith("/settings/admin")) return [];
+    return flattenCurrentGroupSections(currentGroup);
+  }, [currentGroup, pathname]);
 
   useEffect(() => {
     let cancelled = false;
@@ -387,7 +393,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <div className="app-shell-subnav-wrap">
+      <div className={`app-shell-subnav-wrap${currentSections.length ? "" : " hidden"}`}>
         <div className="app-shell-subnav">
           {currentSections.flatMap((section) =>
             section.items.map((item) => (

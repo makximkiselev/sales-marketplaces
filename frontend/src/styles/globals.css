@@ -2082,6 +2082,10 @@ select.input {
   backdrop-filter: blur(14px);
 }
 
+.app-shell-subnav-wrap.hidden {
+  display: none;
+}
+
 .app-shell-subnav {
   display: flex;
   align-items: center;

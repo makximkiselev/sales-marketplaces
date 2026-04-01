@@ -21,7 +21,7 @@ import SalesOverviewPage from "./app/sales/overview/SalesOverviewPage";
 import SettingsMonitoringPage from "./app/settings/monitoring/MonitoringPage";
 import SettingsSourcesPage from "./app/settings/sources/DataSourcesPage";
 import SettingsAdminPage from "./app/settings/admin/AdminPage";
-import { fetchAuthUser, type AuthUser } from "./lib/auth";
+import { fetchAuthUser, getAuthUserSnapshot, type AuthUser } from "./lib/auth";
 
 function ProtectedLayout() {
   return (
@@ -33,7 +33,7 @@ function ProtectedLayout() {
 
 function RequireAuth() {
   const location = useLocation();
-  const [status, setStatus] = useState<"loading" | "ready" | "unauthorized">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "unauthorized">(() => (getAuthUserSnapshot() ? "ready" : "loading"));
 
   useEffect(() => {
     let cancelled = false;
@@ -48,7 +48,7 @@ function RequireAuth() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, location.search]);
+  }, []);
 
   if (status === "loading") {
     return <div className="auth-loading-screen">Проверяем доступ…</div>;
