@@ -39,7 +39,7 @@ from backend.routers import (
     sales_elasticity as sales_elasticity_router,
     sales_overview as sales_overview_router,
 )
-from backend.services.auth_service import AUTH_COOKIE_NAME, get_user_by_session_token
+from backend.services.auth_service import AUTH_COOKIE_NAME, get_user_by_session_token, warm_auth_runtime
 from backend.services.db import init_db
 from backend.services.store_data_model import abandon_incomplete_refresh_job_runs, init_store_data_model
 from backend.services.source_tables import init_source_registry
@@ -135,6 +135,10 @@ async def _run_startup_refreshes() -> None:
 async def lifespan(_: FastAPI):
     init_db()
     init_store_data_model()
+    try:
+        await asyncio.to_thread(warm_auth_runtime)
+    except Exception:
+        pass
     try:
         abandon_incomplete_refresh_job_runs()
     except Exception:

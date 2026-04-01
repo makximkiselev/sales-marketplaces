@@ -94,6 +94,12 @@ def _with_system_conn(fn):
             raise
 
 
+def warm_auth_runtime() -> None:
+    _init_system_store_tables()
+    if is_postgres_backend():
+        _get_shared_system_conn()
+
+
 def _row_value(row: Any, key: str, idx: int | None = None) -> Any:
     if row is None:
         return None
