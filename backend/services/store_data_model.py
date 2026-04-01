@@ -1974,6 +1974,30 @@ def _init_store_data_model_postgres() -> None:
             )
             conn.execute(
                 """
+                CREATE TABLE IF NOT EXISTS pricing_attractiveness_recommendations_raw (
+                    store_uid TEXT NOT NULL,
+                    sku TEXT NOT NULL,
+                    attractiveness_overpriced_price DOUBLE PRECISION NULL,
+                    attractiveness_moderate_price DOUBLE PRECISION NULL,
+                    attractiveness_profitable_price DOUBLE PRECISION NULL,
+                    payload_json TEXT NOT NULL DEFAULT '{}',
+                    source_updated_at TEXT NULL,
+                    loaded_at TEXT NOT NULL,
+                    PRIMARY KEY (store_uid, sku),
+                    FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_pricing_attr_recommendations_raw_store "
+                "ON pricing_attractiveness_recommendations_raw(store_uid)"
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_pricing_attr_recommendations_raw_sku "
+                "ON pricing_attractiveness_recommendations_raw(sku)"
+            )
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS pricing_autopilot_snapshots (
                     snapshot_id BIGSERIAL PRIMARY KEY,
                     snapshot_at TEXT NOT NULL,

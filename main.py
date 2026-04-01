@@ -90,6 +90,9 @@ BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 START_FRONTEND = _env_bool("START_FRONTEND", "NEXT_AUTOSTART", default=True)
 BACKEND_RELOAD_ENABLED = _env_bool("BACKEND_RELOAD", "UVICORN_RELOAD", default=True)
 BLOCKING_STARTUP_PRIME = _env_bool("STARTUP_PRIME_BLOCKING", default=False)
+STARTUP_CACHE_PRIME_ENABLED = _env_bool("STARTUP_CACHE_PRIME_ENABLED", default=False)
+STARTUP_HEAVY_REFRESH_ENABLED = _env_bool("STARTUP_HEAVY_REFRESH_ENABLED", default=False)
+REFRESH_SCHEDULER_AUTOSTART = _env_bool("REFRESH_SCHEDULER_AUTOSTART", default=False)
 ELASTICITY_SCHEDULER = BackgroundScheduler(
     executors={"default": APSchedulerThreadPoolExecutor(1)},
     job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 7200},
@@ -97,30 +100,32 @@ ELASTICITY_SCHEDULER = BackgroundScheduler(
 
 
 async def _run_startup_refreshes() -> None:
-    try:
-        await asyncio.to_thread(refresh_pricing_catalog_trees_from_sources)
-    except Exception:
-        pass
-    try:
-        await asyncio.to_thread(refresh_sales_overview_cogs_sources)
-    except Exception:
-        pass
-    try:
-        await prime_catalog_cache()
-    except Exception:
-        pass
-    try:
-        await prime_prices_cache()
-    except Exception:
-        pass
-    try:
-        await prime_attractiveness_cache()
-    except Exception:
-        pass
-    try:
-        await prime_strategy_cache()
-    except Exception:
-        pass
+    if STARTUP_HEAVY_REFRESH_ENABLED:
+        try:
+            await asyncio.to_thread(refresh_pricing_catalog_trees_from_sources)
+        except Exception:
+            pass
+        try:
+            await asyncio.to_thread(refresh_sales_overview_cogs_sources)
+        except Exception:
+            pass
+    if STARTUP_CACHE_PRIME_ENABLED:
+        try:
+            await prime_catalog_cache()
+        except Exception:
+            pass
+        try:
+            await prime_prices_cache()
+        except Exception:
+            pass
+        try:
+            await prime_attractiveness_cache()
+        except Exception:
+            pass
+        try:
+            await prime_strategy_cache()
+        except Exception:
+            pass
     try:
         schedule_sales_overview_dashboard_cache_warm()
     except Exception:
@@ -142,7 +147,7 @@ async def lifespan(_: FastAPI):
         await _run_startup_refreshes()
     else:
         asyncio.create_task(_run_startup_refreshes())
-    if not ELASTICITY_SCHEDULER.running:
+    if REFRESH_SCHEDULER_AUTOSTART and not ELASTICITY_SCHEDULER.running:
         bind_refresh_scheduler(ELASTICITY_SCHEDULER)
         ELASTICITY_SCHEDULER.add_job(
             lambda: asyncio.run(run_pricing_autopilot_simulation()),
