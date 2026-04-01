@@ -4,11 +4,20 @@ import { usePricingCategoryController } from "./usePricingCategoryController";
 import { usePricingGeneralController } from "./usePricingGeneralController";
 import { usePricingLogisticsController } from "./usePricingLogisticsController";
 import { getCachedPricingPlatforms, loadPricingPlatforms, refreshPricingStoreData, resolveNextStoreSelection } from "./controllerServices";
-import { safeReadJson, safeWriteJson } from "./cache";
+import {
+  PRICING_SETTINGS_MONITORING_CACHE_KEY,
+  PRICING_SETTINGS_SALES_PLAN_CACHE_KEY,
+  safeReadFreshJson,
+  safeReadJson,
+  safeWriteFreshJson,
+  safeWriteJson,
+} from "./cache";
 import type { PlatformItem, RefreshMonitoringRowApi, SalesPlanRowApi, StoreTabItem } from "./types";
 import { showAppToast } from "../../../components/ui/toastBus";
 
 const PRICING_SETTINGS_TAB_KEY = "pricing_settings_active_tab_v1";
+const SALES_PLAN_CACHE_TTL_MS = 10 * 60 * 1000;
+const MONITORING_CACHE_TTL_MS = 2 * 60 * 1000;
 type SettingsTab = "sales_plan" | "categories" | "logistics" | "monitoring";
 
 function readInitialSettingsTab(): SettingsTab {
@@ -150,13 +159,25 @@ export function usePricingSettingsController() {
   }
 
   async function loadSalesPlanData() {
-    setSalesPlanLoading(true);
+    const cached = safeReadFreshJson<{ ok: boolean; rows?: SalesPlanRowApi[] }>(
+      PRICING_SETTINGS_SALES_PLAN_CACHE_KEY,
+      SALES_PLAN_CACHE_TTL_MS,
+    );
+    const hasCachedRows = Array.isArray(cached?.rows);
+    if (hasCachedRows) {
+      setSalesPlanRows(cached?.rows || []);
+      setSalesPlanError("");
+      setSalesPlanLoading(false);
+    } else {
+      setSalesPlanLoading(true);
+    }
     setSalesPlanError("");
     try {
       const data = await fetchPricingSalesPlan();
+      safeWriteFreshJson(PRICING_SETTINGS_SALES_PLAN_CACHE_KEY, data);
       setSalesPlanRows(Array.isArray(data.rows) ? data.rows : []);
     } catch (e) {
-      setSalesPlanRows([]);
+      if (!hasCachedRows) setSalesPlanRows([]);
       setSalesPlanError(e instanceof Error ? e.message : String(e));
     } finally {
       setSalesPlanLoading(false);
@@ -164,13 +185,25 @@ export function usePricingSettingsController() {
   }
 
   async function loadMonitoringData() {
-    setMonitoringLoading(true);
+    const cached = safeReadFreshJson<{
+      ok: boolean;
+      rows?: RefreshMonitoringRowApi[];
+    }>(PRICING_SETTINGS_MONITORING_CACHE_KEY, MONITORING_CACHE_TTL_MS);
+    const hasCachedRows = Array.isArray(cached?.rows);
+    if (hasCachedRows) {
+      setMonitoringRows(cached?.rows || []);
+      setMonitoringError("");
+      setMonitoringLoading(false);
+    } else {
+      setMonitoringLoading(true);
+    }
     setMonitoringError("");
     try {
       const data = await fetchPricingMonitoring();
+      safeWriteFreshJson(PRICING_SETTINGS_MONITORING_CACHE_KEY, data);
       setMonitoringRows(Array.isArray(data.rows) ? data.rows : []);
     } catch (e) {
-      setMonitoringRows([]);
+      if (!hasCachedRows) setMonitoringRows([]);
       setMonitoringError(e instanceof Error ? e.message : String(e));
     } finally {
       setMonitoringLoading(false);
