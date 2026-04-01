@@ -36,6 +36,7 @@ type DataFlowResp = {
 };
 
 type OrderRow = {
+  store_uid?: string;
   sale_price?: number | null;
   sale_price_with_coinvest?: number | null;
   profit?: number | null;
@@ -343,6 +344,53 @@ function mergeRetrospectiveResponses(responses: RetrospectiveResp[]): Retrospect
 function mergeDataFlowResponses(responses: DataFlowResp[]): DataFlowResp {
   const flows = responses.flatMap((response) => response.flows || []);
   return { ok: true, flows };
+}
+
+function emptyOrdersResponse(): OrdersResp {
+  return { ok: true, rows: [], total_count: 0, kpis: { orders_count: 0, avg_coinvest_pct: 0, additional_ads: 0, operational_errors: 0 } };
+}
+
+function emptyProblemsResponse(): ProblemOrdersResp {
+  return { ok: true, rows: [], total_count: 0 };
+}
+
+function emptyRetrospectiveResponse(): RetrospectiveResp {
+  return { ok: true, rows: [], total_count: 0 };
+}
+
+function emptyDataFlowResponse(): DataFlowResp {
+  return { ok: true, flows: [] };
+}
+
+function buildStoreComparisonFromScoped(
+  stores: StoreCtx[],
+  scoped: Array<{ storeId: string; current: OrdersResp; previous: OrdersResp }>,
+) {
+  return scoped
+    .map((item) => {
+      const store = stores.find((candidate) => candidate.store_id === item.storeId);
+      const rows = item.current.rows || [];
+      const previousRows = item.previous.rows || [];
+      const revenue = sumBy(rows, (row) => row.sale_price);
+      const profit = sumBy(rows, (row) => row.profit);
+      const ordersCount = Number(item.current.kpis?.orders_count || rows.length);
+      const previousRevenue = sumBy(previousRows, (row) => row.sale_price);
+      const previousProfit = sumBy(previousRows, (row) => row.profit);
+      const previousOrdersCount = Number(item.previous.kpis?.orders_count || previousRows.length);
+      return {
+        storeId: item.storeId,
+        label: store?.label || item.storeId,
+        platformLabel: store?.platform_label || "",
+        revenue,
+        profit,
+        orders: ordersCount,
+        marginPct: revenue > 0 ? (profit / revenue) * 100 : null,
+        revenueDeltaPct: compareDelta(revenue, previousRevenue),
+        profitDeltaPct: compareDelta(profit, previousProfit),
+        ordersDeltaPct: compareDelta(ordersCount, previousOrdersCount),
+      } satisfies StoreComparison;
+    })
+    .sort((a, b) => b.revenue - a.revenue);
 }
 
 function getActiveMonth(tracking: TrackingResp | null) {
@@ -740,14 +788,11 @@ export default function Page() {
       try {
         const previousRange = getPreviousPeriodRange(period);
         const retrospectiveRange = overviewDateRange(period);
-        const fetchStoreDashboard = async (sid: string) => {
+        const fetchStorePrimaryDashboard = async (sid: string) => {
           const storeQuery = `store_id=${encodeURIComponent(sid)}&`;
-          const [orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems] = await Promise.all([
+          const [orders, problems, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems] = await Promise.all([
             apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=${encodeURIComponent(period)}&page=1&page_size=1000`),
             apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=${encodeURIComponent(period)}&page=1&page_size=500`),
-            apiGetOk<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(sid)}`),
-            apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=sku&grain=${encodeURIComponent(retrospectiveRange.grain)}&date_mode=created&date_from=${encodeURIComponent(retrospectiveRange.dateFrom)}&date_to=${encodeURIComponent(retrospectiveRange.dateTo)}&limit=120`),
-            apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=category&grain=${encodeURIComponent(retrospectiveRange.grain)}&date_mode=created&date_from=${encodeURIComponent(retrospectiveRange.dateFrom)}&date_to=${encodeURIComponent(retrospectiveRange.dateTo)}&limit=120`),
             apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=today&page=1&page_size=1000`),
             apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=yesterday&page=1&page_size=1000`),
             apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=today&page=1&page_size=500`),
@@ -755,76 +800,107 @@ export default function Page() {
             apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=custom&date_from=${encodeURIComponent(previousRange.start)}&date_to=${encodeURIComponent(previousRange.end)}&page=1&page_size=1000`),
             apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=custom&date_from=${encodeURIComponent(previousRange.start)}&date_to=${encodeURIComponent(previousRange.end)}&page=1&page_size=500`),
           ]);
-          return { orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems };
+          return { orders, problems, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems };
         };
 
-        const tracking = await apiGetOk<TrackingResp>(`/api/sales/overview/tracking?store_id=${encodeURIComponent(storeId === "all" ? "all" : storeId)}&date_mode=created`);
+        const fetchStoreSecondaryDashboard = async (sid: string) => {
+          const storeQuery = `store_id=${encodeURIComponent(sid)}&`;
+          const [dataFlow, sku, category] = await Promise.all([
+            apiGetOk<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(sid)}`),
+            apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=sku&grain=${encodeURIComponent(retrospectiveRange.grain)}&date_mode=created&date_from=${encodeURIComponent(retrospectiveRange.dateFrom)}&date_to=${encodeURIComponent(retrospectiveRange.dateTo)}&limit=120`),
+            apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=category&grain=${encodeURIComponent(retrospectiveRange.grain)}&date_mode=created&date_from=${encodeURIComponent(retrospectiveRange.dateFrom)}&date_to=${encodeURIComponent(retrospectiveRange.dateTo)}&limit=120`),
+          ]);
+          return { dataFlow, sku, category };
+        };
+
+        const trackingPromise = apiGetOk<TrackingResp>(`/api/sales/overview/tracking?store_id=${encodeURIComponent(storeId === "all" ? "all" : storeId)}&date_mode=created`);
 
         let orders: OrdersResp;
         let problems: ProblemOrdersResp;
-        let dataFlow: DataFlowResp;
-        let sku: RetrospectiveResp;
-        let category: RetrospectiveResp;
+        let dataFlow: DataFlowResp = emptyDataFlowResponse();
+        let sku: RetrospectiveResp = emptyRetrospectiveResponse();
+        let category: RetrospectiveResp = emptyRetrospectiveResponse();
         let today: OrdersResp;
         let yesterday: OrdersResp;
         let todayProblems: ProblemOrdersResp;
         let yesterdayProblems: ProblemOrdersResp;
         let previousOrders: OrdersResp;
         let previousProblems: ProblemOrdersResp;
+        let comparison: StoreComparison[] = [];
+        const tracking = await trackingPromise;
 
         if (storeId === "all") {
-          const scoped = await Promise.all(storesCtx.map((store) => fetchStoreDashboard(store.store_id)));
+          const scoped = await Promise.all(storesCtx.map((store) => fetchStorePrimaryDashboard(store.store_id)));
           orders = mergeOrdersResponses(scoped.map((item) => item.orders));
           problems = mergeProblemResponses(scoped.map((item) => item.problems));
-          dataFlow = mergeDataFlowResponses(scoped.map((item) => item.dataFlow));
-          sku = mergeRetrospectiveResponses(scoped.map((item) => item.sku));
-          category = mergeRetrospectiveResponses(scoped.map((item) => item.category));
           today = mergeOrdersResponses(scoped.map((item) => item.today));
           yesterday = mergeOrdersResponses(scoped.map((item) => item.yesterday));
           todayProblems = mergeProblemResponses(scoped.map((item) => item.todayProblems));
           yesterdayProblems = mergeProblemResponses(scoped.map((item) => item.yesterdayProblems));
           previousOrders = mergeOrdersResponses(scoped.map((item) => item.previousOrders));
           previousProblems = mergeProblemResponses(scoped.map((item) => item.previousProblems));
-        } else {
-          ({ orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems } = await fetchStoreDashboard(storeId));
-        }
+          comparison = buildStoreComparisonFromScoped(
+            storesCtx,
+            scoped.map((item, index) => ({
+              storeId: storesCtx[index]?.store_id || "",
+              current: item.orders,
+              previous: item.previousOrders,
+            })),
+          );
 
-        const comparison = await Promise.all(
-          storesCtx.map(async (store) => {
-            const [currentResponse, previousResponse] = await Promise.all([
-              apiGetOk<OrdersResp>(
-                `/api/sales/overview/united-orders?store_id=${encodeURIComponent(store.store_id)}&period=${encodeURIComponent(period)}&page=1&page_size=1000`,
-              ),
-              apiGetOk<OrdersResp>(
-                `/api/sales/overview/united-orders?store_id=${encodeURIComponent(store.store_id)}&period=custom&date_from=${encodeURIComponent(previousRange.start)}&date_to=${encodeURIComponent(previousRange.end)}&page=1&page_size=1000`,
-              ),
-            ]);
-            const rows = currentResponse.rows || [];
-            const previousRows = previousResponse.rows || [];
-            const revenue = sumBy(rows, (row) => row.sale_price);
-            const profit = sumBy(rows, (row) => row.profit);
-            const ordersCount = Number(currentResponse.kpis?.orders_count || rows.length);
-            const previousRevenue = sumBy(previousRows, (row) => row.sale_price);
-            const previousProfit = sumBy(previousRows, (row) => row.profit);
-            const previousOrdersCount = Number(previousResponse.kpis?.orders_count || previousRows.length);
+          if (!active) return;
+          setBundle({ tracking, orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems });
+          setStoreComparison(comparison);
+          setLoading(false);
+
+          const secondary = await Promise.all(storesCtx.map((store) => fetchStoreSecondaryDashboard(store.store_id)));
+          if (!active) return;
+          setBundle((prev) => {
+            if (!prev) return prev;
             return {
-              storeId: store.store_id,
-              label: store.label,
-              platformLabel: store.platform_label,
-              revenue,
-              profit,
-              orders: ordersCount,
-              marginPct: revenue > 0 ? (profit / revenue) * 100 : null,
-              revenueDeltaPct: compareDelta(revenue, previousRevenue),
-              profitDeltaPct: compareDelta(profit, previousProfit),
-              ordersDeltaPct: compareDelta(ordersCount, previousOrdersCount),
-            } satisfies StoreComparison;
-          }),
-        );
+              ...prev,
+              dataFlow: mergeDataFlowResponses(secondary.map((item) => item.dataFlow)),
+              sku: mergeRetrospectiveResponses(secondary.map((item) => item.sku)),
+              category: mergeRetrospectiveResponses(secondary.map((item) => item.category)),
+            };
+          });
+          return;
+        } else {
+          ({ orders, problems, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems } = await fetchStorePrimaryDashboard(storeId));
+        }
 
         if (!active) return;
         setBundle({ tracking, orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems });
-        setStoreComparison(comparison.sort((a, b) => b.revenue - a.revenue));
+        setStoreComparison([]);
+        setLoading(false);
+
+        const [secondary, comparisonScoped] = await Promise.all([
+          fetchStoreSecondaryDashboard(storeId),
+          Promise.all(
+            storesCtx.map(async (store) => {
+              const [current, previous] = await Promise.all([
+                apiGetOk<OrdersResp>(
+                  `/api/sales/overview/united-orders?store_id=${encodeURIComponent(store.store_id)}&period=${encodeURIComponent(period)}&page=1&page_size=1000`,
+                ),
+                apiGetOk<OrdersResp>(
+                  `/api/sales/overview/united-orders?store_id=${encodeURIComponent(store.store_id)}&period=custom&date_from=${encodeURIComponent(previousRange.start)}&date_to=${encodeURIComponent(previousRange.end)}&page=1&page_size=1000`,
+                ),
+              ]);
+              return { storeId: store.store_id, current, previous };
+            }),
+          ),
+        ]);
+        if (!active) return;
+        setBundle((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            dataFlow: secondary.dataFlow,
+            sku: secondary.sku,
+            category: secondary.category,
+          };
+        });
+        setStoreComparison(buildStoreComparisonFromScoped(storesCtx, comparisonScoped));
       } catch (e) {
         if (!active) return;
         setError(e instanceof Error ? e.message : String(e));

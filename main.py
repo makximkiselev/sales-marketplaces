@@ -85,7 +85,7 @@ BACKEND_HOST = os.getenv("BACKEND_HOST", "127.0.0.1")
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
 START_FRONTEND = _env_bool("START_FRONTEND", "NEXT_AUTOSTART", default=True)
 BACKEND_RELOAD_ENABLED = _env_bool("BACKEND_RELOAD", "UVICORN_RELOAD", default=True)
-BLOCKING_STARTUP_PRIME = _env_bool("STARTUP_PRIME_BLOCKING", default=not BACKEND_RELOAD_ENABLED)
+BLOCKING_STARTUP_PRIME = _env_bool("STARTUP_PRIME_BLOCKING", default=False)
 ELASTICITY_SCHEDULER = BackgroundScheduler(
     executors={"default": APSchedulerThreadPoolExecutor(1)},
     job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 7200},
