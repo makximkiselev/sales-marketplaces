@@ -132,11 +132,6 @@ export function LogisticsSettingsSection({
                   <div className={styles.logisticsSummaryValue}>{logisticsTotal}</div>
                   <div className={styles.logisticsSummaryMeta}>{visibleSkuLabel}</div>
                 </div>
-                <div className={styles.logisticsSummaryCard}>
-                  <div className={styles.logisticsSummaryLabel}>Импорт</div>
-                  <div className={styles.logisticsSummaryValue}>Массовое обновление</div>
-                  <div className={styles.logisticsSummaryMeta}>Загрузи шаблон и обнови размеры одним действием</div>
-                </div>
               </div>
 
               <div className={styles.logisticsFilterBar}>
@@ -179,24 +174,18 @@ export function LogisticsSettingsSection({
                       </button>
                     ) : null}
                   </div>
-                  <div className={styles.logisticsPageSizeGroup}>
-                    <span className={styles.logisticsPageSizeLabel}>На странице</span>
-                    <div className={styles.logisticsPageSizeOptions}>
-                      {logisticsPageSizeOptions.map((n) => (
-                        <button
-                          key={n}
-                          type="button"
-                          className={`${styles.logisticsPageSizeOption} ${logisticsPageSize === n ? styles.logisticsPageSizeOptionActive : ""}`}
-                          onClick={() => {
-                            setLogisticsPageSize(n);
-                            setLogisticsPage(1);
-                          }}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <ControlField label="На странице" className={styles.logisticsPageSizeBox}>
+                    <select
+                      className={`input input-size-sm ${styles.logisticsPageSizeSelect}`}
+                      value={String(logisticsPageSize)}
+                      onChange={(e) => {
+                        setLogisticsPageSize(Number(e.target.value));
+                        setLogisticsPage(1);
+                      }}
+                    >
+                      {logisticsPageSizeOptions.map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </ControlField>
                 </div>
                 <button
                   type="button"

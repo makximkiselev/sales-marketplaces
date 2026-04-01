@@ -1112,7 +1112,7 @@
 
 .logisticsSummaryGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1263,6 +1263,7 @@
   display: grid;
   gap: 10px;
   min-width: 0;
+  justify-items: end;
 }
 
 .logisticsToolbarChipRow {
@@ -2637,55 +2638,6 @@
   flex: 0 0 auto;
 }
 
-.logisticsPageSizeGroup {
-  display: grid;
-  gap: 8px;
-}
-
-.logisticsPageSizeLabel {
-  color: var(--text-soft);
-  font-size: 11px;
-  line-height: 1.2;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.logisticsPageSizeOptions {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.logisticsPageSizeOption {
-  min-width: 48px;
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(132, 161, 214, 0.18);
-  background: rgba(10, 18, 33, 0.72);
-  color: #d6e6ff;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  transition:
-    border-color 0.16s ease,
-    background 0.16s ease,
-    color 0.16s ease;
-}
-
-.logisticsPageSizeOption:hover {
-  border-color: rgba(76, 201, 240, 0.34);
-  background: rgba(16, 30, 53, 0.9);
-}
-
-.logisticsPageSizeOptionActive {
-  border-color: rgba(76, 201, 240, 0.42);
-  background:
-    linear-gradient(180deg, rgba(30, 66, 98, 0.48), rgba(17, 31, 52, 0.92));
-  color: #eff6ff;
-  box-shadow: 0 0 0 1px rgba(76, 201, 240, 0.12) inset;
-}
-
 .logisticsImportBox {
   flex: 0 0 auto;
   align-self: end;
@@ -3077,18 +3029,13 @@
     min-height: 64px;
   }
 
-  .logisticsToolbarMeta,
   .logisticsToolbarChipRow,
   .logisticsPagerActions {
     justify-content: flex-start;
   }
 
-  .logisticsPageSizeOptions {
-    width: 100%;
-  }
-
-  .logisticsPageSizeOption {
-    flex: 1 1 0;
+  .logisticsToolbarMeta {
+    justify-items: stretch;
   }
 
   .pricingDesktopTableWrap {
@@ -3299,6 +3246,29 @@
 .logisticsImportStep {
   display: grid;
   gap: 10px;
+}
+
+.logisticsImportIntro {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  background:
+    linear-gradient(180deg, rgba(15, 28, 49, 0.8), rgba(8, 16, 30, 0.72));
+}
+
+.logisticsImportIntroTitle {
+  color: #edf4ff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.logisticsImportIntroText {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .logisticsImportShell {
