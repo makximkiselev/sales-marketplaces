@@ -1,13 +1,11 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { buildApiUrl } from "../lib/api";
+import { fetchAuthUser, type AuthUser } from "../lib/auth";
 import { APP_TOAST_EVENT, type AppToastDetail } from "./ui/toastBus";
 
 type NavItem = { href: string; label: string };
 type NavSection = { title: string; items: NavItem[] };
 type NavGroup = { title: string; shortLabel: string; items?: NavItem[]; sections?: NavSection[] };
-type AuthUser = { user_id: string; identifier: string; display_name: string; role: string; is_active: boolean };
-
 const groups: NavGroup[] = [
   { title: "Сводка", shortLabel: "Сводка", items: [{ href: "/", label: "Дашборд" }] },
   {
@@ -119,10 +117,9 @@ export function Shell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(buildApiUrl("/api/auth/me"), { cache: "no-store", credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { ok?: boolean; user?: AuthUser } | null) => {
-        if (!cancelled) setAuthUser(data?.ok && data.user ? data.user : null);
+    fetchAuthUser()
+      .then((user) => {
+        if (!cancelled) setAuthUser(user);
       })
       .catch(() => {
         if (!cancelled) setAuthUser(null);
@@ -130,7 +127,7 @@ export function Shell({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [pathname]);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

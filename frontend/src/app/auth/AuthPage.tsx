@@ -1,15 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../lib/api";
+import { clearAuthUserCache, fetchAuthUser, primeAuthUser, type AuthUser } from "../../lib/auth";
 import styles from "./AuthPage.module.css";
-
-type AuthUser = {
-  user_id: string;
-  identifier: string;
-  display_name: string;
-  role: string;
-  is_active: boolean;
-};
 
 function nextPathFromSearch(search: string): string {
   const params = new URLSearchParams(search);
@@ -27,11 +20,10 @@ export default function AuthPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(buildApiUrl("/api/auth/me"), { cache: "no-store", credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { ok?: boolean; user?: AuthUser } | null) => {
+    fetchAuthUser()
+      .then((user: AuthUser | null) => {
         if (cancelled) return;
-        if (data?.ok && data.user) {
+        if (user) {
           navigate(next, { replace: true });
         }
       })
@@ -55,8 +47,10 @@ export default function AuthPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
+        clearAuthUserCache();
         throw new Error(String(data?.message || "Не удалось выполнить вход"));
       }
+      primeAuthUser(data.user || null);
       navigate(next, { replace: true });
     } catch (error) {
       setStatus("error");

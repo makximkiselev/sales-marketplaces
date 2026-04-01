@@ -21,15 +21,7 @@ import SalesOverviewPage from "./app/sales/overview/SalesOverviewPage";
 import SettingsMonitoringPage from "./app/settings/monitoring/MonitoringPage";
 import SettingsSourcesPage from "./app/settings/sources/DataSourcesPage";
 import SettingsAdminPage from "./app/settings/admin/AdminPage";
-import { buildApiUrl } from "./lib/api";
-
-type AuthUser = {
-  user_id: string;
-  identifier: string;
-  display_name: string;
-  role: string;
-  is_active: boolean;
-};
+import { fetchAuthUser, type AuthUser } from "./lib/auth";
 
 function ProtectedLayout() {
   return (
@@ -45,11 +37,10 @@ function RequireAuth() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(buildApiUrl("/api/auth/me"), { cache: "no-store", credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { ok?: boolean; user?: AuthUser } | null) => {
+    fetchAuthUser()
+      .then((user: AuthUser | null) => {
         if (cancelled) return;
-        setStatus(data?.ok && data.user ? "ready" : "unauthorized");
+        setStatus(user ? "ready" : "unauthorized");
       })
       .catch(() => {
         if (!cancelled) setStatus("unauthorized");

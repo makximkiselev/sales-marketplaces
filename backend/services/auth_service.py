@@ -16,6 +16,7 @@ from backend.services.store_data_model import _init_system_store_tables
 AUTH_COOKIE_NAME = "daweb_session"
 AUTH_SESSION_DAYS = int(str(os.getenv("AUTH_SESSION_DAYS") or "30").strip() or "30")
 PBKDF2_ROUNDS = int(str(os.getenv("AUTH_PBKDF2_ROUNDS") or "240000").strip() or "240000")
+AUTH_LAST_SEEN_UPDATE_SECONDS = int(str(os.getenv("AUTH_LAST_SEEN_UPDATE_SECONDS") or "300").strip() or "300")
 
 
 def _now() -> datetime:
@@ -273,6 +274,7 @@ def get_user_by_session_token(session_token: str | None) -> dict[str, Any] | Non
             f"""
             SELECT
                 s.session_id,
+                s.last_seen_at,
                 s.expires_at,
                 s.revoked_at,
                 u.user_id,
@@ -289,18 +291,28 @@ def get_user_by_session_token(session_token: str | None) -> dict[str, Any] | Non
         ).fetchone()
         if not row:
             return None
-        if not bool(int(_row_value(row, "is_active", 8) or 0)):
+        if not bool(int(_row_value(row, "is_active", 9) or 0)):
             return None
-        if str(_row_value(row, "revoked_at", 2) or "").strip():
+        if str(_row_value(row, "revoked_at", 3) or "").strip():
             return None
-        expires_at = str(_row_value(row, "expires_at", 1) or "").strip()
+        expires_at = str(_row_value(row, "expires_at", 2) or "").strip()
         if expires_at and expires_at < now_iso:
             return None
-        conn.execute(
-            f"UPDATE app_sessions SET last_seen_at = {_ph()}, updated_at = {_ph()} WHERE session_id = {_ph()}",
-            (now_iso, now_iso, str(_row_value(row, "session_id", 0) or "").strip()),
-        )
-        conn.commit()
+        last_seen_at = str(_row_value(row, "last_seen_at", 1) or "").strip()
+        should_touch_last_seen = True
+        if last_seen_at:
+            try:
+                should_touch_last_seen = (
+                    (_now() - datetime.fromisoformat(last_seen_at)).total_seconds() >= AUTH_LAST_SEEN_UPDATE_SECONDS
+                )
+            except Exception:
+                should_touch_last_seen = True
+        if should_touch_last_seen:
+            conn.execute(
+                f"UPDATE app_sessions SET last_seen_at = {_ph()}, updated_at = {_ph()} WHERE session_id = {_ph()}",
+                (now_iso, now_iso, str(_row_value(row, "session_id", 0) or "").strip()),
+            )
+            conn.commit()
     return _public_user(row)
 
 
