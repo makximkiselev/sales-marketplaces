@@ -74,7 +74,7 @@ export default function AuthPage() {
             value={identifier}
             onChange={(event) => setIdentifier(event.target.value)}
             autoComplete="username"
-            placeholder="maksim"
+            placeholder="Например, manager"
           />
           <label className={styles.label} htmlFor="password">Пароль</label>
           <input
