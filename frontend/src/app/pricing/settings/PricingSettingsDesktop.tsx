@@ -1,6 +1,5 @@
 import styles from "./PricingSettingsPage.module.css";
 import { WorkspaceHeader, WorkspaceStack, WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
-import { GeneralSettingsPanel } from "./components/GeneralSettingsPanel";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
@@ -34,12 +33,6 @@ export function PricingSettingsDesktop({
     categoryRows,
     cellDrafts,
     cellSaving,
-    earningMode,
-    earningUnit,
-    targetDrr,
-    cogsSource,
-    stockSource,
-    activeTargetValue,
     storeSettingsSaving,
     storeSettingsError,
     storeSettingsSavedAt,
@@ -64,14 +57,6 @@ export function PricingSettingsDesktop({
     tableColumns,
     setActiveStoreTabKey,
     setSettingsTab,
-    setEarningMode,
-    setEarningUnit,
-    setTargetDrr,
-    setCogsSource,
-    setCogsModalOpen,
-    setStockSource,
-    setStockModalOpen,
-    setActiveTargetValue,
     setLogisticsPage,
     setLogisticsPageSize,
     setLogisticsSearch,
@@ -177,46 +162,21 @@ export function PricingSettingsDesktop({
           ) : null}
 
           {settingsTab === "categories" ? (
-            <>
-              <div className={styles.controlsRow}>
-                <GeneralSettingsPanel
-                  earningMode={earningMode}
-                  earningUnit={earningUnit}
-                  moneySign={moneySign}
-                  activeTargetValue={activeTargetValue}
-                  targetDrr={targetDrr}
-                  cogsSource={cogsSource}
-                  stockSource={stockSource}
-                  activeStoreId={activeStoreId}
-                  showTargets={false}
-                  showRelay={true}
-                  showSources={true}
-                  setEarningMode={setEarningMode}
-                  setEarningUnit={setEarningUnit}
-                  setActiveTargetValue={setActiveTargetValue}
-                  setTargetDrr={setTargetDrr}
-                  setCogsModalOpen={setCogsModalOpen}
-                  setCogsSource={setCogsSource}
-                  setStockModalOpen={setStockModalOpen}
-                  setStockSource={setStockSource}
-                />
-              </div>
-              <GeneralSettingsSection
-                loading={loading}
-                error={error}
-                itemsError={itemsError}
-                itemsLoading={itemsLoading}
-                categoryRows={categoryRows}
-                tableColumns={tableColumns}
-                cellDrafts={cellDrafts}
-                cellSaving={cellSaving}
-                getCellKey={getCellKey}
-                defaultFieldValue={defaultFieldValue}
-                formatNum={formatNum}
-                queueSaveCell={queueSaveCell}
-                flushSaveCell={flushSaveCell}
-              />
-            </>
+            <GeneralSettingsSection
+              loading={loading}
+              error={error}
+              itemsError={itemsError}
+              itemsLoading={itemsLoading}
+              categoryRows={categoryRows}
+              tableColumns={tableColumns}
+              cellDrafts={cellDrafts}
+              cellSaving={cellSaving}
+              getCellKey={getCellKey}
+              defaultFieldValue={defaultFieldValue}
+              formatNum={formatNum}
+              queueSaveCell={queueSaveCell}
+              flushSaveCell={flushSaveCell}
+            />
           ) : null}
 
           {settingsTab === "logistics" ? (

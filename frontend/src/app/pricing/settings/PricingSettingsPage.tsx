@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import styles from "./PricingSettingsPage.module.css";
 import { LogisticsImportModal } from "./components/LogisticsImportModal";
 import { BulkFillColumnModal } from "./components/BulkFillColumnModal";
-import { CogsSourceModal } from "./components/CogsSourceModal";
 import { usePricingSettingsController } from "./usePricingSettingsController";
 import type { EditableFieldKey } from "./types";
 import { PricingSettingsDesktop } from "./PricingSettingsDesktop";
@@ -41,16 +40,8 @@ export default function PricingSettingsPage() {
     logisticsStoreSavedAt,
     logisticsStoreError,
     logisticsImportOpen,
-    cogsSource,
-    cogsModalOpen,
-    stockSource,
-    stockModalOpen,
     tableColumns,
-    setCogsModalOpen,
-    setCogsSource,
     setLogisticsImportOpen,
-    setStockModalOpen,
-    setStockSource,
     applyColumnValue,
     handleLogisticsImportDone,
     storeTabs,
@@ -175,44 +166,6 @@ export default function PricingSettingsPage() {
         onClose={() => setLogisticsImportOpen(false)}
         onDone={handleLogisticsImportDone}
       />
-
-      {cogsModalOpen ? (
-        <CogsSourceModal
-          current={cogsSource}
-          onClose={() => setCogsModalOpen(false)}
-          onSave={(src) => {
-            setCogsSource(src);
-            setCogsModalOpen(false);
-          }}
-          title="Источник себестоимости"
-          valueColumnLabel="Столбец с себестоимостью"
-        />
-      ) : null}
-
-      {stockModalOpen ? (
-        <CogsSourceModal
-          current={stockSource ? {
-            type: stockSource.type,
-            sourceId: stockSource.sourceId,
-            sourceName: stockSource.sourceName,
-            skuColumn: stockSource.skuColumn,
-            valueColumn: stockSource.valueColumn,
-          } : null}
-          onClose={() => setStockModalOpen(false)}
-          onSave={(src) => {
-            setStockSource({
-              type: src.type,
-              sourceId: src.sourceId,
-              sourceName: src.sourceName,
-              skuColumn: src.skuColumn,
-              valueColumn: src.valueColumn,
-            });
-            setStockModalOpen(false);
-          }}
-          title="Источник остатков"
-          valueColumnLabel="Столбец с остатком"
-        />
-      ) : null}
     </>
   );
 }
