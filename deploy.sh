@@ -9,6 +9,8 @@ BACKEND_HEALTH_URL="${BACKEND_HEALTH_URL:-http://127.0.0.1:18000/api/health}"
 PUBLIC_HEALTH_URL="${PUBLIC_HEALTH_URL:-https://sales.id-smart.ru/api/health}"
 FRONTEND_DIST_DIR="${FRONTEND_DIST_DIR:-$APP_ROOT/frontend/dist}"
 FRONTEND_DIST_BUILD_DIR="${FRONTEND_DIST_BUILD_DIR:-$APP_ROOT/frontend/dist-build}"
+SYSTEMD_UNIT_SOURCE="${SYSTEMD_UNIT_SOURCE:-$APP_ROOT/deploy/systemd/${BACKEND_SERVICE}.service}"
+SYSTEMD_UNIT_TARGET="${SYSTEMD_UNIT_TARGET:-/etc/systemd/system/${BACKEND_SERVICE}.service}"
 
 log() {
   printf '\n[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
@@ -47,6 +49,18 @@ require_cmd npx
 require_cmd curl
 require_cmd systemctl
 
+restart_backend_service() {
+  local timeout_seconds="${1:-30}"
+  if timeout "$timeout_seconds" systemctl restart "$BACKEND_SERVICE"; then
+    return 0
+  fi
+
+  log "Backend restart timed out, forcing service reset"
+  systemctl kill -s SIGKILL "$BACKEND_SERVICE" || true
+  systemctl reset-failed "$BACKEND_SERVICE" || true
+  systemctl start "$BACKEND_SERVICE"
+}
+
 require_file() {
   local path="$1"
   if [[ ! -f "$path" ]]; then
@@ -67,6 +81,12 @@ require_glob_match() {
 }
 
 cd "$APP_ROOT"
+
+if [[ -f "$SYSTEMD_UNIT_SOURCE" ]]; then
+  log "Syncing backend systemd unit"
+  install -m 0644 "$SYSTEMD_UNIT_SOURCE" "$SYSTEMD_UNIT_TARGET"
+  systemctl daemon-reload
+fi
 
 log "Pulling latest code"
 git pull --ff-only
@@ -102,7 +122,7 @@ mv "$FRONTEND_DIST_BUILD_DIR" "$FRONTEND_DIST_DIR"
 cd "$APP_ROOT"
 
 log "Restarting backend service"
-systemctl restart "$BACKEND_SERVICE"
+restart_backend_service 30
 
 log "Reloading nginx"
 systemctl reload "$NGINX_SERVICE"
