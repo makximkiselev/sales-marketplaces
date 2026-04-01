@@ -224,13 +224,13 @@ async def auth_guard(request: Request, call_next):
     path = str(request.url.path or "")
     if path.startswith("/api/") and path not in _AUTH_EXEMPT_API_PATHS:
         token = request.cookies.get(AUTH_COOKIE_NAME)
-        user = get_user_by_session_token(token)
+        user = await asyncio.to_thread(get_user_by_session_token, token)
         if not user:
             return JSONResponse({"detail": "Unauthorized"}, status_code=401)
         request.state.auth_user = user
     elif path == "/api/auth/me":
         token = request.cookies.get(AUTH_COOKIE_NAME)
-        user = get_user_by_session_token(token)
+        user = await asyncio.to_thread(get_user_by_session_token, token)
         if user:
             request.state.auth_user = user
     return await call_next(request)

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from backend.services.auth_service import (
     AUTH_COOKIE_NAME,
@@ -21,6 +23,11 @@ from backend.services.auth_service import (
 
 router = APIRouter()
 logger = logging.getLogger("uvicorn.error")
+
+
+class LoginPayload(BaseModel):
+    identifier: str = ""
+    password: str = ""
 
 
 def _cookie_secure(request: Request) -> bool:
@@ -49,29 +56,25 @@ async def auth_me(request: Request):
     user = getattr(request.state, "auth_user", None)
     if not user:
         token = request.cookies.get(AUTH_COOKIE_NAME)
-        user = get_user_by_session_token(token)
+        user = await asyncio.to_thread(get_user_by_session_token, token)
     if not user:
         return JSONResponse({"ok": False, "message": "unauthorized"}, status_code=401)
     return {"ok": True, "user": user}
 
 
 @router.post("/api/auth/login")
-async def auth_login(request: Request, response: Response):
+async def auth_login(payload: LoginPayload, request: Request, response: Response):
     logger.warning("[auth] login request received")
-    try:
-        payload = await request.json()
-    except Exception:
-        payload = {}
-    body = payload if isinstance(payload, dict) else {}
-    identifier = str(body.get("identifier") or "").strip()
-    password = str(body.get("password") or "")
+    identifier = str(payload.identifier or "").strip()
+    password = str(payload.password or "")
     if not identifier or not password:
         return JSONResponse({"ok": False, "message": "identifier и password обязательны"}, status_code=400)
     try:
         logger.warning("[auth] authenticating identifier=%s", identifier)
-        user = authenticate_user(identifier=identifier, password=password)
+        user = await asyncio.to_thread(authenticate_user, identifier=identifier, password=password)
         logger.warning("[auth] authenticated identifier=%s user_id=%s", identifier, user.get("user_id"))
-        session_token, expires_at = create_session_for_user(
+        session_token, expires_at = await asyncio.to_thread(
+            create_session_for_user,
             user_id=user["user_id"],
             user_agent=str(request.headers.get("user-agent") or "")[:500],
             ip_address=_client_ip(request),
@@ -105,7 +108,7 @@ async def auth_login(request: Request, response: Response):
 async def auth_logout(request: Request, response: Response):
     token = request.cookies.get(AUTH_COOKIE_NAME)
     if token:
-        revoke_session(token)
+        await asyncio.to_thread(revoke_session, token)
     response.delete_cookie(AUTH_COOKIE_NAME, path="/")
     response.delete_cookie(AUTH_HINT_COOKIE_NAME, path="/")
     return {"ok": True}
