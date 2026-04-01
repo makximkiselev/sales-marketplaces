@@ -1,6 +1,8 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { fetchAuthUser, type AuthUser } from "../lib/auth";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ModalShell } from "./page/PageKit";
+import { apiPostOk } from "../lib/api";
+import { clearAuthUserCache, fetchAuthUser, type AuthUser } from "../lib/auth";
 import { APP_TOAST_EVENT, type AppToastDetail } from "./ui/toastBus";
 
 type NavItem = { href: string; label: string };
@@ -90,9 +92,12 @@ function flattenCurrentGroupSections(group: NavGroup) {
 
 export function Shell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [toast, setToast] = useState<AppToastDetail | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [logoutPending, setLogoutPending] = useState(false);
   const [mobileRouteLoading, setMobileRouteLoading] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [pullReady, setPullReady] = useState(false);
@@ -139,12 +144,30 @@ export function Shell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMobileMenuOpen(false);
+    setProfileOpen(false);
     setPullDistance(0);
     setPullReady(false);
     setPullRefreshing(false);
     pullStartYRef.current = null;
     pullActiveRef.current = false;
   }, [pathname]);
+
+  async function handleLogout() {
+    if (logoutPending) return;
+    setLogoutPending(true);
+    try {
+      await apiPostOk("/api/auth/logout");
+    } catch {
+      // Even if the API call fails, we should still clear local session state.
+    } finally {
+      clearAuthUserCache();
+      setAuthUser(null);
+      setMobileMenuOpen(false);
+      setProfileOpen(false);
+      setLogoutPending(false);
+      navigate("/auth", { replace: true });
+    }
+  }
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -264,6 +287,19 @@ export function Shell({ children }: { children: ReactNode }) {
             </button>
           </div>
           <div className="app-drawer-body">
+            {authUser ? (
+              <section className="app-drawer-group">
+                <div className="app-drawer-group-title">Аккаунт</div>
+                <div className="app-drawer-links">
+                  <button type="button" className="app-drawer-link app-drawer-action" onClick={() => { setMobileMenuOpen(false); setProfileOpen(true); }}>
+                    Профиль
+                  </button>
+                  <button type="button" className="app-drawer-link app-drawer-action" onClick={() => void handleLogout()}>
+                    {logoutPending ? "Выходим..." : "Выйти"}
+                  </button>
+                </div>
+              </section>
+            ) : null}
             {groups.map((group) => (
               <section key={group.title} className="app-drawer-group">
                 <div className="app-drawer-group-title">{group.title}</div>
@@ -335,7 +371,17 @@ export function Shell({ children }: { children: ReactNode }) {
                   Пользователи
                 </Link>
               ) : null}
-              {authUser ? <div className="app-shell-userchip">{authUser.display_name || authUser.identifier}</div> : null}
+              {authUser ? (
+                <>
+                  <button type="button" className="app-shell-utility-link" onClick={() => setProfileOpen(true)}>
+                    Профиль
+                  </button>
+                  <button type="button" className="app-shell-utility-link" onClick={() => void handleLogout()}>
+                    {logoutPending ? "Выходим..." : "Выйти"}
+                  </button>
+                  <div className="app-shell-userchip">{authUser.display_name || authUser.identifier}</div>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
@@ -384,6 +430,42 @@ export function Shell({ children }: { children: ReactNode }) {
           );
         })}
       </nav>
+
+      {profileOpen && authUser ? (
+        <ModalShell
+          title="Профиль"
+          subtitle={`@${authUser.identifier}`}
+          onClose={() => setProfileOpen(false)}
+          width="min(92vw, 520px)"
+        >
+          <div className="profile-sheet">
+            <div className="profile-row">
+              <span className="profile-label">Имя</span>
+              <span className="profile-value">{authUser.display_name || "—"}</span>
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">Логин</span>
+              <span className="profile-value">@{authUser.identifier}</span>
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">Роль</span>
+              <span className="profile-value">{authUser.role}</span>
+            </div>
+            <div className="profile-row">
+              <span className="profile-label">Статус</span>
+              <span className="profile-value">{authUser.is_active ? "Активен" : "Отключен"}</span>
+            </div>
+          </div>
+          <div className="profile-actions">
+            <button type="button" className="btn ghost" onClick={() => setProfileOpen(false)}>
+              Закрыть
+            </button>
+            <button type="button" className="btn primary" onClick={() => void handleLogout()}>
+              {logoutPending ? "Выходим..." : "Выйти из аккаунта"}
+            </button>
+          </div>
+        </ModalShell>
+      ) : null}
     </div>
   );
 }

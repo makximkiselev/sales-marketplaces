@@ -2000,6 +2000,7 @@ select.input {
 .app-shell-utility-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 38px;
   padding: 0 14px;
   border-radius: 999px;
@@ -2008,6 +2009,7 @@ select.input {
   color: #bfd1ee;
   font-size: 13px;
   font-weight: 700;
+  cursor: pointer;
   transition:
     color 0.18s ease,
     background 0.18s ease,
@@ -2255,6 +2257,48 @@ select.input {
   border-color: rgba(76, 201, 240, 0.32);
   background: linear-gradient(90deg, rgba(76, 201, 240, 0.18), rgba(45, 212, 191, 0.13));
   color: #eff7ff;
+}
+
+.app-drawer-action {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-sheet {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 16px;
+  background: rgba(10, 18, 33, 0.46);
+}
+
+.profile-label {
+  color: #8fa8cf;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-value {
+  color: #eef5ff;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
 }
 
 .wrap {

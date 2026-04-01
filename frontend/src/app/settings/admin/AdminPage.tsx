@@ -90,6 +90,7 @@ export default function SettingsAdminPage() {
   const [resetUser, setResetUser] = useState<AdminUser | null>(null);
   const [resetPassword, setResetPassword] = useState(() => generatePassword());
   const [confirmUser, setConfirmUser] = useState<AdminUser | null>(null);
+  const [deleteUserModal, setDeleteUserModal] = useState<AdminUser | null>(null);
   const [issuedPassword, setIssuedPassword] = useState<IssuedPasswordState | null>(null);
   const [filters, setFilters] = useState<FilterState>({ role: "all", status: "all", search: "" });
   const [openGroups, setOpenGroups] = useState<Record<UserRole, boolean>>(() => initialGroupState());
@@ -272,6 +273,21 @@ export default function SettingsAdminPage() {
     try {
       await apiPostOk(`/api/admin/users/${confirmUser.user_id}`, { is_active: false });
       setConfirmUser(null);
+      await loadUsers();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (!deleteUserModal) return;
+    setSaving(true);
+    setError("");
+    try {
+      await apiPostOk(`/api/admin/users/${deleteUserModal.user_id}/delete`);
+      setDeleteUserModal(null);
       await loadUsers();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -481,6 +497,15 @@ export default function SettingsAdminPage() {
                                         <span aria-hidden="true">×</span>
                                       </button>
                                     ) : null}
+                                    <button
+                                      type="button"
+                                      className={`${styles.iconButton} ${styles.iconButtonDangerSoft}`}
+                                      title="Удалить"
+                                      aria-label={`Удалить ${user.identifier}`}
+                                      onClick={() => setDeleteUserModal(user)}
+                                    >
+                                      <span aria-hidden="true">🗑</span>
+                                    </button>
                                   </div>
                                 </div>
                               </article>
@@ -766,6 +791,27 @@ export default function SettingsAdminPage() {
             </button>
             <button type="button" className="btn danger" disabled={saving} onClick={() => void handleConfirmDisable()}>
               Отключить
+            </button>
+          </div>
+        </ModalShell>
+      ) : null}
+
+      {deleteUserModal ? (
+        <ModalShell
+          title="Удалить пользователя"
+          subtitle={deleteUserModal.identifier}
+          onClose={() => setDeleteUserModal(null)}
+          width="min(92vw, 520px)"
+        >
+          <div className={styles.confirmText}>
+            Пользователь будет удален полностью вместе с его активными сессиями. Это действие необратимо.
+          </div>
+          <div className={styles.modalActions}>
+            <button type="button" className="btn ghost" onClick={() => setDeleteUserModal(null)}>
+              Отмена
+            </button>
+            <button type="button" className="btn danger" disabled={saving} onClick={() => void handleDeleteUser()}>
+              Удалить пользователя
             </button>
           </div>
         </ModalShell>

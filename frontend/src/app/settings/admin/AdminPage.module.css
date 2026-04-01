@@ -115,6 +115,17 @@
   gap: 10px;
 }
 
+.iconButtonDangerSoft {
+  color: #ffb7b0;
+  border-color: rgba(255, 120, 120, 0.18);
+  background: rgba(59, 16, 16, 0.5);
+}
+
+.iconButtonDangerSoft:hover {
+  border-color: rgba(255, 120, 120, 0.3);
+  background: rgba(79, 20, 20, 0.72);
+}
+
 .filtersBar {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) repeat(2, minmax(180px, 0.8fr));

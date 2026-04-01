@@ -211,6 +211,41 @@ def update_user(
     }
 
 
+def delete_user(*, user_id: str) -> None:
+    uid = str(user_id or "").strip()
+    if not uid:
+        raise ValueError("user_id обязателен")
+    _init_system_store_tables()
+    with _connect_system() as conn:
+        row = conn.execute(
+            f"SELECT user_id, role FROM app_users WHERE user_id = {_ph()}",
+            (uid,),
+        ).fetchone()
+        if not row:
+            raise ValueError("Пользователь не найден")
+        role = str(_row_value(row, "role", 1) or "viewer").strip()
+        if role == "owner":
+            owners_left = conn.execute(
+                f"SELECT COUNT(*) AS cnt FROM app_users WHERE role = {_ph()} AND is_active = {_ph()} AND user_id <> {_ph()}",
+                ("owner", 1, uid),
+            ).fetchone()
+            if int(_row_value(owners_left, "cnt", 0) or 0) <= 0:
+                raise ValueError("Нельзя удалить последнего владельца")
+        conn.execute(
+            f"DELETE FROM app_sessions WHERE user_id = {_ph()}",
+            (uid,),
+        )
+        conn.execute(
+            f"DELETE FROM app_access_links WHERE user_id = {_ph()}",
+            (uid,),
+        )
+        conn.execute(
+            f"DELETE FROM app_users WHERE user_id = {_ph()}",
+            (uid,),
+        )
+        conn.commit()
+
+
 def authenticate_user(*, identifier: str, password: str) -> dict[str, Any]:
     ident = str(identifier or "").strip().lower()
     if not ident:

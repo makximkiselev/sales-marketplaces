@@ -10,6 +10,7 @@ from backend.services.auth_service import (
     authenticate_user,
     create_session_for_user,
     create_or_update_user,
+    delete_user,
     get_user_by_session_token,
     list_users,
     revoke_session,
@@ -153,3 +154,21 @@ async def admin_users_update(user_id: str, payload: dict | None, request: Reques
     except ValueError as exc:
         return JSONResponse({"ok": False, "message": str(exc)}, status_code=400)
     return {"ok": True, "user": user}
+
+
+@router.post("/api/admin/users/{user_id}/delete")
+async def admin_users_delete(user_id: str, request: Request):
+    current_user = None
+    try:
+        current_user = _require_owner(request)
+    except PermissionError as exc:
+        code = 401 if str(exc) == "unauthorized" else 403
+        return JSONResponse({"ok": False, "message": str(exc)}, status_code=code)
+    target_user_id = str(user_id or "").strip()
+    if current_user and current_user.get("user_id") == target_user_id:
+        return JSONResponse({"ok": False, "message": "Нельзя удалить текущего владельца"}, status_code=400)
+    try:
+        delete_user(user_id=target_user_id)
+    except ValueError as exc:
+        return JSONResponse({"ok": False, "message": str(exc)}, status_code=400)
+    return {"ok": True}
