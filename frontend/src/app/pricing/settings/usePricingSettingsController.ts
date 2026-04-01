@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchPricingMonitoring, fetchPricingSalesPlan, runPricingMonitoringAll, runPricingMonitoringJob, savePricingMonitoringJob, savePricingStoreSettings } from "./api";
 import { usePricingCategoryController } from "./usePricingCategoryController";
 import { usePricingGeneralController } from "./usePricingGeneralController";
@@ -35,6 +35,7 @@ export function usePricingSettingsController() {
   const [monitoringSaving, setMonitoringSaving] = useState<Record<string, boolean>>({});
   const [monitoringRunning, setMonitoringRunning] = useState<Record<string, boolean>>({});
   const [monitoringRunAll, setMonitoringRunAll] = useState(false);
+  const previousSettingsTabRef = useRef<SettingsTab>("sales_plan");
 
   const activeStores = useMemo(
     () => platforms.find((p) => p.id === activePlatform)?.stores || [],
@@ -237,6 +238,17 @@ export function usePricingSettingsController() {
     }
     if (!activeStores.some((s) => s.id === activeStoreId)) setActiveStoreId(activeStores[0]?.id || "");
   }, [activeStores, activeStoreId]);
+
+  useEffect(() => {
+    const previousTab = previousSettingsTabRef.current;
+    previousSettingsTabRef.current = settingsTab;
+    if (settingsTab === "sales_plan") return;
+    if (previousTab !== "sales_plan") return;
+    const firstStoreTab = storeTabs[0];
+    if (!firstStoreTab) return;
+    setActivePlatform(firstStoreTab.platformId);
+    setActiveStoreId(firstStoreTab.storeId);
+  }, [settingsTab, storeTabs]);
 
   function setActiveStoreTabKey(nextKey: string) {
     const normalized = String(nextKey || "").trim();
