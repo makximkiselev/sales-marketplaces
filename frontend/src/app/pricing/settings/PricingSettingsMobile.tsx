@@ -1,6 +1,7 @@
 import styles from "./PricingSettingsPage.module.css";
 import { MobileDockLayout } from "../../../components/page/PageKit";
 import { WorkspaceHeader, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
+import { GeneralSettingsPanel } from "./components/GeneralSettingsPanel";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
@@ -36,6 +37,12 @@ export function PricingSettingsMobile({
     categoryRows,
     cellDrafts,
     cellSaving,
+    earningMode,
+    earningUnit,
+    targetDrr,
+    cogsSource,
+    stockSource,
+    activeTargetValue,
     logisticsStoreSettings,
     logisticsRows,
     logisticsTreeRoots,
@@ -57,6 +64,14 @@ export function PricingSettingsMobile({
     tableColumns,
     setActiveStoreTabKey,
     setSettingsTab,
+    setEarningMode,
+    setEarningUnit,
+    setTargetDrr,
+    setCogsSource,
+    setCogsModalOpen,
+    setStockSource,
+    setStockModalOpen,
+    setActiveTargetValue,
     setLogisticsPage,
     setLogisticsPageSize,
     setLogisticsSearch,
@@ -173,25 +188,50 @@ export function PricingSettingsMobile({
         ) : null}
 
         {settingsTab === "categories" ? (
-          <GeneralSettingsSection
-            mobileMode={true}
-            loading={loading}
-            error={error}
-            itemsError={itemsError}
-            itemsLoading={itemsLoading}
-            categoryRows={categoryRows}
-            tableColumns={tableColumns}
-            cellDrafts={cellDrafts}
-            cellSaving={cellSaving}
-            getCellKey={getCellKey}
-            defaultFieldValue={defaultFieldValue}
-            formatNum={formatNum}
-            queueSaveCell={queueSaveCell}
-            flushSaveCell={flushSaveCell}
-            mobileCatalogOpen={mobileCatalogOpen}
-            onOpenMobileCatalog={() => setMobileCatalogOpen(true)}
-            onCloseMobileCatalog={() => setMobileCatalogOpen(false)}
-          />
+          <>
+            <div className={styles.controlsRow}>
+              <GeneralSettingsPanel
+                earningMode={earningMode}
+                earningUnit={earningUnit}
+                moneySign={moneySign}
+                activeTargetValue={activeTargetValue}
+                targetDrr={targetDrr}
+                cogsSource={cogsSource}
+                stockSource={stockSource}
+                activeStoreId={activeStoreId}
+                showTargets={false}
+                showRelay={true}
+                showSources={true}
+                setEarningMode={setEarningMode}
+                setEarningUnit={setEarningUnit}
+                setActiveTargetValue={setActiveTargetValue}
+                setTargetDrr={setTargetDrr}
+                setCogsModalOpen={setCogsModalOpen}
+                setCogsSource={setCogsSource}
+                setStockModalOpen={setStockModalOpen}
+                setStockSource={setStockSource}
+              />
+            </div>
+            <GeneralSettingsSection
+              mobileMode={true}
+              loading={loading}
+              error={error}
+              itemsError={itemsError}
+              itemsLoading={itemsLoading}
+              categoryRows={categoryRows}
+              tableColumns={tableColumns}
+              cellDrafts={cellDrafts}
+              cellSaving={cellSaving}
+              getCellKey={getCellKey}
+              defaultFieldValue={defaultFieldValue}
+              formatNum={formatNum}
+              queueSaveCell={queueSaveCell}
+              flushSaveCell={flushSaveCell}
+              mobileCatalogOpen={mobileCatalogOpen}
+              onOpenMobileCatalog={() => setMobileCatalogOpen(true)}
+              onCloseMobileCatalog={() => setMobileCatalogOpen(false)}
+            />
+          </>
         ) : null}
 
         {settingsTab === "logistics" ? (
