@@ -20,6 +20,8 @@ from backend.services.db import (
 _INIT_LOCK = threading.Lock()
 _INIT_DONE = False
 _MAINTENANCE_DONE = False
+_SYSTEM_INIT_LOCK = threading.Lock()
+_SYSTEM_INIT_DONE = False
 
 _HOT_RETENTION_RULES: tuple[tuple[str, str, int], ...] = (
     ("pricing_strategy_history", "captured_at", 2),
@@ -1053,128 +1055,135 @@ def _default_store_settings_document() -> dict[str, Any]:
 
 
 def _init_system_store_tables() -> None:
-    with _connect_system() as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS stores (
-                store_uid TEXT PRIMARY KEY,
-                platform TEXT NOT NULL,
-                store_id TEXT NOT NULL,
-                store_name TEXT NOT NULL DEFAULT '',
-                currency_code TEXT NOT NULL DEFAULT 'RUB',
-                fulfillment_model TEXT NOT NULL DEFAULT 'FBO',
-                business_id TEXT NOT NULL DEFAULT '',
-                seller_id TEXT NOT NULL DEFAULT '',
-                account_id TEXT NOT NULL DEFAULT '',
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
+    global _SYSTEM_INIT_DONE
+    if _SYSTEM_INIT_DONE:
+        return
+    with _SYSTEM_INIT_LOCK:
+        if _SYSTEM_INIT_DONE:
+            return
+        with _connect_system() as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS stores (
+                    store_uid TEXT PRIMARY KEY,
+                    platform TEXT NOT NULL,
+                    store_id TEXT NOT NULL,
+                    store_name TEXT NOT NULL DEFAULT '',
+                    currency_code TEXT NOT NULL DEFAULT 'RUB',
+                    fulfillment_model TEXT NOT NULL DEFAULT 'FBO',
+                    business_id TEXT NOT NULL DEFAULT '',
+                    seller_id TEXT NOT NULL DEFAULT '',
+                    account_id TEXT NOT NULL DEFAULT '',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+                """
             )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_system_stores_platform ON stores(platform)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_system_stores_store_id ON stores(store_id)")
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS store_settings (
-                store_uid TEXT PRIMARY KEY,
-                pricing_json TEXT NOT NULL DEFAULT '{}',
-                logistics_json TEXT NOT NULL DEFAULT '{}',
-                sources_json TEXT NOT NULL DEFAULT '{}',
-                export_json TEXT NOT NULL DEFAULT '{}',
-                sales_plan_json TEXT NOT NULL DEFAULT '{}',
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_system_stores_platform ON stores(platform)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_system_stores_store_id ON stores(store_id)")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS store_settings (
+                    store_uid TEXT PRIMARY KEY,
+                    pricing_json TEXT NOT NULL DEFAULT '{}',
+                    logistics_json TEXT NOT NULL DEFAULT '{}',
+                    sources_json TEXT NOT NULL DEFAULT '{}',
+                    export_json TEXT NOT NULL DEFAULT '{}',
+                    sales_plan_json TEXT NOT NULL DEFAULT '{}',
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+                )
+                """
             )
-            """
-        )
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS refresh_jobs (
-                job_code TEXT PRIMARY KEY,
-                title TEXT NOT NULL DEFAULT '',
-                enabled INTEGER NOT NULL DEFAULT 1,
-                schedule_kind TEXT NOT NULL DEFAULT 'interval',
-                interval_minutes INTEGER NULL,
-                time_of_day TEXT NULL,
-                date_from TEXT NULL,
-                date_to TEXT NULL,
-                stores_json TEXT NOT NULL DEFAULT '[]',
-                updated_at TEXT NOT NULL
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS refresh_jobs (
+                    job_code TEXT PRIMARY KEY,
+                    title TEXT NOT NULL DEFAULT '',
+                    enabled INTEGER NOT NULL DEFAULT 1,
+                    schedule_kind TEXT NOT NULL DEFAULT 'interval',
+                    interval_minutes INTEGER NULL,
+                    time_of_day TEXT NULL,
+                    date_from TEXT NULL,
+                    date_to TEXT NULL,
+                    stores_json TEXT NOT NULL DEFAULT '[]',
+                    updated_at TEXT NOT NULL
+                )
+                """
             )
-            """
-        )
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS dashboard_snapshots (
-                cache_key TEXT PRIMARY KEY,
-                snapshot_name TEXT NOT NULL,
-                scope_id TEXT NOT NULL DEFAULT '',
-                period TEXT NOT NULL DEFAULT '',
-                payload_json TEXT NOT NULL DEFAULT '{}',
-                response_json TEXT NOT NULL DEFAULT '{}',
-                updated_at TEXT NOT NULL
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS dashboard_snapshots (
+                    cache_key TEXT PRIMARY KEY,
+                    snapshot_name TEXT NOT NULL,
+                    scope_id TEXT NOT NULL DEFAULT '',
+                    period TEXT NOT NULL DEFAULT '',
+                    payload_json TEXT NOT NULL DEFAULT '{}',
+                    response_json TEXT NOT NULL DEFAULT '{}',
+                    updated_at TEXT NOT NULL
+                )
+                """
             )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_dashboard_snapshots_name_scope_period ON dashboard_snapshots(snapshot_name, scope_id, period)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_dashboard_snapshots_updated_at ON dashboard_snapshots(updated_at)")
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS app_users (
-                user_id TEXT PRIMARY KEY,
-                identifier TEXT NOT NULL UNIQUE,
-                display_name TEXT NOT NULL DEFAULT '',
-                password_hash TEXT NOT NULL DEFAULT '',
-                role TEXT NOT NULL DEFAULT 'viewer',
-                is_active INTEGER NOT NULL DEFAULT 1,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_dashboard_snapshots_name_scope_period ON dashboard_snapshots(snapshot_name, scope_id, period)")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_dashboard_snapshots_updated_at ON dashboard_snapshots(updated_at)")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS app_users (
+                    user_id TEXT PRIMARY KEY,
+                    identifier TEXT NOT NULL UNIQUE,
+                    display_name TEXT NOT NULL DEFAULT '',
+                    password_hash TEXT NOT NULL DEFAULT '',
+                    role TEXT NOT NULL DEFAULT 'viewer',
+                    is_active INTEGER NOT NULL DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+                """
             )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_app_users_role ON app_users(role)")
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS app_access_links (
-                link_id TEXT PRIMARY KEY,
-                user_id TEXT NOT NULL,
-                label TEXT NOT NULL DEFAULT '',
-                token_hash TEXT NOT NULL UNIQUE,
-                created_by TEXT NOT NULL DEFAULT '',
-                use_count INTEGER NOT NULL DEFAULT 0,
-                last_used_at TEXT NULL,
-                expires_at TEXT NULL,
-                revoked_at TEXT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (user_id) REFERENCES app_users(user_id) ON DELETE CASCADE
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_app_users_role ON app_users(role)")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS app_access_links (
+                    link_id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    label TEXT NOT NULL DEFAULT '',
+                    token_hash TEXT NOT NULL UNIQUE,
+                    created_by TEXT NOT NULL DEFAULT '',
+                    use_count INTEGER NOT NULL DEFAULT 0,
+                    last_used_at TEXT NULL,
+                    expires_at TEXT NULL,
+                    revoked_at TEXT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES app_users(user_id) ON DELETE CASCADE
+                )
+                """
             )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_app_access_links_user_id ON app_access_links(user_id)")
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS app_sessions (
-                session_id TEXT PRIMARY KEY,
-                user_id TEXT NOT NULL,
-                token_hash TEXT NOT NULL UNIQUE,
-                user_agent TEXT NOT NULL DEFAULT '',
-                ip_address TEXT NOT NULL DEFAULT '',
-                last_seen_at TEXT NOT NULL,
-                expires_at TEXT NOT NULL,
-                revoked_at TEXT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (user_id) REFERENCES app_users(user_id) ON DELETE CASCADE
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_app_access_links_user_id ON app_access_links(user_id)")
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS app_sessions (
+                    session_id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    token_hash TEXT NOT NULL UNIQUE,
+                    user_agent TEXT NOT NULL DEFAULT '',
+                    ip_address TEXT NOT NULL DEFAULT '',
+                    last_seen_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    revoked_at TEXT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES app_users(user_id) ON DELETE CASCADE
+                )
+                """
             )
-            """
-        )
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_app_sessions_user_id ON app_sessions(user_id)")
-        if not is_postgres_backend():
-            user_cols = {row[1] for row in conn.execute("PRAGMA table_info(app_users)").fetchall()}
-            if "password_hash" not in user_cols:
-                conn.execute("ALTER TABLE app_users ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''")
-        conn.commit()
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_app_sessions_user_id ON app_sessions(user_id)")
+            if not is_postgres_backend():
+                user_cols = {row[1] for row in conn.execute("PRAGMA table_info(app_users)").fetchall()}
+                if "password_hash" not in user_cols:
+                    conn.execute("ALTER TABLE app_users ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''")
+            conn.commit()
+        _SYSTEM_INIT_DONE = True
 
 
 def _load_system_store_settings_document(*, store_uid: str) -> dict[str, Any]:
