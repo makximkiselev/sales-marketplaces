@@ -317,6 +317,17 @@ def schedule_sales_overview_dashboard_cache_warm(payloads: list[dict[str, str]] 
     _DASHBOARD_WARM_TASK = loop.create_task(_warm_sales_overview_dashboard_cache(next_payloads))
 
 
+async def warm_sales_overview_dashboard_cache_defaults() -> None:
+    await _warm_sales_overview_dashboard_cache(_dashboard_default_payloads())
+
+
+def run_sales_overview_dashboard_cache_warm_sync() -> None:
+    try:
+        asyncio.run(warm_sales_overview_dashboard_cache_defaults())
+    except Exception as exc:
+        logger.warning("[sales_overview] scheduled dashboard warm failed error=%s", exc)
+
+
 async def _fetch_primary_store_dashboard(*, store_id: str, period: str, previous_start: str, previous_end: str) -> dict:
     store_query = str(store_id or "").strip()
     today_orders_task = get_sales_overview_history(page=1, page_size=1000, store_id=store_query, period="today")

@@ -49,6 +49,10 @@ from backend.services.pricing_catalog_tree_service import refresh_pricing_catalo
 from backend.services.pricing_attractiveness_service import prime_attractiveness_cache
 from backend.services.pricing_prices_service import prime_prices_cache
 from backend.routers.catalog import prime_catalog_cache
+from backend.routers.sales_overview import (
+    run_sales_overview_dashboard_cache_warm_sync,
+    schedule_sales_overview_dashboard_cache_warm,
+)
 from backend.services.yandex_united_orders_report_service import refresh_sales_overview_cogs_sources
 from backend.services.refresh_orchestrator_service import (
     bind_refresh_scheduler,
@@ -117,6 +121,10 @@ async def _run_startup_refreshes() -> None:
         await prime_strategy_cache()
     except Exception:
         pass
+    try:
+        schedule_sales_overview_dashboard_cache_warm()
+    except Exception:
+        pass
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
@@ -142,6 +150,15 @@ async def lifespan(_: FastAPI):
             minute=5,
             id="pricing_autopilot_simulation",
             replace_existing=True,
+        )
+        ELASTICITY_SCHEDULER.add_job(
+            run_sales_overview_dashboard_cache_warm_sync,
+            trigger="interval",
+            minutes=5,
+            id="sales_overview_dashboard_cache_warm",
+            replace_existing=True,
+            coalesce=True,
+            max_instances=1,
         )
         configure_refresh_scheduler()
         ELASTICITY_SCHEDULER.start()
