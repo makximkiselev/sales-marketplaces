@@ -21,7 +21,7 @@ import SalesOverviewPage from "./app/sales/overview/SalesOverviewPage";
 import SettingsMonitoringPage from "./app/settings/monitoring/MonitoringPage";
 import SettingsSourcesPage from "./app/settings/sources/DataSourcesPage";
 import SettingsAdminPage from "./app/settings/admin/AdminPage";
-import { fetchAuthUser, getAuthUserSnapshot, type AuthUser } from "./lib/auth";
+import { fetchAuthUser, getAuthUserSnapshot, hasAuthSessionHint, type AuthUser } from "./lib/auth";
 
 function ProtectedLayout() {
   return (
@@ -33,9 +33,16 @@ function ProtectedLayout() {
 
 function RequireAuth() {
   const location = useLocation();
-  const [status, setStatus] = useState<"loading" | "ready" | "unauthorized">(() => (getAuthUserSnapshot() ? "ready" : "loading"));
+  const [status, setStatus] = useState<"loading" | "ready" | "unauthorized">(() => {
+    if (getAuthUserSnapshot()) return "ready";
+    return hasAuthSessionHint() ? "loading" : "unauthorized";
+  });
 
   useEffect(() => {
+    if (!hasAuthSessionHint()) {
+      setStatus("unauthorized");
+      return;
+    }
     let cancelled = false;
     fetchAuthUser()
       .then((user: AuthUser | null) => {

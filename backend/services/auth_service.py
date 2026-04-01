@@ -14,6 +14,7 @@ from backend.services.store_data_model import _init_system_store_tables
 
 
 AUTH_COOKIE_NAME = "daweb_session"
+AUTH_HINT_COOKIE_NAME = "daweb_has_session"
 AUTH_SESSION_DAYS = int(str(os.getenv("AUTH_SESSION_DAYS") or "30").strip() or "30")
 PBKDF2_ROUNDS = int(str(os.getenv("AUTH_PBKDF2_ROUNDS") or "240000").strip() or "240000")
 AUTH_LAST_SEEN_UPDATE_SECONDS = int(str(os.getenv("AUTH_LAST_SEEN_UPDATE_SECONDS") or "300").strip() or "300")

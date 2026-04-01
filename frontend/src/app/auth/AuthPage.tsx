@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { buildApiUrl } from "../../lib/api";
-import { clearAuthUserCache, fetchAuthUser, primeAuthUser, type AuthUser } from "../../lib/auth";
+import { clearAuthUserCache, fetchAuthUser, getAuthUserSnapshot, hasAuthSessionHint, primeAuthUser, type AuthUser } from "../../lib/auth";
 import styles from "./AuthPage.module.css";
 
 function nextPathFromSearch(search: string): string {
@@ -19,6 +19,9 @@ export default function AuthPage() {
   const next = useMemo(() => nextPathFromSearch(location.search), [location.search]);
 
   useEffect(() => {
+    if (!getAuthUserSnapshot() && !hasAuthSessionHint()) {
+      return;
+    }
     let cancelled = false;
     fetchAuthUser()
       .then((user: AuthUser | null) => {
@@ -89,7 +92,7 @@ export default function AuthPage() {
           <button className={styles.submitButton} type="submit" disabled={status === "checking"}>
             {status === "checking" ? "Входим…" : "Войти"}
           </button>
-          {status === "checking" ? <div className={styles.note}>Проверяем ссылку…</div> : null}
+          {status === "checking" ? <div className={styles.note}>Проверяем логин и пароль…</div> : null}
           {status === "error" ? <div className={styles.error}>{message}</div> : null}
         </form>
       </div>

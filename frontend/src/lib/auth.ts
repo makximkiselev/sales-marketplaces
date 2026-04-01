@@ -14,6 +14,7 @@ type AuthMeResponse = {
 };
 
 const AUTH_USER_STORAGE_KEY = "app_auth_user_v1";
+const AUTH_HINT_COOKIE_NAME = "daweb_has_session";
 
 let authUserCache: AuthUser | null | undefined;
 let authUserPromise: Promise<AuthUser | null> | null = null;
@@ -42,6 +43,11 @@ function writeStoredAuthUser(user: AuthUser | null) {
   } catch {
     // Ignore storage failures and keep working with in-memory cache.
   }
+}
+
+export function hasAuthSessionHint(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.split(";").some((chunk) => chunk.trim().startsWith(`${AUTH_HINT_COOKIE_NAME}=`));
 }
 
 function requestAuthUser(): Promise<AuthUser | null> {

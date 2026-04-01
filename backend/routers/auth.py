@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from backend.services.auth_service import (
     AUTH_COOKIE_NAME,
+    AUTH_HINT_COOKIE_NAME,
     authenticate_user,
     create_session_for_user,
     create_or_update_user,
@@ -87,6 +88,15 @@ async def auth_login(request: Request, response: Response):
         max_age=60 * 60 * 24 * 30,
         path="/",
     )
+    response.set_cookie(
+        AUTH_HINT_COOKIE_NAME,
+        "1",
+        httponly=False,
+        secure=_cookie_secure(request),
+        samesite="lax",
+        max_age=60 * 60 * 24 * 30,
+        path="/",
+    )
     logger.warning("[auth] login response ready identifier=%s", identifier)
     return {"ok": True, "user": user, "expires_at": expires_at}
 
@@ -97,6 +107,7 @@ async def auth_logout(request: Request, response: Response):
     if token:
         revoke_session(token)
     response.delete_cookie(AUTH_COOKIE_NAME, path="/")
+    response.delete_cookie(AUTH_HINT_COOKIE_NAME, path="/")
     return {"ok": True}
 
 
