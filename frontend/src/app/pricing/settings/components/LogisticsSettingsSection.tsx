@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { CatalogBrowser } from "../../../../components/page/CatalogBrowser";
 import { ControlField } from "../../../../components/page/ControlKit";
-import { SectionBlock } from "../../../../components/page/SectionKit";
 import styles from "../PricingSettingsPage.module.css";
 import type { LogisticsEditableFieldKey, LogisticsRow } from "../types";
 import type { TreeNode } from "../../../_shared/catalogState";
@@ -93,7 +92,7 @@ export function LogisticsSettingsSection({
   const selectedBranchLabel = logisticsTreePath || "Весь каталог";
 
   return (
-    <SectionBlock className={styles.settingsCanvasSection} bodyClassName={styles.settingsCanvasBody}>
+    <section className={styles.settingsWorkbenchSection}>
       {loading ? <div className="status">Загрузка контекста...</div> : null}
       {!loading && error ? <div className="status error">{error}</div> : null}
       {!loading && !error ? (
@@ -156,21 +155,12 @@ export function LogisticsSettingsSection({
               </aside>
 
               <div className={`${styles.logisticsTablePane} ${styles.logisticsTablePaneFull}`}>
-                <div className={styles.logisticsStageHead}>
-                  <div className={styles.logisticsStageIntro}>
-                    <div className={styles.categoryEditorEyebrow}>Логистическая матрица</div>
-                    <div className={styles.logisticsStageTitle}>Размеры товаров и расчет затрат</div>
-                    <div className={styles.logisticsStageText}>
-                      Редактируй размеры SKU, фильтруй по ветке и сразу смотри пересчитанные издержки.
-                    </div>
-                  </div>
-                  <div className={styles.logisticsStageMeta}>
+                <div className={styles.logisticsFilterBar}>
+                  <div className={styles.logisticsFilterSummary}>
+                    <span className={styles.logisticsStageStat}>{selectedBranchLabel}</span>
                     <span className={styles.logisticsStageStat}>{logisticsTotal} SKU</span>
                     <span className={styles.logisticsStageStat}>{visibleSkuLabel}</span>
                   </div>
-                </div>
-
-                <div className={styles.logisticsFilterBar}>
                   <ControlField label="Поиск по SKU" className={styles.logisticsSearchField}>
                     <div className={styles.inputWithSuffix}>
                       <input
@@ -308,6 +298,6 @@ export function LogisticsSettingsSection({
           )}
         </>
       ) : null}
-    </SectionBlock>
+    </section>
   );
 }

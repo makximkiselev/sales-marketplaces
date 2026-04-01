@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { CatalogBrowser } from "../../../../components/page/CatalogBrowser";
-import { SectionBlock } from "../../../../components/page/SectionKit";
 import styles from "../PricingSettingsPage.module.css";
 import type { EditableFieldKey, PricingCategoryRow, PricingTableColumn } from "../types";
 import type { TreeNode } from "../../../_shared/catalogState";
@@ -254,7 +253,7 @@ export function GeneralSettingsSection({
 
   return (
     <>
-    <SectionBlock className={styles.settingsCanvasSection} bodyClassName={styles.settingsCanvasBody}>
+    <section className={styles.settingsWorkbenchSection}>
         {loading ? <div className="status">Загрузка контекста...</div> : null}
         {!loading && error ? <div className="status error">{error}</div> : null}
         {!loading && !error ? (
@@ -276,7 +275,7 @@ export function GeneralSettingsSection({
                       <div className={styles.categoryEditorRail}>
                         <div className={styles.categoryEditorHead}>
                           <div>
-                            <div className={styles.categoryEditorEyebrow}>Рабочая категория</div>
+                            <div className={styles.categoryEditorEyebrow}>Категория</div>
                             <h3 className={styles.categoryEditorTitle}>
                               {selectedRow.subcategoryLevels.at(-1) || selectedRow.category || "-"}
                             </h3>
@@ -296,13 +295,6 @@ export function GeneralSettingsSection({
                                 Каталог
                               </button>
                             ) : null}
-                          </div>
-                        </div>
-
-                        <div className={styles.categoryEditorSummary}>
-                          <div className={styles.categoryEditorSummaryTitle}>Параметры расчета</div>
-                          <div className={styles.categoryEditorSummaryText}>
-                            Изменяй только активную ветку. Пустое значение наследует общие правила выше по дереву.
                           </div>
                         </div>
                       </div>
@@ -344,7 +336,7 @@ export function GeneralSettingsSection({
             )}
           </>
         ) : null}
-    </SectionBlock>
+    </section>
     {mounted && mobileCatalogOpen
       ? createPortal(
           <div className={styles.mobileSheetBackdrop} onClick={() => onCloseMobileCatalog?.()}>
