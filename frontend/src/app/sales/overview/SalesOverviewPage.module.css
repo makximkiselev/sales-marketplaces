@@ -16,6 +16,14 @@
   margin-bottom: 16px;
 }
 
+.overviewHeroTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .overviewTabs {
   gap: 10px;
 }
@@ -38,6 +46,106 @@
   color: #cfe0f8;
   font-size: 12px;
   font-weight: 700;
+}
+
+.overviewHeroBody {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.overviewHeroIntro,
+.overviewControlDeck {
+  min-width: 0;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(67, 115, 199, 0.12), transparent 34%),
+    rgba(9, 17, 31, 0.82);
+}
+
+.overviewHeroIntro {
+  padding: 22px;
+  display: grid;
+  gap: 14px;
+}
+
+.overviewEyebrow {
+  color: #7fc5ff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.overviewHeroTitle {
+  margin: 0;
+  color: #eef4ff;
+  font-size: 30px;
+  line-height: 1.05;
+}
+
+.overviewHeroSubtitle {
+  margin: 0;
+  max-width: 680px;
+  color: #adc3e5;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.overviewFactGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.overviewFactCard {
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  background: rgba(8, 16, 30, 0.54);
+}
+
+.overviewFactLabel {
+  margin-bottom: 6px;
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.overviewFactValue {
+  color: #eef4ff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.overviewControlDeck {
+  padding: 18px;
+  display: grid;
+  align-content: start;
+}
+
+.overviewControlGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.overviewControlField {
+  display: grid;
+  gap: 8px;
+}
+
+.overviewControlLabel {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .overviewToolbar {
@@ -96,7 +204,7 @@
 
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -154,6 +262,7 @@
 .pageInfo {
   color: var(--text-soft);
   font-size: 13px;
+  margin-bottom: 16px;
 }
 
 .pageInfoChip {
@@ -477,6 +586,19 @@
     gap: 14px;
   }
 
+  .overviewHeroBody {
+    grid-template-columns: 1fr;
+  }
+
+  .overviewHeroIntro,
+  .overviewControlDeck {
+    padding: 16px;
+  }
+
+  .overviewHeroTitle {
+    font-size: 26px;
+  }
+
   .overviewToolbar {
     align-items: stretch;
   }
@@ -502,6 +624,29 @@
   .overviewHeroSurface {
     padding: 12px;
     gap: 12px;
+  }
+
+  .overviewHeroTop {
+    gap: 12px;
+  }
+
+  .overviewHeroIntro,
+  .overviewControlDeck {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .overviewHeroTitle {
+    font-size: 22px;
+  }
+
+  .overviewHeroSubtitle {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .overviewFactGrid {
+    grid-template-columns: 1fr;
   }
 
   .summaryGrid {

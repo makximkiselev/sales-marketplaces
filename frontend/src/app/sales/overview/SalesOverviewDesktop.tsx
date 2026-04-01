@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import { PageFrame, PageSectionTitle } from "../../../components/page/PageKit";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
+import { WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import styles from "./SalesOverviewPage.module.css";
 
 type Props = {
@@ -72,82 +72,150 @@ export function SalesOverviewDesktop({ vm }: Props) {
     { id: "sku", label: "Товары" },
     { id: "category", label: "Категории" },
   ] as const;
+  const tabCopy: Record<string, { eyebrow: string; title: string; subtitle: string }> = {
+    orders: {
+      eyebrow: "Операционный поток",
+      title: "Заказы и экономика в одном слое",
+      subtitle: "Смотри продажи, стратегическую цену, расходы и прибыль без разрыва между заказом и экономикой.",
+    },
+    problems: {
+      eyebrow: "Контроль качества",
+      title: "Проблемные заказы без шумных таблиц",
+      subtitle: "Быстрый срез по проблемным кейсам, чтобы сразу видеть потери, причины и исключенные строки.",
+    },
+    tracking: {
+      eyebrow: "План и факт",
+      title: "Трекинг выполнения по периодам",
+      subtitle: "Оценивай оборот, прибыль, рекламу и возвраты в динамике по месяцам и дням.",
+    },
+    sku: {
+      eyebrow: "Ретроспектива товаров",
+      title: "Товары во времени",
+      subtitle: "Собирай выручку, прибыль и возвраты по SKU без перехода в отдельные отчеты.",
+    },
+    category: {
+      eyebrow: "Ретроспектива категорий",
+      title: "Категории во времени",
+      subtitle: "Смотри, как категории двигают оборот и маржу по дням и месяцам.",
+    },
+  };
+  const activeTabCopy = tabCopy[tab] || tabCopy.orders;
   const currentStoreLabel = tab === "tracking" ? activeTrackingStore?.label : activeStore?.label;
   const currentCurrencySymbol = String(tab === "tracking" ? activeTrackingCurrencyCode : activeStoreCurrencyCode).trim().toUpperCase() === "USD"
     ? "$"
     : "₽";
+  const currentPeriodLabel = ORDERS_PERIOD_OPTIONS.find((option: any) => option.value === period)?.label || "Период";
+  const quickFacts = [
+    currentStoreLabel ? { label: "Магазин", value: currentStoreLabel } : null,
+    tab === "tracking" || tab === "sku" || tab === "category"
+      ? { label: "Срез", value: dateMode === "delivery" ? "Дата доставки" : "Дата заказа" }
+      : { label: "Период", value: currentPeriodLabel },
+    tab === "sku" || tab === "category"
+      ? { label: "Гранулярность", value: grain === "day" ? "По дням" : "По месяцам" }
+      : null,
+    tab === "orders" && itemStatus ? { label: "Статус", value: itemStatus } : null,
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
 
   return (
     <PageFrame
       className={s.pageFrame}
       innerClassName={s.pageFrameInner}
       title="Обзор продаж"
-      subtitle="Единый слой 'по заказам': история загружается один раз, текущий месяц пополняется инкрементально, а в течение дня заказы донасыщаются оперативной экономикой."
+      subtitle="Рабочее пространство по заказам, проблемам, трекингу, товарам и категориям."
     >
       <WorkspaceSurface className={s.overviewHeroSurface}>
-        <WorkspaceTabs
-          className={s.overviewTabs}
-          items={overviewTabs.map((item) => ({ id: item.id, label: item.label }))}
-          activeId={tab}
-          onChange={setTab}
-        />
-        <WorkspaceHeader
-          title="Аналитика продаж"
-          subtitle="Операционный sales workspace для заказов, проблемных кейсов, трекинга и ретроспектив по товарам и категориям."
-          meta={(
-            <div className={s.overviewHeroMeta}>
-              {currentStoreLabel ? <span className={s.overviewMetaChip}>{currentStoreLabel}</span> : null}
-              <span className={s.overviewMetaChip}>{currentCurrencySymbol}</span>
-            </div>
-          )}
-        />
-        <WorkspaceToolbar className={s.overviewToolbar}>
-          <div className={s.toolbarGroup}>
-            {tab === "tracking" ? (
-              <select className={`input input-size-xl ${s.dateInput}`} value={trackingStoreId} onChange={(e) => setTrackingStoreId(e.target.value)}>
-                {trackingStores.map((store: any) => (
-                  <option key={store.store_uid} value={store.store_id}>{store.label}</option>
-                ))}
-              </select>
-            ) : (
-              <select className={`input input-size-xl ${s.dateInput}`} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-                {stores.map((store: any) => (
-                  <option key={store.store_uid} value={store.store_id}>{store.label}</option>
-                ))}
-              </select>
-            )}
+        <div className={s.overviewHeroTop}>
+          <WorkspaceTabs
+            className={s.overviewTabs}
+            items={overviewTabs.map((item) => ({ id: item.id, label: item.label }))}
+            activeId={tab}
+            onChange={setTab}
+          />
+          <div className={s.overviewHeroMeta}>
+            {currentStoreLabel ? <span className={s.overviewMetaChip}>{currentStoreLabel}</span> : null}
+            <span className={s.overviewMetaChip}>{currentCurrencySymbol}</span>
           </div>
-          <div className={s.toolbarGroup}>
-            {tab === "tracking" || tab === "sku" || tab === "category" ? (
-              <>
-                <select className={`input input-size-md ${s.dateInput}`} value={dateMode} onChange={(e) => setDateMode(e.target.value)}>
-                  <option value="created">По дате заказа</option>
-                  <option value="delivery">По дате доставки</option>
-                </select>
-                {tab === "sku" || tab === "category" ? (
-                  <select className={`input input-size-sm ${s.dateInput}`} value={grain} onChange={(e) => setGrain(e.target.value)}>
+        </div>
+
+        <div className={s.overviewHeroBody}>
+          <div className={s.overviewHeroIntro}>
+            <div className={s.overviewEyebrow}>{activeTabCopy.eyebrow}</div>
+            <h2 className={s.overviewHeroTitle}>{activeTabCopy.title}</h2>
+            <p className={s.overviewHeroSubtitle}>{activeTabCopy.subtitle}</p>
+            {quickFacts.length ? (
+              <div className={s.overviewFactGrid}>
+                {quickFacts.map((fact) => (
+                  <div key={`${fact.label}-${fact.value}`} className={s.overviewFactCard}>
+                    <div className={s.overviewFactLabel}>{fact.label}</div>
+                    <div className={s.overviewFactValue}>{fact.value}</div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className={s.overviewControlDeck}>
+            <div className={s.overviewControlGrid}>
+              <label className={s.overviewControlField}>
+                <span className={s.overviewControlLabel}>{tab === "tracking" ? "Магазин трекинга" : "Магазин"}</span>
+                {tab === "tracking" ? (
+                  <select className={`input input-size-fluid ${s.dateInput}`} value={trackingStoreId} onChange={(e) => setTrackingStoreId(e.target.value)}>
+                    {trackingStores.map((store: any) => (
+                      <option key={store.store_uid} value={store.store_id}>{store.label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <select className={`input input-size-fluid ${s.dateInput}`} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+                    {stores.map((store: any) => (
+                      <option key={store.store_uid} value={store.store_id}>{store.label}</option>
+                    ))}
+                  </select>
+                )}
+              </label>
+
+              {tab === "tracking" || tab === "sku" || tab === "category" ? (
+                <label className={s.overviewControlField}>
+                  <span className={s.overviewControlLabel}>Срез данных</span>
+                  <select className={`input input-size-fluid ${s.dateInput}`} value={dateMode} onChange={(e) => setDateMode(e.target.value)}>
+                    <option value="created">По дате заказа</option>
+                    <option value="delivery">По дате доставки</option>
+                  </select>
+                </label>
+              ) : (
+                <label className={s.overviewControlField}>
+                  <span className={s.overviewControlLabel}>Период</span>
+                  <select className={`input input-size-fluid ${s.dateInput}`} value={period} onChange={(e) => { setPage(1); setPeriod(e.target.value); }}>
+                    {ORDERS_PERIOD_OPTIONS.map((option: any) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              {tab === "sku" || tab === "category" ? (
+                <label className={s.overviewControlField}>
+                  <span className={s.overviewControlLabel}>Гранулярность</span>
+                  <select className={`input input-size-fluid ${s.dateInput}`} value={grain} onChange={(e) => setGrain(e.target.value)}>
                     <option value="month">По месяцам</option>
                     <option value="day">По дням</option>
                   </select>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <select className={`input input-size-md ${s.dateInput}`} value={period} onChange={(e) => { setPage(1); setPeriod(e.target.value); }}>
-                  {ORDERS_PERIOD_OPTIONS.map((option: any) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-                <select className={`input input-size-lg ${s.dateInput}`} value={itemStatus} onChange={(e) => { setPage(1); setItemStatus(e.target.value); }}>
-                  <option value="">Все статусы</option>
-                  {availableStatuses.map((status: string) => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </>
-            )}
+                </label>
+              ) : null}
+
+              {tab === "orders" ? (
+                <label className={s.overviewControlField}>
+                  <span className={s.overviewControlLabel}>Статус заказа</span>
+                  <select className={`input input-size-fluid ${s.dateInput}`} value={itemStatus} onChange={(e) => { setPage(1); setItemStatus(e.target.value); }}>
+                    <option value="">Все статусы</option>
+                    {availableStatuses.map((status: string) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+            </div>
           </div>
-        </WorkspaceToolbar>
+        </div>
       </WorkspaceSurface>
 
       <div className={s.summaryGrid}>

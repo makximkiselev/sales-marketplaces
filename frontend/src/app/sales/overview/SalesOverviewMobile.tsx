@@ -1,5 +1,5 @@
 import { PageFrame } from "../../../components/page/PageKit";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
+import { WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import styles from "./SalesOverviewPage.module.css";
 
 type Props = {
@@ -47,6 +47,34 @@ export function SalesOverviewMobile({ vm }: Props) {
   const modeLabel = dateMode === "delivery" ? "Дата доставки" : "Дата заказа";
   const grainLabel = grain === "day" ? "По дням" : "По месяцам";
   const periodLabel = ORDERS_PERIOD_OPTIONS.find((option: any) => option.value === period)?.label || "Период";
+  const tabCopy: Record<string, { eyebrow: string; title: string; subtitle: string }> = {
+    orders: {
+      eyebrow: "Заказы",
+      title: "Операционный слой продаж",
+      subtitle: "Быстрый вход в заказы, экономику и статусы без широких таблиц.",
+    },
+    problems: {
+      eyebrow: "Проблемные",
+      title: "Контроль потерь и исключений",
+      subtitle: "Смотри проблемные заказы отдельно, без смешивания с чистой продажей.",
+    },
+    tracking: {
+      eyebrow: "Трекинг",
+      title: "План и факт по периодам",
+      subtitle: "Выручка, прибыль и реклама в компактном mobile-срезе.",
+    },
+    sku: {
+      eyebrow: "Товары",
+      title: "SKU в динамике",
+      subtitle: "Ретроспектива по товарам с акцентом на оборот и прибыль.",
+    },
+    category: {
+      eyebrow: "Категории",
+      title: "Категории в динамике",
+      subtitle: "Сводный мобильный срез по категориям и периодам.",
+    },
+  };
+  const activeTabCopy = tabCopy[tab] || tabCopy.orders;
 
   const resetPage = () => setPage(1);
 
@@ -59,26 +87,31 @@ export function SalesOverviewMobile({ vm }: Props) {
     >
       <div className={styles.mobileOverviewShell}>
         <WorkspaceSurface className={styles.overviewHeroSurface}>
-          <WorkspaceTabs
-            className={styles.overviewTabs}
-            items={[
-              { id: "orders", label: "Заказы" },
-              { id: "problems", label: "Проблемные" },
-              { id: "tracking", label: "Трекинг" },
-              { id: "sku", label: "Товары" },
-              { id: "category", label: "Категории" },
-            ]}
-            activeId={tab}
-            onChange={setTab}
-          />
-        <WorkspaceHeader
-          title="Аналитика продаж"
-          subtitle="Компактный mobile-workspace для быстрых срезов по заказам и ретроспективам."
-            meta={currentStoreLabel ? <span className={styles.overviewMetaChip}>{currentStoreLabel}</span> : undefined}
-        />
-          <WorkspaceToolbar className={styles.overviewToolbarMobile}>
+          <div className={styles.overviewHeroTop}>
+            <WorkspaceTabs
+              className={styles.overviewTabs}
+              items={[
+                { id: "orders", label: "Заказы" },
+                { id: "problems", label: "Проблемные" },
+                { id: "tracking", label: "Трекинг" },
+                { id: "sku", label: "Товары" },
+                { id: "category", label: "Категории" },
+              ]}
+              activeId={tab}
+              onChange={setTab}
+            />
+            <div className={styles.overviewHeroMeta}>
+              {currentStoreLabel ? <span className={styles.overviewMetaChip}>{currentStoreLabel}</span> : null}
+            </div>
+          </div>
+          <div className={styles.overviewHeroIntro}>
+            <div className={styles.overviewEyebrow}>{activeTabCopy.eyebrow}</div>
+            <h2 className={styles.overviewHeroTitle}>{activeTabCopy.title}</h2>
+            <p className={styles.overviewHeroSubtitle}>{activeTabCopy.subtitle}</p>
+          </div>
+          <div className={styles.mobileFilterGrid}>
             {tab === "tracking" ? (
-              <div className={styles.mobileFilterGrid}>
+              <>
                 <div className={styles.mobileFilterGroup}>
                   <div className={styles.mobileFilterLabel}>Магазин</div>
                   <select className={`input input-size-fluid ${styles.dateInput}`} value={trackingStoreId} onChange={(e) => setTrackingStoreId(e.target.value)}>
@@ -94,9 +127,9 @@ export function SalesOverviewMobile({ vm }: Props) {
                     <option value="delivery">Дата доставки</option>
                   </select>
                 </div>
-              </div>
+              </>
             ) : (
-              <div className={styles.mobileFilterGrid}>
+              <>
                 <div className={styles.mobileFilterGroup}>
                   <div className={styles.mobileFilterLabel}>Магазин</div>
                   <select className={`input input-size-fluid ${styles.dateInput}`} value={storeId} onChange={(e) => { resetPage(); setStoreId(e.target.value); }}>
@@ -144,9 +177,9 @@ export function SalesOverviewMobile({ vm }: Props) {
                     </div>
                   </>
                 ) : null}
-              </div>
+              </>
             )}
-          </WorkspaceToolbar>
+          </div>
           <div className={styles.mobileFilterChips}>
             {currentStoreLabel ? <span className={styles.overviewMetaChip}>{currentStoreLabel}</span> : null}
             {tab === "orders" || tab === "problems" ? <span className={styles.overviewMetaChip}>{periodLabel}</span> : null}

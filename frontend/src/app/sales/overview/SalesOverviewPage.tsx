@@ -190,6 +190,15 @@ type OrdersPeriod = "today" | "yesterday" | "week" | "month" | "quarter";
 type DateMode = "created" | "delivery";
 type RetrospectiveGrain = "month" | "day";
 
+type OverviewCacheEntry = {
+  tracking?: TrackingResp | null;
+  orders?: OrdersResp | null;
+  problemOrders?: ProblemOrdersResp | null;
+  skuRetrospective?: RetrospectiveResp | null;
+  categoryRetrospective?: RetrospectiveResp | null;
+  dataFlow?: DataFlowResp | null;
+};
+
 const ORDERS_PERIOD_OPTIONS: Array<{ value: OrdersPeriod; label: string }> = [
   { value: "today", label: "Сегодня" },
   { value: "yesterday", label: "Вчера" },
@@ -197,6 +206,8 @@ const ORDERS_PERIOD_OPTIONS: Array<{ value: OrdersPeriod; label: string }> = [
   { value: "month", label: "30 дней" },
   { value: "quarter", label: "90 дней" },
 ];
+
+const OVERVIEW_CLIENT_CACHE = new Map<string, OverviewCacheEntry>();
 
 function getInitialSearchParams() {
   if (typeof window === "undefined") return new URLSearchParams();
@@ -424,6 +435,22 @@ function SummaryCard({ label, value, detail }: { label: string; value: string; d
   );
 }
 
+function makeOverviewCacheKey(params: {
+  tab: TabKey;
+  storeId: string;
+  trackingStoreId: string;
+  period: OrdersPeriod;
+  itemStatus: string;
+  dateMode: DateMode;
+  grain: RetrospectiveGrain;
+  page: number;
+  pageSize: number;
+  customDateFrom: string;
+  customDateTo: string;
+}) {
+  return JSON.stringify(params);
+}
+
 export default function SalesOverviewPage() {
   const initialParams = getInitialSearchParams();
   const [isMobile, setIsMobile] = useState(false);
@@ -482,51 +509,115 @@ export default function SalesOverviewPage() {
   useEffect(() => {
     if (!storeId || (storeId === "all" && !context)) return;
     let cancelled = false;
+    const cacheKey = makeOverviewCacheKey({
+      tab,
+      storeId,
+      trackingStoreId,
+      period,
+      itemStatus,
+      dateMode,
+      grain,
+      page,
+      pageSize,
+      customDateFrom,
+      customDateTo,
+    });
+    const cached = OVERVIEW_CLIENT_CACHE.get(cacheKey);
+
+    if (cached) {
+      setTracking(cached.tracking ?? null);
+      setOrders(cached.orders ?? null);
+      setProblemOrders(cached.problemOrders ?? null);
+      setSkuRetrospective(cached.skuRetrospective ?? null);
+      setCategoryRetrospective(cached.categoryRetrospective ?? null);
+      setDataFlow(cached.dataFlow ?? null);
+      setLoading(false);
+    }
+
     async function loadOverview() {
-      setLoading(true);
+      setLoading(!cached);
       setError("");
       try {
-        const fetchScoped = async (sid: string) => {
-          const rangeQuery = customDateFrom || customDateTo
-            ? `&date_from=${encodeURIComponent(customDateFrom)}&date_to=${encodeURIComponent(customDateTo)}`
-            : "";
-          const [ordersData, problemOrdersData, dataFlowData, skuData, categoryData] = await Promise.all([
-            fetchJson<OrdersResp>(
-              `/api/sales/overview/united-orders?store_id=${encodeURIComponent(sid)}&period=${encodeURIComponent(period)}&item_status=${encodeURIComponent(itemStatus)}&page=${page}&page_size=${pageSize}`,
-            ),
-            fetchJson<ProblemOrdersResp>(
-              `/api/sales/overview/problem-orders?store_id=${encodeURIComponent(sid)}&period=${encodeURIComponent(period)}&page=${page}&page_size=${pageSize}`,
-            ),
-            fetchJson<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(sid)}`),
-            fetchJson<RetrospectiveResp>(
-              `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=sku&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}${rangeQuery}&limit=120`,
-            ),
-            fetchJson<RetrospectiveResp>(
-              `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=category&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}${rangeQuery}&limit=120`,
-            ),
-          ]);
-          return { ordersData, problemOrdersData, dataFlowData, skuData, categoryData };
+        const rangeQuery = customDateFrom || customDateTo
+          ? `&date_from=${encodeURIComponent(customDateFrom)}&date_to=${encodeURIComponent(customDateTo)}`
+          : "";
+        const nextState: OverviewCacheEntry = {
+          tracking,
+          orders,
+          problemOrders,
+          skuRetrospective,
+          categoryRetrospective,
+          dataFlow,
         };
 
-        const [trackingData, scoped] = await Promise.all([
-          fetchJson<TrackingResp>(`/api/sales/overview/tracking?store_id=${encodeURIComponent(tab === "tracking" ? trackingStoreId : storeId)}&date_mode=${encodeURIComponent(dateMode)}`),
-          storeId === "all"
-            ? Promise.all((context?.marketplace_stores || []).map((store) => fetchScoped(store.store_id)))
-            : fetchScoped(storeId),
-        ]);
+        if (tab === "tracking") {
+          const [trackingData, flowData] = await Promise.all([
+            fetchJson<TrackingResp>(`/api/sales/overview/tracking?store_id=${encodeURIComponent(trackingStoreId)}&date_mode=${encodeURIComponent(dateMode)}`),
+            fetchJson<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(trackingStoreId)}`),
+          ]);
+          nextState.tracking = trackingData;
+          nextState.dataFlow = flowData;
+        } else if (tab === "orders") {
+          const fetchScopedOrders = async (sid: string) => fetchJson<OrdersResp>(
+            `/api/sales/overview/united-orders?store_id=${encodeURIComponent(sid)}&period=${encodeURIComponent(period)}&item_status=${encodeURIComponent(itemStatus)}&page=${page}&page_size=${pageSize}`,
+          );
+          const [ordersData, flowData] = await Promise.all([
+            storeId === "all"
+              ? Promise.all((context?.marketplace_stores || []).map((store) => fetchScopedOrders(store.store_id))).then((responses) => mergeOrdersResponses(responses, page, pageSize))
+              : fetchScopedOrders(storeId),
+            fetchJson<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(storeId)}`),
+          ]);
+          nextState.orders = ordersData;
+          nextState.dataFlow = flowData;
+        } else if (tab === "problems") {
+          const fetchScopedProblems = async (sid: string) => fetchJson<ProblemOrdersResp>(
+            `/api/sales/overview/problem-orders?store_id=${encodeURIComponent(sid)}&period=${encodeURIComponent(period)}&page=${page}&page_size=${pageSize}`,
+          );
+          const [problemsData, flowData] = await Promise.all([
+            storeId === "all"
+              ? Promise.all((context?.marketplace_stores || []).map((store) => fetchScopedProblems(store.store_id))).then((responses) => mergeProblemResponses(responses, page, pageSize))
+              : fetchScopedProblems(storeId),
+            fetchJson<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(storeId)}`),
+          ]);
+          nextState.problemOrders = problemsData;
+          nextState.dataFlow = flowData;
+        } else if (tab === "sku") {
+          const fetchScopedSku = async (sid: string) => fetchJson<RetrospectiveResp>(
+            `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=sku&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}${rangeQuery}&limit=120`,
+          );
+          const [skuData, flowData] = await Promise.all([
+            storeId === "all"
+              ? Promise.all((context?.marketplace_stores || []).map((store) => fetchScopedSku(store.store_id))).then((responses) => mergeRetrospectiveResponses(responses))
+              : fetchScopedSku(storeId),
+            fetchJson<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(storeId)}`),
+          ]);
+          nextState.skuRetrospective = skuData;
+          nextState.dataFlow = flowData;
+        } else if (tab === "category") {
+          const fetchScopedCategory = async (sid: string) => fetchJson<RetrospectiveResp>(
+            `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=category&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}${rangeQuery}&limit=120`,
+          );
+          const [categoryData, flowData] = await Promise.all([
+            storeId === "all"
+              ? Promise.all((context?.marketplace_stores || []).map((store) => fetchScopedCategory(store.store_id))).then((responses) => mergeRetrospectiveResponses(responses))
+              : fetchScopedCategory(storeId),
+            fetchJson<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(storeId)}`),
+          ]);
+          nextState.categoryRetrospective = categoryData;
+          nextState.dataFlow = flowData;
+        }
+
         if (cancelled) return;
-        const ordersData = Array.isArray(scoped) ? mergeOrdersResponses(scoped.map((item) => item.ordersData), page, pageSize) : scoped.ordersData;
-        const problemOrdersData = Array.isArray(scoped) ? mergeProblemResponses(scoped.map((item) => item.problemOrdersData), page, pageSize) : scoped.problemOrdersData;
-        const dataFlowData = Array.isArray(scoped) ? mergeDataFlowResponses(scoped.map((item) => item.dataFlowData)) : scoped.dataFlowData;
-        const skuData = Array.isArray(scoped) ? mergeRetrospectiveResponses(scoped.map((item) => item.skuData)) : scoped.skuData;
-        const categoryData = Array.isArray(scoped) ? mergeRetrospectiveResponses(scoped.map((item) => item.categoryData)) : scoped.categoryData;
-        setTracking(trackingData);
-        setOrders(ordersData);
-        setProblemOrders(problemOrdersData);
-        setDataFlow(dataFlowData);
-        setSkuRetrospective(skuData);
-        setCategoryRetrospective(categoryData);
-        setExpandedMonthKey((prev) => prev || String(trackingData.active_month_key || ""));
+        OVERVIEW_CLIENT_CACHE.set(cacheKey, nextState);
+        setTracking(nextState.tracking ?? null);
+        setOrders(nextState.orders ?? null);
+        setProblemOrders(nextState.problemOrders ?? null);
+        setDataFlow(nextState.dataFlow ?? null);
+        setSkuRetrospective(nextState.skuRetrospective ?? null);
+        setCategoryRetrospective(nextState.categoryRetrospective ?? null);
+        if (nextState.tracking?.active_month_key) {
+          setExpandedMonthKey((prev) => prev || String(nextState.tracking?.active_month_key || ""));
+        }
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Не удалось загрузить обзор продаж");
@@ -539,6 +630,10 @@ export default function SalesOverviewPage() {
       cancelled = true;
     };
   }, [context, storeId, trackingStoreId, tab, dateMode, period, itemStatus, page, pageSize, grain, customDateFrom, customDateTo]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [tab]);
 
   const stores = useMemo<StoreCtx[]>(
     () => [{ store_uid: "all", store_id: "all", platform: "multi", platform_label: "Все магазины", label: "Все магазины", currency_code: "RUB" }, ...(context?.marketplace_stores || [])],
