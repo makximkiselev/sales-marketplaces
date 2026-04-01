@@ -106,50 +106,64 @@ export function LogisticsSettingsSection({
             <div className="status">Загрузка логистики...</div>
           ) : (
             <div className={`${styles.logisticsTablePane} ${styles.logisticsTablePaneFull}`}>
-                <div className={styles.logisticsTableHead}>
-                  <div className={styles.logisticsTableIntro}>
-                    <div className={styles.categorySidebarTitle}>Товары</div>
-                    <div className={styles.categorySidebarMeta}>{visibleSkuLabel}</div>
-                  </div>
-                  <div className={styles.logisticsTableInfo}>
-                    <span className={styles.logisticsBranchChip}>{selectedBranchLabel}</span>
-                    <span>Всего: {logisticsTotal}</span>
-                    {logisticsTreePath ? (
-                      <button
-                        type="button"
-                        className={`btn ghost ${styles.logisticsResetButton}`}
-                        onClick={() => {
-                          setLogisticsTreePath("");
-                          setLogisticsPage(1);
-                        }}
-                      >
-                        Сбросить
-                      </button>
-                    ) : null}
+              <div className={styles.logisticsTableHead}>
+                <div className={styles.logisticsTableIntro}>
+                  <div className={styles.categorySidebarTitle}>Логистические затраты</div>
+                  <div className={styles.categorySidebarMeta}>
+                    Управляй размерами товара и смотри расчетные логистические издержки по raw-слою.
                   </div>
                 </div>
+                <div className={styles.logisticsTableInfo}>
+                  <span className={styles.logisticsBranchChip}>{selectedBranchLabel}</span>
+                  <span>{visibleSkuLabel}</span>
+                </div>
+              </div>
 
-                <div className={styles.logisticsFilterBar}>
-                  <button
-                    type="button"
-                    className={`btn ghost ${styles.logisticsCatalogToggle}`}
-                    onClick={() => setCatalogOpen((current) => !current)}
-                  >
-                    {catalogOpen ? "Скрыть каталог" : "Каталог"}
-                  </button>
-                  <ControlField label="Поиск по SKU" className={styles.logisticsSearchField}>
-                    <div className={styles.inputWithSuffix}>
-                      <input
-                        className={`input input-size-fluid ${styles.settingInput}`}
-                        value={logisticsSearch}
-                        onChange={(e) => {
-                          setLogisticsSearch(e.target.value);
-                          setLogisticsPage(1);
-                        }}
-                        placeholder="Поиск по SKU или наименованию"
-                      />
-                    </div>
-                  </ControlField>
+              <div className={styles.logisticsSummaryGrid}>
+                <div className={styles.logisticsSummaryCard}>
+                  <div className={styles.logisticsSummaryLabel}>Каталог</div>
+                  <div className={styles.logisticsSummaryValue}>
+                    {logisticsTreePath ? "Выбрана ветка" : "Весь каталог"}
+                  </div>
+                  <div className={styles.logisticsSummaryMeta}>{selectedBranchLabel}</div>
+                </div>
+                <div className={styles.logisticsSummaryCard}>
+                  <div className={styles.logisticsSummaryLabel}>SKU в выборке</div>
+                  <div className={styles.logisticsSummaryValue}>{logisticsTotal}</div>
+                  <div className={styles.logisticsSummaryMeta}>{visibleSkuLabel}</div>
+                </div>
+                <div className={styles.logisticsSummaryCard}>
+                  <div className={styles.logisticsSummaryLabel}>Импорт</div>
+                  <div className={styles.logisticsSummaryValue}>Массовое обновление</div>
+                  <div className={styles.logisticsSummaryMeta}>Загрузи шаблон и обнови размеры одним действием</div>
+                </div>
+              </div>
+
+              <div className={styles.logisticsFilterBar}>
+                <button
+                  type="button"
+                  className={`${styles.logisticsCatalogLauncher} ${catalogOpen ? styles.logisticsCatalogLauncherActive : ""}`}
+                  onClick={() => setCatalogOpen((current) => !current)}
+                >
+                  <span className={styles.logisticsCatalogLauncherTitle}>
+                    {catalogOpen ? "Каталог открыт" : "Открыть каталог"}
+                  </span>
+                  <span className={styles.logisticsCatalogLauncherMeta}>{selectedBranchLabel}</span>
+                </button>
+                <ControlField label="Поиск по SKU" className={styles.logisticsSearchField}>
+                  <div className={styles.inputWithSuffix}>
+                    <input
+                      className={`input input-size-fluid ${styles.settingInput}`}
+                      value={logisticsSearch}
+                      onChange={(e) => {
+                        setLogisticsSearch(e.target.value);
+                        setLogisticsPage(1);
+                      }}
+                      placeholder="Поиск по SKU или наименованию"
+                    />
+                  </div>
+                </ControlField>
+                <div className={styles.logisticsToolbarMeta}>
                   <div className={styles.logisticsToolbarChipRow}>
                     <span className={styles.logisticsBranchChip}>{selectedBranchLabel}</span>
                     {logisticsTreePath ? (
@@ -161,34 +175,62 @@ export function LogisticsSettingsSection({
                           setLogisticsPage(1);
                         }}
                       >
-                        Сбросить
+                        Весь каталог
                       </button>
                     ) : null}
                   </div>
-                  <ControlField label="На странице" className={styles.logisticsPageSizeBox}>
-                    <select
-                      className={`input input-size-sm ${styles.logisticsPageSizeSelect}`}
-                      value={String(logisticsPageSize)}
-                      onChange={(e) => {
-                        setLogisticsPageSize(Number(e.target.value));
-                        setLogisticsPage(1);
-                      }}
-                    >
-                      {logisticsPageSizeOptions.map((n) => <option key={n} value={n}>{n}</option>)}
-                    </select>
-                  </ControlField>
-                  <button
-                    type="button"
-                    className={`btn ghost ${styles.logisticsImportButton}`}
-                    onClick={() => setLogisticsImportOpen(true)}
-                    disabled={!activeStoreId || (activePlatform !== "yandex_market" && activePlatform !== "ozon")}
-                  >
-                    Импорт
-                  </button>
+                  <div className={styles.logisticsPageSizeGroup}>
+                    <span className={styles.logisticsPageSizeLabel}>На странице</span>
+                    <div className={styles.logisticsPageSizeOptions}>
+                      {logisticsPageSizeOptions.map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          className={`${styles.logisticsPageSizeOption} ${logisticsPageSize === n ? styles.logisticsPageSizeOptionActive : ""}`}
+                          onClick={() => {
+                            setLogisticsPageSize(n);
+                            setLogisticsPage(1);
+                          }}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  className={`btn ${styles.logisticsImportButton}`}
+                  onClick={() => setLogisticsImportOpen(true)}
+                  disabled={!activeStoreId || (activePlatform !== "yandex_market" && activePlatform !== "ozon")}
+                >
+                  Импорт размеров
+                </button>
+              </div>
 
-                {catalogOpen ? (
-                  <div className={styles.logisticsCatalogInline}>
+              {catalogOpen ? (
+                <div className={styles.logisticsCatalogInline}>
+                  <div className={styles.logisticsCatalogInlineHead}>
+                    <div>
+                      <div className={styles.categorySidebarTitle}>Каталог</div>
+                      <div className={styles.categorySidebarMeta}>
+                        Выбери ветку каталога, чтобы отфильтровать таблицу логистики.
+                      </div>
+                    </div>
+                    {logisticsTreePath ? (
+                      <button
+                        type="button"
+                        className={`btn ghost ${styles.logisticsResetButton}`}
+                        onClick={() => {
+                          setLogisticsTreePath("");
+                          setLogisticsPage(1);
+                        }}
+                      >
+                        Сбросить ветку
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className={styles.logisticsCatalogWorkspace}>
                     <CatalogBrowser
                       title="Каталог"
                       subtitle="Выбери ветку каталога, чтобы сузить таблицу товаров."
@@ -215,11 +257,17 @@ export function LogisticsSettingsSection({
                       emptyText="Нет категорий для выбранного магазина"
                       actionLabel={expandedTreePaths.length ? "Свернуть все" : "Развернуть все"}
                     />
+                    <div className={styles.logisticsCatalogSelection}>
+                      <div className={styles.logisticsCatalogSelectionLabel}>Текущий выбор</div>
+                      <div className={styles.logisticsCatalogSelectionValue}>{selectedBranchLabel}</div>
+                      <div className={styles.logisticsCatalogSelectionHint}>{visibleSkuLabel}</div>
+                    </div>
                   </div>
-                ) : null}
+                </div>
+              ) : null}
 
-                <div className={`${styles.pricingTableWrap} ${styles.logisticsTableWrap}`}>
-                  <table className={`${styles.pricingTable} ${styles.logisticsTable}`}>
+              <div className={`${styles.pricingTableWrap} ${styles.logisticsTableWrap}`}>
+                <table className={`${styles.pricingTable} ${styles.logisticsTable}`}>
                     <thead>
                       <tr>
                         <th>SKU</th>
@@ -302,19 +350,19 @@ export function LogisticsSettingsSection({
                         );
                       })}
                     </tbody>
-                  </table>
-                </div>
+                </table>
+              </div>
 
-                <div className={styles.logisticsPager}>
-                  <div className={styles.logisticsPagerMeta}>
-                    <div className={styles.inlineInfo}>Страница {logisticsPage} / {totalPages}</div>
-                    <div className={styles.logisticsPagerHint}>{logisticsTotal} SKU в выборке</div>
-                  </div>
-                  <div className={styles.logisticsPagerActions}>
-                    <button type="button" className="btn ghost" onClick={() => setLogisticsPage((p) => Math.max(1, p - 1))} disabled={logisticsPage <= 1}>Назад</button>
-                    <button type="button" className="btn ghost" onClick={() => setLogisticsPage((p) => p + 1)} disabled={logisticsPage >= totalPages}>Вперед</button>
-                  </div>
+              <div className={styles.logisticsPager}>
+                <div className={styles.logisticsPagerMeta}>
+                  <div className={styles.inlineInfo}>Страница {logisticsPage} / {totalPages}</div>
+                  <div className={styles.logisticsPagerHint}>{logisticsTotal} SKU в выборке</div>
                 </div>
+                <div className={styles.logisticsPagerActions}>
+                  <button type="button" className="btn ghost" onClick={() => setLogisticsPage((p) => Math.max(1, p - 1))} disabled={logisticsPage <= 1}>Назад</button>
+                  <button type="button" className="btn ghost" onClick={() => setLogisticsPage((p) => p + 1)} disabled={logisticsPage >= totalPages}>Вперед</button>
+                </div>
+              </div>
             </div>
           )}
         </>

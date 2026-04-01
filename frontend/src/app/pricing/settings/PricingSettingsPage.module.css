@@ -1110,6 +1110,43 @@
   line-height: 1.35;
 }
 
+.logisticsSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.logisticsSummaryCard {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  background:
+    linear-gradient(180deg, rgba(13, 24, 43, 0.84), rgba(8, 16, 30, 0.68));
+}
+
+.logisticsSummaryLabel {
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.logisticsSummaryValue {
+  color: #ecf4ff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.logisticsSummaryMeta {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .logisticsTableControls {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -1171,13 +1208,61 @@
 
 .logisticsFilterBar {
   display: grid;
-  grid-template-columns: auto minmax(320px, 1fr) minmax(0, auto) minmax(112px, auto) auto;
+  grid-template-columns: minmax(240px, 280px) minmax(320px, 1fr) minmax(280px, auto) auto;
   gap: 14px;
   align-items: end;
 }
 
+.logisticsCatalogLauncher {
+  min-height: 72px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(10, 18, 33, 0.84), rgba(7, 14, 27, 0.9));
+  color: inherit;
+  padding: 12px 14px;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    transform 0.16s ease;
+}
+
+.logisticsCatalogLauncher:hover {
+  border-color: rgba(76, 201, 240, 0.34);
+  background: rgba(16, 29, 51, 0.94);
+  transform: translateY(-1px);
+}
+
+.logisticsCatalogLauncherActive {
+  border-color: rgba(76, 201, 240, 0.4);
+  background:
+    linear-gradient(180deg, rgba(30, 66, 98, 0.4), rgba(12, 24, 43, 0.9));
+}
+
+.logisticsCatalogLauncherTitle {
+  color: #edf4ff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.logisticsCatalogLauncherMeta {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .logisticsCatalogToggle {
   min-height: 40px;
+}
+
+.logisticsToolbarMeta {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
 }
 
 .logisticsToolbarChipRow {
@@ -1188,7 +1273,6 @@
   gap: 8px;
   min-height: 40px;
   min-width: 0;
-  overflow: hidden;
 }
 
 .logisticsCatalogInline {
@@ -1196,8 +1280,53 @@
   border-radius: 18px;
   background: rgba(10, 18, 34, 0.54);
   padding: 18px;
-  max-height: 320px;
-  overflow: hidden;
+  display: grid;
+  gap: 16px;
+}
+
+.logisticsCatalogInlineHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.logisticsCatalogWorkspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.65fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.logisticsCatalogSelection {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  background: rgba(7, 14, 28, 0.72);
+}
+
+.logisticsCatalogSelectionLabel {
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.logisticsCatalogSelectionValue {
+  color: #edf4ff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.logisticsCatalogSelectionHint {
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .logisticsSidebarActionRow {
@@ -1208,8 +1337,10 @@
 }
 
 .logisticsImportButton {
-  min-height: 40px;
+  min-height: 44px;
+  padding-inline: 16px;
   align-self: end;
+  white-space: nowrap;
 }
 
 .logisticsSidebarList {
@@ -2506,6 +2637,55 @@
   flex: 0 0 auto;
 }
 
+.logisticsPageSizeGroup {
+  display: grid;
+  gap: 8px;
+}
+
+.logisticsPageSizeLabel {
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.logisticsPageSizeOptions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.logisticsPageSizeOption {
+  min-width: 48px;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(10, 18, 33, 0.72);
+  color: #d6e6ff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.logisticsPageSizeOption:hover {
+  border-color: rgba(76, 201, 240, 0.34);
+  background: rgba(16, 30, 53, 0.9);
+}
+
+.logisticsPageSizeOptionActive {
+  border-color: rgba(76, 201, 240, 0.42);
+  background:
+    linear-gradient(180deg, rgba(30, 66, 98, 0.48), rgba(17, 31, 52, 0.92));
+  color: #eff6ff;
+  box-shadow: 0 0 0 1px rgba(76, 201, 240, 0.12) inset;
+}
+
 .logisticsImportBox {
   flex: 0 0 auto;
   align-self: end;
@@ -2883,13 +3063,32 @@
     grid-template-columns: 1fr;
   }
 
+  .logisticsSummaryGrid,
+  .logisticsCatalogWorkspace {
+    grid-template-columns: 1fr;
+  }
+
+  .logisticsCatalogInlineHead {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .logisticsCatalogLauncher {
+    min-height: 64px;
+  }
+
+  .logisticsToolbarMeta,
   .logisticsToolbarChipRow,
   .logisticsPagerActions {
     justify-content: flex-start;
   }
 
-  .logisticsPageSizeBox {
-    justify-content: space-between;
+  .logisticsPageSizeOptions {
+    width: 100%;
+  }
+
+  .logisticsPageSizeOption {
+    flex: 1 1 0;
   }
 
   .pricingDesktopTableWrap {
