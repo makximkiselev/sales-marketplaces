@@ -1,6 +1,6 @@
 import styles from "./PricingSettingsPage.module.css";
 import { MobileDockLayout } from "../../../components/page/PageKit";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
+import { WorkspaceHeader, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
@@ -114,7 +114,7 @@ export function PricingSettingsMobile({
     <div className={`${styles.settingsShell} ${styles.mobileSettingsShell}`}>
       <div className={`${styles.settingsMain} ${styles.mobileSettingsMain}`}>
         <MobileDockLayout dock={mobileDock} dockVisible={mobileDockVisible} dockHeight={232} dockOffset={82}>
-        <WorkspaceSurface className={styles.mobileWorkspaceSurface}>
+        <div className={styles.mobileCommandDeck}>
           <div className={styles.mobileNavStack}>
             <WorkspaceTabs
               className={styles.mobileWorkspaceTabs}
@@ -123,37 +123,43 @@ export function PricingSettingsMobile({
               onChange={(id) => setSettingsTab(id)}
             />
             {!isSalesPlanSection ? (
-              <WorkspaceTabs
-                className={styles.mobileWorkspaceTabs}
-                items={storeTabs.map((store) => ({
-                  id: store.key,
-                  label: store.storeName,
-                  meta: store.platformLabel,
-                }))}
-                activeId={activeStoreTabKey}
-                onChange={setActiveStoreTabKey}
-              />
+              <div className={styles.mobileStoreStrip}>
+                <div className={styles.pricingStripLabel}>Магазин</div>
+                <WorkspaceTabs
+                  className={styles.mobileWorkspaceTabs}
+                  items={storeTabs.map((store) => ({
+                    id: store.key,
+                    label: store.storeName,
+                    meta: store.platformLabel,
+                  }))}
+                  activeId={activeStoreTabKey}
+                  onChange={setActiveStoreTabKey}
+                />
+              </div>
             ) : null}
           </div>
 
-          <WorkspaceHeader
-            title={activeSection.title}
-            subtitle={
-              isSalesPlanSection
-                ? "Store-level цели, режимы прибыли и стратегия для всех магазинов."
-                : activeSection.description
-            }
-            meta={
-              !isSalesPlanSection && activeStore ? (
-                <div className={styles.workspaceHeroChips}>
-                  <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
-                  <span className={styles.workspaceHeroChip}>{activeStore.storeName}</span>
-                  <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
-                </div>
-              ) : isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : undefined
-            }
-          />
-        </WorkspaceSurface>
+          <div className={styles.pricingHeroPanel}>
+            <WorkspaceHeader
+              className={styles.pricingHeroHeader}
+              title={activeSection.title}
+              subtitle={
+                isSalesPlanSection
+                  ? "Store-level цели, режимы прибыли и стратегия для всех магазинов."
+                  : activeSection.description
+              }
+              meta={
+                !isSalesPlanSection && activeStore ? (
+                  <div className={styles.workspaceHeroChips}>
+                    <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
+                    <span className={styles.workspaceHeroChip}>{activeStore.storeName}</span>
+                    <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
+                  </div>
+                ) : isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : undefined
+              }
+            />
+          </div>
+        </div>
 
         {settingsTab === "sales_plan" ? (
           <SalesPlanSection

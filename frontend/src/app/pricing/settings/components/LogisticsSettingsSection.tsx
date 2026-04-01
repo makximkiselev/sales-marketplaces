@@ -93,7 +93,7 @@ export function LogisticsSettingsSection({
   const selectedBranchLabel = logisticsTreePath || "Весь каталог";
 
   return (
-    <SectionBlock>
+    <SectionBlock className={styles.settingsCanvasSection} bodyClassName={styles.settingsCanvasBody}>
       {loading ? <div className="status">Загрузка контекста...</div> : null}
       {!loading && error ? <div className="status error">{error}</div> : null}
       {!loading && !error ? (

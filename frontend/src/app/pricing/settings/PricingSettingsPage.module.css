@@ -107,13 +107,48 @@
 }
 
 .pricingWorkspace {
-  gap: 18px;
+  gap: 20px;
   width: 100%;
 }
 
-.pricingHeroSurface {
-  padding: 22px;
-  gap: 16px;
+.pricingCommandDeck {
+  display: grid;
+  gap: 14px;
+}
+
+.pricingModeStrip,
+.pricingStoreStrip,
+.pricingHeroPanel {
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(11, 21, 38, 0.94), rgba(7, 14, 27, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.pricingModeStrip,
+.pricingStoreStrip {
+  padding: 14px 16px;
+}
+
+.pricingStoreStrip {
+  display: grid;
+  gap: 10px;
+}
+
+.pricingHeroPanel {
+  padding: 20px 22px;
+}
+
+.pricingStripLabel {
+  color: var(--text-soft);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.pricingHeroHeader {
+  gap: 20px;
 }
 
 .pricingPrimaryTabs,
@@ -196,6 +231,16 @@
 .mobileWorkspaceSurface {
   padding: 14px;
   gap: 12px;
+}
+
+.mobileCommandDeck {
+  display: grid;
+  gap: 12px;
+}
+
+.mobileStoreStrip {
+  display: grid;
+  gap: 8px;
 }
 
 .mobileWorkspaceTabs {
@@ -451,6 +496,16 @@
 
 .stickyActionBarAlways {
   visibility: visible;
+}
+
+.settingsCanvasSection {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.settingsCanvasBody {
+  padding: 0 !important;
 }
 
 .stickyActionMeta {
@@ -2934,6 +2989,12 @@
     min-height: 30px;
     padding-inline: 10px;
     font-size: 11px;
+  }
+
+  .pricingModeStrip,
+  .pricingStoreStrip,
+  .pricingHeroPanel {
+    border-radius: 18px;
   }
 
   .categoryWorkspace {

@@ -85,43 +85,53 @@ export function PricingSettingsDesktop({
     <div className={styles.settingsShell}>
       <div className={styles.settingsMain}>
         <WorkspaceStack className={styles.pricingWorkspace}>
-          <WorkspaceSurface className={styles.pricingHeroSurface}>
-            <WorkspaceTabs
-              className={styles.pricingPrimaryTabs}
-              items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
-              activeId={settingsTab}
-              onChange={(id) => setSettingsTab(id)}
-            />
-            {!isSalesPlanSection ? (
+          <div className={styles.pricingCommandDeck}>
+            <div className={styles.pricingModeStrip}>
               <WorkspaceTabs
-                className={styles.pricingStoreTabs}
-                items={storeTabs.map((store) => ({
-                  id: store.key,
-                  label: store.storeName,
-                  meta: store.platformLabel,
-                }))}
-                activeId={activeStoreTabKey}
-                onChange={setActiveStoreTabKey}
+                className={styles.pricingPrimaryTabs}
+                items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
+                activeId={settingsTab}
+                onChange={(id) => setSettingsTab(id)}
               />
+            </div>
+
+            {!isSalesPlanSection ? (
+              <div className={styles.pricingStoreStrip}>
+                <div className={styles.pricingStripLabel}>Магазин</div>
+                <WorkspaceTabs
+                  className={styles.pricingStoreTabs}
+                  items={storeTabs.map((store) => ({
+                    id: store.key,
+                    label: store.storeName,
+                    meta: store.platformLabel,
+                  }))}
+                  activeId={activeStoreTabKey}
+                  onChange={setActiveStoreTabKey}
+                />
+              </div>
             ) : null}
-            <WorkspaceHeader
-              title={activeSection.title}
-              subtitle={
-                isSalesPlanSection
-                  ? "Store-level цели, режимы прибыли и стратегия для всех магазинов в одном рабочем пространстве."
-                  : activeSection.description
-              }
-              meta={
-                !isSalesPlanSection && activeStore ? (
-                  <div className={styles.workspaceHeroChips}>
-                    <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
-                    <span className={styles.workspaceHeroChip}>{activeStore.storeName}</span>
-                    <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
-                  </div>
-                ) : isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : undefined
-              }
-            />
-          </WorkspaceSurface>
+
+            <div className={styles.pricingHeroPanel}>
+              <WorkspaceHeader
+                className={styles.pricingHeroHeader}
+                title={activeSection.title}
+                subtitle={
+                  isSalesPlanSection
+                    ? "Store-level цели, режимы прибыли и стратегия для всех магазинов в одном рабочем пространстве."
+                    : activeSection.description
+                }
+                meta={
+                  !isSalesPlanSection && activeStore ? (
+                    <div className={styles.workspaceHeroChips}>
+                      <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
+                      <span className={styles.workspaceHeroChip}>{activeStore.storeName}</span>
+                      <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
+                    </div>
+                  ) : isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : undefined
+                }
+              />
+            </div>
+          </div>
 
           {settingsTab === "logistics" ? (
             <div className={styles.controlsRow}>
