@@ -1733,10 +1733,10 @@
 
 .salesPlanGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
   gap: 18px;
-  max-width: 1120px;
+  max-width: 1440px;
   width: 100%;
   margin-inline: auto;
   justify-self: stretch;
@@ -3191,10 +3191,10 @@
   }
 }
 
-@media (max-width: 1180px) and (min-width: 961px) {
+@media (max-width: 1320px) and (min-width: 961px) {
   .salesPlanGrid {
-    grid-template-columns: 1fr;
-    max-width: 860px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 1120px;
   }
 }
 
