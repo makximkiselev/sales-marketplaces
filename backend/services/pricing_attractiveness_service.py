@@ -747,6 +747,7 @@ async def get_attractiveness_overview(
     page: int = 1,
     page_size: int = 50,
     fetch_live: bool = False,
+    force_full_live: bool = False,
 ):
     status_filter_norm = str(status_filter or "all").strip().lower()
     if status_filter_norm not in {"all", "profitable", "moderate", "overpriced"}:
@@ -798,7 +799,21 @@ async def get_attractiveness_overview(
     # Для status_filter != all или stock_filter != all фильтрация должна идти по всем товарам,
     # а не по текущей странице. Тогда сначала собираем все строки из prices-layer,
     # затем фильтруем и пагинируем здесь.
-    if fetch_live:
+    if fetch_live and force_full_live:
+        base = await get_prices_overview_full(
+            scope=scope,
+            platform=platform,
+            store_id=store_id,
+            tree_mode=tree_mode,
+            tree_source_store_id=tree_source_store_id,
+            category_path=category_path,
+            search=search,
+            stock_filter="all",
+            force_refresh=True,
+        )
+        rows = base.get("rows") if isinstance(base, dict) and isinstance(base.get("rows"), list) else []
+        stores = base.get("stores") if isinstance(base, dict) and isinstance(base.get("stores"), list) else []
+    elif fetch_live:
         base, rows, stores = await _load_attractiveness_base_rows(
             scope=scope,
             platform=platform,
@@ -1371,42 +1386,31 @@ async def refresh_attractiveness_data(*, refresh_base: bool = True, store_uids: 
     async def _run_store(store: dict[str, Any]) -> dict[str, Any]:
         store_id = str(store.get("store_id") or "").strip()
         store_uid = str(store.get("store_uid") or "").strip()
-        page = 1
-        page_size = 200
         try:
-            local_total = 0
-            local_processed = 0
-            while True:
-                resp = await get_attractiveness_overview(
-                    scope="store",
-                    platform="yandex_market",
-                    store_id=store_id,
-                    tree_mode="marketplaces",
-                    tree_source_store_id=store_id,
-                    page=page,
-                    page_size=page_size,
-                    fetch_live=True,
-                )
-                local_total = max(local_total, int(resp.get("total_count") or 0))
-                rows = resp.get("rows") if isinstance(resp.get("rows"), list) else []
-                debug_live = resp.get("debug_yandex_recommendations") if isinstance(resp, dict) else {}
-                store_debug = debug_live.get(store_uid) if isinstance(debug_live, dict) else []
-                if _has_terminal_yandex_403(store_debug):
-                    return {
-                        "ok": False,
-                        "store_uid": store_uid,
-                        "store_id": store_id,
-                        "reason": "yandex_recommendations_403_forbidden",
-                        "total": local_total,
-                        "processed": local_processed,
-                    }
-                local_processed += len(rows)
-                if not rows or len(rows) < page_size:
-                    break
-                page += 1
-                if page > 500:
-                    break
-            return {"ok": True, "store_uid": store_uid, "store_id": store_id, "total": local_total, "processed": local_processed}
+            resp = await get_attractiveness_overview(
+                scope="store",
+                platform="yandex_market",
+                store_id=store_id,
+                tree_mode="marketplaces",
+                tree_source_store_id=store_id,
+                page=1,
+                page_size=200,
+                fetch_live=True,
+                force_full_live=True,
+            )
+            local_total = int(resp.get("total_count") or 0)
+            debug_live = resp.get("debug_yandex_recommendations") if isinstance(resp, dict) else {}
+            store_debug = debug_live.get(store_uid) if isinstance(debug_live, dict) else []
+            if _has_terminal_yandex_403(store_debug):
+                return {
+                    "ok": False,
+                    "store_uid": store_uid,
+                    "store_id": store_id,
+                    "reason": "yandex_recommendations_403_forbidden",
+                    "total": local_total,
+                    "processed": 0,
+                }
+            return {"ok": True, "store_uid": store_uid, "store_id": store_id, "total": local_total, "processed": local_total}
         except Exception as exc:
             return {"ok": False, "store_uid": store_uid, "store_id": store_id, "reason": str(exc)}
 
