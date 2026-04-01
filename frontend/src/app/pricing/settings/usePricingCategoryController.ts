@@ -8,6 +8,7 @@ import { showAppToast } from "../../../components/ui/toastBus";
 export function usePricingCategoryController(params: {
   activePlatform: string;
   activeStoreId: string;
+  enabled: boolean;
   moneySign: string;
   earningMode: "profit" | "margin";
   earningUnit: "rub" | "percent";
@@ -18,7 +19,7 @@ export function usePricingCategoryController(params: {
   targetDrr: string;
   onStoreSettingsLoaded: (settings: PricingStoreSettingsApi) => void;
 }) {
-  const { activePlatform, activeStoreId, moneySign, earningMode, earningUnit, targetProfit, targetProfitPercent, targetMargin, targetMarginRub, targetDrr, onStoreSettingsLoaded } = params;
+  const { activePlatform, activeStoreId, enabled, moneySign, earningMode, earningUnit, targetProfit, targetProfitPercent, targetMargin, targetMarginRub, targetDrr, onStoreSettingsLoaded } = params;
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsError, setItemsError] = useState("");
   const [categoryRows, setCategoryRows] = useState<PricingCategoryRow[]>([]);
@@ -38,6 +39,7 @@ export function usePricingCategoryController(params: {
   }
 
   async function loadPricingCategoryTree() {
+    if (!enabled) return;
     if (!activePlatform || !activeStoreId || (activePlatform !== "yandex_market" && activePlatform !== "ozon")) {
       setCategoryRows([]);
       setItemsError("");
@@ -185,8 +187,9 @@ export function usePricingCategoryController(params: {
   }, [activePlatform, activeStoreId, targetProfit, targetProfitPercent, targetMarginRub, targetMargin, targetDrr, categoryRows.length, itemsLoading]);
 
   useEffect(() => {
+    if (!enabled) return;
     void loadPricingCategoryTree();
-  }, [activePlatform, activeStoreId]);
+  }, [activePlatform, activeStoreId, enabled]);
 
   const usedSubcategoryDepth = useMemo(() => getUsedSubcategoryDepth(categoryRows), [categoryRows]);
   const tableColumns = useMemo<PricingTableColumn[]>(() => buildPricingTableColumns({ isProfitMode: earningMode === "profit", usedSubcategoryDepth, earningUnit, moneySign }), [earningMode, usedSubcategoryDepth, earningUnit, moneySign]);

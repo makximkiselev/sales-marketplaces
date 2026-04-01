@@ -77,6 +77,7 @@ export function usePricingSettingsController() {
   const categories = usePricingCategoryController({
     activePlatform,
     activeStoreId,
+    enabled: settingsTab === "categories",
     moneySign,
     earningMode: general.earningMode,
     earningUnit: general.earningUnit,
@@ -181,8 +182,8 @@ export function usePricingSettingsController() {
     categories.setItemsError("");
     try {
       await loadContext(true);
-      await loadSalesPlanData();
-      await loadMonitoringData();
+      if (settingsTab === "sales_plan") await loadSalesPlanData();
+      if (settingsTab === "monitoring") await loadMonitoringData();
       await refreshPricingStoreData(activePlatform, activeStoreId);
       if (settingsTab === "logistics") await logistics.loadLogisticsData();
       else if (settingsTab === "categories") await categories.loadPricingCategoryTree();
@@ -194,8 +195,18 @@ export function usePricingSettingsController() {
   }
 
   useEffect(() => { void loadContext(); }, []);
-  useEffect(() => { void loadSalesPlanData(); }, []);
-  useEffect(() => { void loadMonitoringData(); }, []);
+  useEffect(() => {
+    if (settingsTab !== "sales_plan") return;
+    if (salesPlanRows.length && !salesPlanError) return;
+    void loadSalesPlanData();
+  }, [settingsTab]);
+
+  useEffect(() => {
+    if (settingsTab !== "monitoring") return;
+    if (monitoringRows.length && !monitoringError) return;
+    void loadMonitoringData();
+  }, [settingsTab]);
+
   useEffect(() => {
     safeWriteJson(PRICING_SETTINGS_TAB_KEY, settingsTab);
   }, [settingsTab]);
@@ -232,8 +243,8 @@ export function usePricingSettingsController() {
         values,
       });
       if (!data.ok) throw new Error(data.message || "Не удалось сохранить план продаж");
-      await loadSalesPlanData();
-      if (platform === activePlatform && storeId === activeStoreId) {
+      if (settingsTab === "sales_plan") await loadSalesPlanData();
+      if (settingsTab === "categories" && platform === activePlatform && storeId === activeStoreId) {
         await categories.loadPricingCategoryTree();
       }
     } catch (e) {
@@ -270,8 +281,8 @@ export function usePricingSettingsController() {
           throw new Error(data.message || `Не удалось сохранить план продаж для магазина ${row.store_name || storeId}`);
         }
       }
-      await loadSalesPlanData();
-      if (activePlatform && activeStoreId) {
+      if (settingsTab === "sales_plan") await loadSalesPlanData();
+      if (settingsTab === "categories" && activePlatform && activeStoreId) {
         await categories.loadPricingCategoryTree();
       }
     } catch (e) {
