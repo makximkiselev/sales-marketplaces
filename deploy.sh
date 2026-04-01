@@ -48,6 +48,7 @@ require_cmd npm
 require_cmd npx
 require_cmd curl
 require_cmd systemctl
+require_cmd grep
 
 restart_backend_service() {
   local timeout_seconds="${1:-30}"
@@ -78,6 +79,38 @@ require_glob_match() {
     echo "Missing required build artifacts matching: $pattern" >&2
     exit 1
   fi
+}
+
+extract_bundle_name() {
+  local html="$1"
+  local kind="$2"
+  if [[ "$kind" == "js" ]]; then
+    grep -oE 'assets/index-[^"]+\.js' "$html" | head -n 1
+  else
+    grep -oE 'assets/index-[^"]+\.css' "$html" | head -n 1
+  fi
+}
+
+verify_public_bundle() {
+  local public_html
+  local expected_js expected_css
+  expected_js="$(extract_bundle_name "$FRONTEND_DIST_DIR/index.html" "js")"
+  expected_css="$(extract_bundle_name "$FRONTEND_DIST_DIR/index.html" "css")"
+
+  if [[ -z "$expected_js" || -z "$expected_css" ]]; then
+    echo "Could not extract built bundle names from $FRONTEND_DIST_DIR/index.html" >&2
+    return 1
+  fi
+
+  public_html="$(curl --fail --silent --show-error "${PUBLIC_ROOT_URL:-https://sales.id-smart.ru}")"
+  [[ "$public_html" == *"$expected_js"* ]] || {
+    echo "Public HTML does not reference expected JS bundle: $expected_js" >&2
+    return 1
+  }
+  [[ "$public_html" == *"$expected_css"* ]] || {
+    echo "Public HTML does not reference expected CSS bundle: $expected_css" >&2
+    return 1
+  }
 }
 
 cd "$APP_ROOT"
@@ -132,5 +165,8 @@ wait_for_url "$BACKEND_HEALTH_URL" "Backend health"
 
 log "Checking public health"
 wait_for_url "$PUBLIC_HEALTH_URL" "Public health"
+
+log "Verifying public bundle"
+verify_public_bundle
 
 log "Deploy completed"
