@@ -8,24 +8,14 @@ import {
   PRICING_SETTINGS_MONITORING_CACHE_KEY,
   PRICING_SETTINGS_SALES_PLAN_CACHE_KEY,
   safeReadFreshJson,
-  safeReadJson,
   safeWriteFreshJson,
-  safeWriteJson,
 } from "./cache";
 import type { PlatformItem, RefreshMonitoringRowApi, SalesPlanRowApi, StoreTabItem } from "./types";
 import { showAppToast } from "../../../components/ui/toastBus";
 
-const PRICING_SETTINGS_TAB_KEY = "pricing_settings_active_tab_v1";
 const SALES_PLAN_CACHE_TTL_MS = 10 * 60 * 1000;
 const MONITORING_CACHE_TTL_MS = 2 * 60 * 1000;
 type SettingsTab = "sales_plan" | "categories" | "logistics" | "monitoring";
-
-function readInitialSettingsTab(): SettingsTab {
-  const saved = safeReadJson<SettingsTab>(PRICING_SETTINGS_TAB_KEY);
-  return saved === "sales_plan" || saved === "categories" || saved === "logistics" || saved === "monitoring"
-    ? saved
-    : "sales_plan";
-}
 
 export function usePricingSettingsController() {
   const [loading, setLoading] = useState(true);
@@ -34,7 +24,7 @@ export function usePricingSettingsController() {
   const [platforms, setPlatforms] = useState<PlatformItem[]>([]);
   const [activePlatform, setActivePlatform] = useState("yandex_market");
   const [activeStoreId, setActiveStoreId] = useState("");
-  const [settingsTab, setSettingsTab] = useState<SettingsTab>(() => readInitialSettingsTab());
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("sales_plan");
   const [salesPlanRows, setSalesPlanRows] = useState<SalesPlanRowApi[]>([]);
   const [salesPlanLoading, setSalesPlanLoading] = useState(false);
   const [salesPlanError, setSalesPlanError] = useState("");
@@ -238,10 +228,6 @@ export function usePricingSettingsController() {
     if (settingsTab !== "monitoring") return;
     if (monitoringRows.length && !monitoringError) return;
     void loadMonitoringData();
-  }, [settingsTab]);
-
-  useEffect(() => {
-    safeWriteJson(PRICING_SETTINGS_TAB_KEY, settingsTab);
   }, [settingsTab]);
 
   useEffect(() => {
