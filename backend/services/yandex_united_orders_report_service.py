@@ -1746,17 +1746,11 @@ def _load_strategy_snapshot_map(*, store_uid: str, orders: list[dict[str, Any]])
     for key, created_at in order_points.items():
         _order_id, sku = key
         chosen: dict[str, Any] | None = None
-        same_day_fallback: dict[str, Any] | None = None
         for snap_dt, snap_row in by_sku.get(sku, []):
             if snap_dt <= created_at:
                 chosen = snap_row
                 continue
-            if snap_dt.date() == created_at.date() and same_day_fallback is None:
-                same_day_fallback = snap_row
-            if snap_dt > created_at and same_day_fallback is not None:
-                break
-        if chosen is None:
-            chosen = same_day_fallback
+            break
         if chosen is not None:
             resolved[key] = chosen
     return resolved
@@ -1862,9 +1856,15 @@ def _build_strategy_snapshot_from_iterations(*, rows: list[dict[str, Any]]) -> d
     if not isinstance(selected, dict) or not selected:
         return {}
     attr_rank = _iteration_attr_rank(selected.get("attractiveness_status"))
+    captured_at_values = [
+        str(item.get("captured_at") or "").strip()
+        for item in ordered
+        if isinstance(item, dict) and str(item.get("captured_at") or "").strip()
+    ]
+    captured_at = captured_at_values[-1] if captured_at_values else str(selected.get("cycle_started_at") or "").strip()
     return {
         "cycle_started_at": str(selected.get("cycle_started_at") or "").strip(),
-        "captured_at": str(selected.get("cycle_started_at") or "").strip(),
+        "captured_at": captured_at,
         "installed_price": _parse_decimal(selected.get("tested_price")),
         "boost_bid_percent": _parse_decimal(selected.get("tested_boost_pct")),
         "market_boost_bid_percent": _parse_decimal(selected.get("market_boost_bid_percent")),
@@ -1898,7 +1898,7 @@ def _load_strategy_iteration_snapshot_map(*, store_uid: str, orders: list[dict[s
     with _connect_history() as conn:
         rows = conn.execute(
             f"""
-            SELECT store_uid, sku, cycle_started_at, iteration_code, tested_price, tested_boost_pct,
+            SELECT store_uid, sku, cycle_started_at, captured_at, iteration_code, tested_price, tested_boost_pct,
                    market_boost_bid_percent, boost_share, promo_count, attractiveness_status, coinvest_pct
             FROM pricing_strategy_iteration_history
             WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
@@ -1929,16 +1929,12 @@ def _load_strategy_iteration_snapshot_map(*, store_uid: str, orders: list[dict[s
             cycle_candidates.append((cycle_dt.astimezone(MSK), cycle_started_at))
         cycle_candidates.sort(key=lambda item: item[0])
         selected_cycle_key = ""
-        same_day_fallback = ""
         for cycle_dt, cycle_key in cycle_candidates:
             if cycle_dt <= created_at:
                 selected_cycle_key = cycle_key
                 continue
-            if cycle_dt.date() == created_at.date() and not same_day_fallback:
-                same_day_fallback = cycle_key
-            if cycle_dt > created_at and same_day_fallback:
-                break
-        chosen_cycle = selected_cycle_key or same_day_fallback
+            break
+        chosen_cycle = selected_cycle_key
         if not chosen_cycle:
             continue
         snapshot = _build_strategy_snapshot_from_iterations(rows=(by_sku_cycle.get(sku) or {}).get(chosen_cycle) or [])
