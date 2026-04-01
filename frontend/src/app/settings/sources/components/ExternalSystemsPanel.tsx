@@ -13,21 +13,10 @@ export function ExternalSystemsPanel() {
       }
     >
       <div className={styles.ymContent}>
-        <div className={styles.ymTableWrap}>
-          <table className={styles.ymTable}>
-            <thead>
-              <tr>
-                <th>Система</th>
-                <th>Статус</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className={styles.ymMutedCell}>Еще нет подключенных источников</td>
-                <td><span className="pill warn">В разработке</span></td>
-              </tr>
-            </tbody>
-          </table>
+        <div className={styles.sourcePlaceholderCard}>
+          <div className={styles.sourcePlaceholderTitle}>Внешние системы в подготовке</div>
+          <div className={styles.sourcePlaceholderText}>Здесь появятся шлюзы для PIM, 1C и МойСклад. Пока секция оставлена как отдельный системный блок без псевдо-таблицы.</div>
+          <div><span className="pill warn">В разработке</span></div>
         </div>
       </div>
     </PanelCard>

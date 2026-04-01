@@ -81,6 +81,14 @@
   color: var(--text-soft);
 }
 
+.sourcePanelActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .sourcesTabs {
   gap: 10px;
 }
@@ -472,6 +480,27 @@
   justify-content: flex-end;
 }
 
+.sourcePlaceholderCard {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px dashed rgba(132, 161, 214, 0.22);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(12, 23, 41, 0.72), rgba(8, 16, 30, 0.64));
+}
+
+.sourcePlaceholderTitle {
+  color: #eef5ff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.sourcePlaceholderText {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .ymAccountActionsButtons :global(.btn) {
   white-space: nowrap;
   height: 30px;
@@ -656,7 +685,8 @@
 
   .ymAccountActionsButtons :global(.btn),
   .ymDeleteAccountBtn,
-  .ymAddAccountBtn {
+  .ymAddAccountBtn,
+  .sourcePanelActions :global(.btn) {
     width: 100%;
   }
 }

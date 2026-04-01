@@ -390,12 +390,27 @@ function TrendChart({
   currencyCode,
   title = "Оборот и прибыль по дням",
   hint = "Выбранный диапазон из обзора продаж.",
+  emptyText = "Нет дневных данных для выбранного диапазона.",
 }: {
   days: TrackingDay[];
   currencyCode?: string | null;
   title?: string;
   hint?: string;
+  emptyText?: string;
 }) {
+  if (days.length === 0) {
+    return (
+      <div className={styles.chartCard}>
+        <div className={styles.chartHead}>
+          <div>
+            <div className={styles.panelTitle}>{title}</div>
+            <div className={styles.panelHint}>{hint}</div>
+          </div>
+        </div>
+        <div className={styles.placeholderCard}>{emptyText}</div>
+      </div>
+    );
+  }
   const chartWidth = 760;
   const chartHeight = 280;
   const pad = { top: 24, right: 20, bottom: 34, left: 52 };
@@ -937,6 +952,10 @@ export default function Page() {
   const chartHint = isSingleDayPeriod
     ? `${selectedDayLabel} внутри текущего рабочего диапазона.`
     : `Выбранный диапазон: ${currentRangeLabel}.`;
+  const isSelectedDayEmpty = isSingleDayPeriod && selectedDayOrdersCount === 0 && selectedDayRevenue === 0 && selectedDayProblemsCount === 0;
+  const chartEmptyText = isSingleDayPeriod
+    ? `За ${formatLongDate(selectedDayDate)} еще нет дневных данных в sales overview.`
+    : "В выбранном диапазоне пока нет дневных точек.";
 
   return (
     <PageFrame title="Сводка" subtitle="Финальный dashboard по продажам, эффективности и зонам риска.">
@@ -1236,7 +1255,7 @@ export default function Page() {
             </section>
 
             <section className={styles.dashboardGrid}>
-              <TrendChart days={trendDays} currencyCode={currencyCode} title={chartTitle} hint={chartHint} />
+              <TrendChart days={trendDays} currencyCode={currencyCode} title={chartTitle} hint={chartHint} emptyText={chartEmptyText} />
 
               <div className={styles.sideStack}>
                 {period === "month" ? (
@@ -1292,6 +1311,14 @@ export default function Page() {
                 )}
 
                 <div className={styles.insightGrid}>
+                  {isSelectedDayEmpty ? (
+                    <InsightCard
+                      title="Статус дня"
+                      value="День еще пустой"
+                      detail="Новых заказов за выбранный день пока нет, поэтому сводка показывает нулевой дневной срез без подмены месячными данными."
+                      tone="neutral"
+                    />
+                  ) : null}
                   <InsightCard
                     title="Средний день"
                     value={formatMoney(averageDayRevenue, currencyCode)}

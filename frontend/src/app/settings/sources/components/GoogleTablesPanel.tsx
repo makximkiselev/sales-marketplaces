@@ -34,7 +34,7 @@ export function GoogleTablesPanel({
       title={`Google Таблицы (источников: ${sources.length})`}
       description="Подключение и проверка Google Sheets"
       action={
-        <div className={styles.ymAccountActionsButtons}>
+        <div className={styles.sourcePanelActions}>
           <button className={`btn inline ${styles.ymAddAccountBtn}`} onClick={() => openGsWizard()}>
             Добавить источник
           </button>
@@ -48,7 +48,10 @@ export function GoogleTablesPanel({
     >
       <div className={styles.ymContent}>
         {!loading && sources.length === 0 ? (
-          <div className="integration-foot"><span className="muted-text">Еще нет подключенных источников.</span></div>
+          <div className={styles.sourcePlaceholderCard}>
+            <div className={styles.sourcePlaceholderTitle}>Google Sheets пока не подключены</div>
+            <div className={styles.sourcePlaceholderText}>Добавь первый источник, чтобы задать лист, включить импорт или экспорт и проверить доступность таблицы.</div>
+          </div>
         ) : (
           <>
             <div className={`${styles.ymTableWrap} ${sources.length > 7 ? styles.ymTableScrollable : ""}`}>
