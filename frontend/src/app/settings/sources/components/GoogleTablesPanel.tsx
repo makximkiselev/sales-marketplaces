@@ -29,6 +29,10 @@ export function GoogleTablesPanel({
   checkGsheetSource,
   formatDateTime,
 }: Props) {
+  const healthySources = sources.filter((source) => source.health_status === "ok").length;
+  const importEnabled = sources.filter((source) => Boolean(source.mode_import)).length;
+  const exportEnabled = sources.filter((source) => Boolean(source.mode_export)).length;
+
   return (
     <PanelCard
       title={`Google Таблицы (источников: ${sources.length})`}
@@ -47,6 +51,23 @@ export function GoogleTablesPanel({
       }
     >
       <div className={styles.ymContent}>
+        <div className={styles.sourceSummaryRow}>
+          <div className={styles.sourceSummaryCard}>
+            <div className={styles.sourceSummaryLabel}>Источники</div>
+            <div className={styles.sourceSummaryValue}>{sources.length}</div>
+            <div className={styles.sourceSummaryMeta}>Подключенные таблицы</div>
+          </div>
+          <div className={styles.sourceSummaryCard}>
+            <div className={styles.sourceSummaryLabel}>Статус</div>
+            <div className={styles.sourceSummaryValue}>{healthySources}</div>
+            <div className={styles.sourceSummaryMeta}>Проверенных и доступных таблиц</div>
+          </div>
+          <div className={styles.sourceSummaryCard}>
+            <div className={styles.sourceSummaryLabel}>Режим обмена</div>
+            <div className={styles.sourceSummaryValue}>{importEnabled}/{exportEnabled}</div>
+            <div className={styles.sourceSummaryMeta}>Импорт / экспорт по источникам</div>
+          </div>
+        </div>
         {!loading && sources.length === 0 ? (
           <div className={styles.sourcePlaceholderCard}>
             <div className={styles.sourcePlaceholderTitle}>Google Sheets пока не подключены</div>

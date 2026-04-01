@@ -76,6 +76,12 @@ export function YandexMarketPanel({
   formatDateTime,
   description,
 }: Props) {
+  const shops = accounts.flatMap((account) => account.shops || []);
+  const healthyShops = shops.filter((shop) => shop.health_status === "ok").length;
+  const errorShops = shops.filter((shop) => shop.health_status === "error").length;
+  const importEnabled = shops.filter((shop) => Boolean(shop.data_flow?.import_enabled)).length;
+  const exportEnabled = shops.filter((shop) => Boolean(shop.data_flow?.export_enabled)).length;
+
   return (
     <PanelCard
       title={`Яндекс.Маркет (аккаунтов: ${accounts.length})`}
@@ -87,6 +93,23 @@ export function YandexMarketPanel({
       }
     >
       <div className={styles.ymContent}>
+        <div className={styles.sourceSummaryRow}>
+          <div className={styles.sourceSummaryCard}>
+            <div className={styles.sourceSummaryLabel}>Кабинеты</div>
+            <div className={styles.sourceSummaryValue}>{accounts.length}</div>
+            <div className={styles.sourceSummaryMeta}>Магазинов: {shops.length}</div>
+          </div>
+          <div className={styles.sourceSummaryCard}>
+            <div className={styles.sourceSummaryLabel}>Статус</div>
+            <div className={styles.sourceSummaryValue}>{healthyShops}</div>
+            <div className={styles.sourceSummaryMeta}>{errorShops > 0 ? `Ошибок: ${errorShops}` : "Все доступные магазины в норме"}</div>
+          </div>
+          <div className={styles.sourceSummaryCard}>
+            <div className={styles.sourceSummaryLabel}>Режим обмена</div>
+            <div className={styles.sourceSummaryValue}>{importEnabled}/{exportEnabled}</div>
+            <div className={styles.sourceSummaryMeta}>Импорт / экспорт по магазинам</div>
+          </div>
+        </div>
         {accounts.length > 0 ? (
           <>
             <div className={`${styles.ymTableWrap} ${totalShops > 5 ? styles.ymTableScrollable : ""}`}>

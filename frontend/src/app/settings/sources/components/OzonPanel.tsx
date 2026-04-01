@@ -72,6 +72,11 @@ export function OzonPanel({
   formatDateTime,
   description,
 }: Props) {
+  const healthyAccounts = accounts.filter((account) => account.health_status === "ok").length;
+  const errorAccounts = accounts.filter((account) => account.health_status === "error").length;
+  const importEnabled = accounts.filter((account) => Boolean(account.data_flow?.import_enabled)).length;
+  const exportEnabled = accounts.filter((account) => Boolean(account.data_flow?.export_enabled)).length;
+
   return (
     <PanelCard
       title={`Ozon (кабинетов: ${accounts.length})`}
@@ -83,6 +88,23 @@ export function OzonPanel({
       }
     >
       <div className={styles.ymContent}>
+        <div className={styles.sourceSummaryRow}>
+          <div className={styles.sourceSummaryCard}>
+            <div className={styles.sourceSummaryLabel}>Кабинеты</div>
+            <div className={styles.sourceSummaryValue}>{accounts.length}</div>
+            <div className={styles.sourceSummaryMeta}>Ozon seller-подключения</div>
+          </div>
+          <div className={styles.sourceSummaryCard}>
+            <div className={styles.sourceSummaryLabel}>Статус</div>
+            <div className={styles.sourceSummaryValue}>{healthyAccounts}</div>
+            <div className={styles.sourceSummaryMeta}>{errorAccounts > 0 ? `Ошибок: ${errorAccounts}` : "Проверенные кабинеты доступны"}</div>
+          </div>
+          <div className={styles.sourceSummaryCard}>
+            <div className={styles.sourceSummaryLabel}>Режим обмена</div>
+            <div className={styles.sourceSummaryValue}>{importEnabled}/{exportEnabled}</div>
+            <div className={styles.sourceSummaryMeta}>Импорт / экспорт по кабинетам</div>
+          </div>
+        </div>
         {accounts.length > 0 ? (
           <>
             <div className={`${styles.ymTableWrap} ${accounts.length > 6 ? styles.ymTableScrollable : ""}`}>
