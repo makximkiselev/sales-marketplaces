@@ -167,6 +167,13 @@ type StoreComparison = {
   ordersDeltaPct: number | null;
 };
 
+type DashboardSummaryResp = {
+  ok: boolean;
+  context: ContextResp;
+  bundle: DashboardBundle;
+  storeComparison: StoreComparison[];
+};
+
 type DashboardPeriod = "today" | "yesterday" | "week" | "month" | "quarter";
 
 const PERIOD_OPTIONS: Array<{ value: DashboardPeriod; label: string }> = [
@@ -265,132 +272,6 @@ function getPreviousPeriodRange(period: DashboardPeriod) {
   const previousEnd = shiftDate(currentStart, -1);
   const previousStart = shiftDate(previousEnd, -(current.span - 1));
   return { start: toIsoDate(previousStart), end: toIsoDate(previousEnd), span: current.span };
-}
-
-function latestTimestamp(values: Array<string | undefined>) {
-  return values.filter(Boolean).sort().at(-1) || "";
-}
-
-function buildOrdersKpis(rows: OrderRow[], fallback?: OrdersResp["kpis"]) {
-  const totalRevenue = sumBy(rows, (row) => row.sale_price);
-  const totalCoinvestAmount = rows.reduce((acc, row) => {
-    const revenue = Number(row.sale_price || 0);
-    const buyerPrice = Number(row.sale_price_with_coinvest ?? row.sale_price ?? 0);
-    if (revenue <= 0) return acc;
-    return acc + Math.max(0, revenue - buyerPrice);
-  }, 0);
-  return {
-    orders_count: rows.length,
-    avg_coinvest_pct: totalRevenue > 0 ? Number(((totalCoinvestAmount / totalRevenue) * 100).toFixed(2)) : Number(fallback?.avg_coinvest_pct || 0),
-    additional_ads: Number(fallback?.additional_ads || 0),
-    operational_errors: Number(fallback?.operational_errors || 0),
-  };
-}
-
-function mergeOrdersResponses(responses: OrdersResp[]): OrdersResp {
-  const rows = responses.flatMap((response) => response.rows || []);
-  return {
-    ok: true,
-    rows,
-    total_count: rows.length,
-    date_from: responses.map((response) => response.date_from).filter(Boolean).sort().at(0),
-    date_to: responses.map((response) => response.date_to).filter(Boolean).sort().at(-1),
-    loaded_at: latestTimestamp(responses.map((response) => response.loaded_at)),
-    kpis: buildOrdersKpis(rows),
-  };
-}
-
-function mergeProblemResponses(responses: ProblemOrdersResp[]): ProblemOrdersResp {
-  const rows = responses.flatMap((response) => response.rows || []);
-  return {
-    ok: true,
-    rows,
-    total_count: rows.length,
-    date_from: responses.map((response) => response.date_from).filter(Boolean).sort().at(0),
-    date_to: responses.map((response) => response.date_to).filter(Boolean).sort().at(-1),
-    loaded_at: latestTimestamp(responses.map((response) => response.loaded_at)),
-  };
-}
-
-function mergeRetrospectiveResponses(responses: RetrospectiveResp[]): RetrospectiveResp {
-  const grouped = new Map<string, RetrospectiveRow>();
-  for (const response of responses) {
-    for (const row of response.rows || []) {
-      const key = String(row.key || row.label || row.sku || row.category_path || "").trim();
-      if (!key) continue;
-      const existing = grouped.get(key);
-      if (!existing) {
-        grouped.set(key, {
-          ...row,
-          revenue: Number(row.revenue || 0),
-          profit_amount: Number(row.profit_amount || 0),
-        });
-        continue;
-      }
-      const nextRevenue = Number(existing.revenue || 0) + Number(row.revenue || 0);
-      const nextProfit = Number(existing.profit_amount || 0) + Number(row.profit_amount || 0);
-      grouped.set(key, {
-        ...existing,
-        revenue: nextRevenue,
-        profit_amount: nextProfit,
-        profit_pct: nextRevenue > 0 ? Number(((nextProfit / nextRevenue) * 100).toFixed(2)) : null,
-      });
-    }
-  }
-  const rows = Array.from(grouped.values()).sort((a, b) => Number(b.revenue || 0) - Number(a.revenue || 0));
-  return { ok: true, rows, total_count: rows.length };
-}
-
-function mergeDataFlowResponses(responses: DataFlowResp[]): DataFlowResp {
-  const flows = responses.flatMap((response) => response.flows || []);
-  return { ok: true, flows };
-}
-
-function emptyOrdersResponse(): OrdersResp {
-  return { ok: true, rows: [], total_count: 0, kpis: { orders_count: 0, avg_coinvest_pct: 0, additional_ads: 0, operational_errors: 0 } };
-}
-
-function emptyProblemsResponse(): ProblemOrdersResp {
-  return { ok: true, rows: [], total_count: 0 };
-}
-
-function emptyRetrospectiveResponse(): RetrospectiveResp {
-  return { ok: true, rows: [], total_count: 0 };
-}
-
-function emptyDataFlowResponse(): DataFlowResp {
-  return { ok: true, flows: [] };
-}
-
-function buildStoreComparisonFromScoped(
-  stores: StoreCtx[],
-  scoped: Array<{ storeId: string; current: OrdersResp; previous: OrdersResp }>,
-) {
-  return scoped
-    .map((item) => {
-      const store = stores.find((candidate) => candidate.store_id === item.storeId);
-      const rows = item.current.rows || [];
-      const previousRows = item.previous.rows || [];
-      const revenue = sumBy(rows, (row) => row.sale_price);
-      const profit = sumBy(rows, (row) => row.profit);
-      const ordersCount = Number(item.current.kpis?.orders_count || rows.length);
-      const previousRevenue = sumBy(previousRows, (row) => row.sale_price);
-      const previousProfit = sumBy(previousRows, (row) => row.profit);
-      const previousOrdersCount = Number(item.previous.kpis?.orders_count || previousRows.length);
-      return {
-        storeId: item.storeId,
-        label: store?.label || item.storeId,
-        platformLabel: store?.platform_label || "",
-        revenue,
-        profit,
-        orders: ordersCount,
-        marginPct: revenue > 0 ? (profit / revenue) * 100 : null,
-        revenueDeltaPct: compareDelta(revenue, previousRevenue),
-        profitDeltaPct: compareDelta(profit, previousProfit),
-        ordersDeltaPct: compareDelta(ordersCount, previousOrdersCount),
-      } satisfies StoreComparison;
-    })
-    .sort((a, b) => b.revenue - a.revenue);
 }
 
 function getActiveMonth(tracking: TrackingResp | null) {
@@ -764,143 +645,17 @@ export default function Page() {
 
   useEffect(() => {
     let active = true;
-    apiGetOk<ContextResp>("/api/sales/overview/context")
-      .then((data) => {
-        if (!active) return;
-        setContext(data);
-      })
-      .catch((e) => {
-        if (!active) return;
-        setError(e instanceof Error ? e.message : String(e));
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!context) return;
-    let active = true;
-    const storesCtx = context.marketplace_stores || [];
     async function loadDashboard() {
       setLoading(true);
       setError("");
       try {
-        const previousRange = getPreviousPeriodRange(period);
-        const retrospectiveRange = overviewDateRange(period);
-        const fetchStorePrimaryDashboard = async (sid: string) => {
-          const storeQuery = `store_id=${encodeURIComponent(sid)}&`;
-          const [orders, problems, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems] = await Promise.all([
-            apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=${encodeURIComponent(period)}&page=1&page_size=1000`),
-            apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=${encodeURIComponent(period)}&page=1&page_size=500`),
-            apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=today&page=1&page_size=1000`),
-            apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=yesterday&page=1&page_size=1000`),
-            apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=today&page=1&page_size=500`),
-            apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=yesterday&page=1&page_size=500`),
-            apiGetOk<OrdersResp>(`/api/sales/overview/united-orders?${storeQuery}period=custom&date_from=${encodeURIComponent(previousRange.start)}&date_to=${encodeURIComponent(previousRange.end)}&page=1&page_size=1000`),
-            apiGetOk<ProblemOrdersResp>(`/api/sales/overview/problem-orders?${storeQuery}period=custom&date_from=${encodeURIComponent(previousRange.start)}&date_to=${encodeURIComponent(previousRange.end)}&page=1&page_size=500`),
-          ]);
-          return { orders, problems, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems };
-        };
-
-        const fetchStoreSecondaryDashboard = async (sid: string) => {
-          const storeQuery = `store_id=${encodeURIComponent(sid)}&`;
-          const [dataFlow, sku, category] = await Promise.all([
-            apiGetOk<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(sid)}`),
-            apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=sku&grain=${encodeURIComponent(retrospectiveRange.grain)}&date_mode=created&date_from=${encodeURIComponent(retrospectiveRange.dateFrom)}&date_to=${encodeURIComponent(retrospectiveRange.dateTo)}&limit=120`),
-            apiGetOk<RetrospectiveResp>(`/api/sales/overview/retrospective?${storeQuery}group_by=category&grain=${encodeURIComponent(retrospectiveRange.grain)}&date_mode=created&date_from=${encodeURIComponent(retrospectiveRange.dateFrom)}&date_to=${encodeURIComponent(retrospectiveRange.dateTo)}&limit=120`),
-          ]);
-          return { dataFlow, sku, category };
-        };
-
-        const trackingPromise = apiGetOk<TrackingResp>(`/api/sales/overview/tracking?store_id=${encodeURIComponent(storeId === "all" ? "all" : storeId)}&date_mode=created`);
-
-        let orders: OrdersResp;
-        let problems: ProblemOrdersResp;
-        let dataFlow: DataFlowResp = emptyDataFlowResponse();
-        let sku: RetrospectiveResp = emptyRetrospectiveResponse();
-        let category: RetrospectiveResp = emptyRetrospectiveResponse();
-        let today: OrdersResp;
-        let yesterday: OrdersResp;
-        let todayProblems: ProblemOrdersResp;
-        let yesterdayProblems: ProblemOrdersResp;
-        let previousOrders: OrdersResp;
-        let previousProblems: ProblemOrdersResp;
-        let comparison: StoreComparison[] = [];
-        const tracking = await trackingPromise;
-
-        if (storeId === "all") {
-          const scoped = await Promise.all(storesCtx.map((store) => fetchStorePrimaryDashboard(store.store_id)));
-          orders = mergeOrdersResponses(scoped.map((item) => item.orders));
-          problems = mergeProblemResponses(scoped.map((item) => item.problems));
-          today = mergeOrdersResponses(scoped.map((item) => item.today));
-          yesterday = mergeOrdersResponses(scoped.map((item) => item.yesterday));
-          todayProblems = mergeProblemResponses(scoped.map((item) => item.todayProblems));
-          yesterdayProblems = mergeProblemResponses(scoped.map((item) => item.yesterdayProblems));
-          previousOrders = mergeOrdersResponses(scoped.map((item) => item.previousOrders));
-          previousProblems = mergeProblemResponses(scoped.map((item) => item.previousProblems));
-          comparison = buildStoreComparisonFromScoped(
-            storesCtx,
-            scoped.map((item, index) => ({
-              storeId: storesCtx[index]?.store_id || "",
-              current: item.orders,
-              previous: item.previousOrders,
-            })),
-          );
-
-          if (!active) return;
-          setBundle({ tracking, orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems });
-          setStoreComparison(comparison);
-          setLoading(false);
-
-          const secondary = await Promise.all(storesCtx.map((store) => fetchStoreSecondaryDashboard(store.store_id)));
-          if (!active) return;
-          setBundle((prev) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              dataFlow: mergeDataFlowResponses(secondary.map((item) => item.dataFlow)),
-              sku: mergeRetrospectiveResponses(secondary.map((item) => item.sku)),
-              category: mergeRetrospectiveResponses(secondary.map((item) => item.category)),
-            };
-          });
-          return;
-        } else {
-          ({ orders, problems, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems } = await fetchStorePrimaryDashboard(storeId));
-        }
-
+        const summary = await apiGetOk<DashboardSummaryResp>(
+          `/api/sales/overview/dashboard-summary?store_id=${encodeURIComponent(storeId)}&period=${encodeURIComponent(period)}`,
+        );
         if (!active) return;
-        setBundle({ tracking, orders, problems, dataFlow, sku, category, today, yesterday, todayProblems, yesterdayProblems, previousOrders, previousProblems });
-        setStoreComparison([]);
-        setLoading(false);
-
-        const [secondary, comparisonScoped] = await Promise.all([
-          fetchStoreSecondaryDashboard(storeId),
-          Promise.all(
-            storesCtx.map(async (store) => {
-              const [current, previous] = await Promise.all([
-                apiGetOk<OrdersResp>(
-                  `/api/sales/overview/united-orders?store_id=${encodeURIComponent(store.store_id)}&period=${encodeURIComponent(period)}&page=1&page_size=1000`,
-                ),
-                apiGetOk<OrdersResp>(
-                  `/api/sales/overview/united-orders?store_id=${encodeURIComponent(store.store_id)}&period=custom&date_from=${encodeURIComponent(previousRange.start)}&date_to=${encodeURIComponent(previousRange.end)}&page=1&page_size=1000`,
-                ),
-              ]);
-              return { storeId: store.store_id, current, previous };
-            }),
-          ),
-        ]);
-        if (!active) return;
-        setBundle((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            dataFlow: secondary.dataFlow,
-            sku: secondary.sku,
-            category: secondary.category,
-          };
-        });
-        setStoreComparison(buildStoreComparisonFromScoped(storesCtx, comparisonScoped));
+        setContext(summary.context);
+        setBundle(summary.bundle);
+        setStoreComparison(summary.storeComparison || []);
       } catch (e) {
         if (!active) return;
         setError(e instanceof Error ? e.message : String(e));
@@ -912,7 +667,7 @@ export default function Page() {
     return () => {
       active = false;
     };
-  }, [context, period, storeId]);
+  }, [period, storeId]);
 
   const stores = useMemo(() => context?.marketplace_stores || [], [context]);
   const selectedStore = useMemo(() => stores.find((store) => String(store.store_id) === String(storeId)) || null, [stores, storeId]);

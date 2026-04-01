@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import asyncio
+from datetime import date, datetime, timedelta
+
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
@@ -20,6 +23,273 @@ from backend.services.yandex_united_netting_report_service import refresh_sales_
 from backend.services.store_data_model import get_pricing_store_settings, upsert_pricing_store_settings
 
 router = APIRouter()
+
+
+def _local_date_only() -> date:
+    now = datetime.now()
+    return datetime(now.year, now.month, now.day).date()
+
+
+def _to_iso_date(value: date) -> str:
+    return value.isoformat()
+
+
+def _shift_date(value: date, days: int) -> date:
+    return value + timedelta(days=days)
+
+
+def _period_span_days(period: str) -> int:
+    value = str(period or "").strip().lower()
+    if value in {"today", "yesterday"}:
+        return 1
+    if value == "week":
+        return 7
+    if value == "quarter":
+        return 90
+    return 30
+
+
+def _current_period_range(period: str) -> tuple[str, str, int]:
+    raw = str(period or "").strip().lower()
+    if raw == "yesterday":
+        day = _shift_date(_local_date_only(), -1)
+        return _to_iso_date(day), _to_iso_date(day), 1
+    if raw == "today":
+        day = _local_date_only()
+        return _to_iso_date(day), _to_iso_date(day), 1
+    end = _local_date_only()
+    span = _period_span_days(raw)
+    start = _shift_date(end, -(span - 1))
+    return _to_iso_date(start), _to_iso_date(end), span
+
+
+def _previous_period_range(period: str) -> tuple[str, str, int]:
+    current_start, _, span = _current_period_range(period)
+    start_day = datetime.fromisoformat(current_start).date()
+    previous_end = _shift_date(start_day, -1)
+    previous_start = _shift_date(previous_end, -(span - 1))
+    return _to_iso_date(previous_start), _to_iso_date(previous_end), span
+
+
+def _overview_date_range(period: str) -> tuple[str, str, str]:
+    start, end, span = _current_period_range(period)
+    grain = "day" if span <= 31 else "month"
+    return start, end, grain
+
+
+def _sum_by(rows: list[dict], key: str) -> float:
+    return sum(float(item.get(key) or 0.0) for item in rows)
+
+
+def _compare_delta(current: float, previous: float) -> float | None:
+    if not previous:
+        return None
+    return ((current - previous) / previous) * 100.0
+
+
+def _build_orders_kpis(rows: list[dict], fallback: dict | None = None) -> dict:
+    total_revenue = _sum_by(rows, "sale_price")
+    total_coinvest_amount = 0.0
+    for row in rows:
+        revenue = float(row.get("sale_price") or 0.0)
+        buyer_price = float(row.get("sale_price_with_coinvest") or row.get("sale_price") or 0.0)
+        if revenue <= 0:
+            continue
+        total_coinvest_amount += max(0.0, revenue - buyer_price)
+    return {
+        "orders_count": len(rows),
+        "avg_coinvest_pct": round((total_coinvest_amount / total_revenue * 100.0), 2) if total_revenue > 0 else float((fallback or {}).get("avg_coinvest_pct") or 0.0),
+        "additional_ads": float((fallback or {}).get("additional_ads") or 0.0),
+        "operational_errors": float((fallback or {}).get("operational_errors") or 0.0),
+    }
+
+
+def _merge_orders_responses(responses: list[dict]) -> dict:
+    rows = [row for response in responses for row in list(response.get("rows") or [])]
+    date_from_values = sorted([str(response.get("date_from") or "").strip() for response in responses if str(response.get("date_from") or "").strip()])
+    date_to_values = sorted([str(response.get("date_to") or "").strip() for response in responses if str(response.get("date_to") or "").strip()])
+    loaded_at_values = sorted([str(response.get("loaded_at") or "").strip() for response in responses if str(response.get("loaded_at") or "").strip()])
+    return {
+        "ok": True,
+        "rows": rows,
+        "total_count": len(rows),
+        "date_from": date_from_values[0] if date_from_values else "",
+        "date_to": date_to_values[-1] if date_to_values else "",
+        "loaded_at": loaded_at_values[-1] if loaded_at_values else "",
+        "kpis": _build_orders_kpis(rows),
+    }
+
+
+def _merge_problem_responses(responses: list[dict]) -> dict:
+    rows = [row for response in responses for row in list(response.get("rows") or [])]
+    date_from_values = sorted([str(response.get("date_from") or "").strip() for response in responses if str(response.get("date_from") or "").strip()])
+    date_to_values = sorted([str(response.get("date_to") or "").strip() for response in responses if str(response.get("date_to") or "").strip()])
+    loaded_at_values = sorted([str(response.get("loaded_at") or "").strip() for response in responses if str(response.get("loaded_at") or "").strip()])
+    return {
+        "ok": True,
+        "rows": rows,
+        "total_count": len(rows),
+        "date_from": date_from_values[0] if date_from_values else "",
+        "date_to": date_to_values[-1] if date_to_values else "",
+        "loaded_at": loaded_at_values[-1] if loaded_at_values else "",
+    }
+
+
+def _merge_retrospective_responses(responses: list[dict]) -> dict:
+    grouped: dict[str, dict] = {}
+    for response in responses:
+        for row in list(response.get("rows") or []):
+            key = str(row.get("key") or row.get("label") or row.get("sku") or row.get("category_path") or "").strip()
+            if not key:
+                continue
+            existing = grouped.get(key)
+            if not existing:
+                grouped[key] = {**row, "revenue": float(row.get("revenue") or 0.0), "profit_amount": float(row.get("profit_amount") or 0.0)}
+                continue
+            next_revenue = float(existing.get("revenue") or 0.0) + float(row.get("revenue") or 0.0)
+            next_profit = float(existing.get("profit_amount") or 0.0) + float(row.get("profit_amount") or 0.0)
+            existing["revenue"] = next_revenue
+            existing["profit_amount"] = next_profit
+            existing["profit_pct"] = round((next_profit / next_revenue * 100.0), 2) if next_revenue > 0 else None
+    rows = sorted(grouped.values(), key=lambda item: float(item.get("revenue") or 0.0), reverse=True)
+    return {"ok": True, "rows": rows, "total_count": len(rows)}
+
+
+def _merge_data_flow_responses(responses: list[dict]) -> dict:
+    flows = [flow for response in responses for flow in list(response.get("flows") or [])]
+    return {"ok": True, "flows": flows}
+
+
+def _build_store_comparison(
+    stores: list[dict],
+    scoped: list[dict],
+) -> list[dict]:
+    by_store_id = {str(store.get("store_id") or "").strip(): store for store in stores}
+    rows: list[dict] = []
+    for item in scoped:
+        store_id = str(item.get("storeId") or "").strip()
+        store = by_store_id.get(store_id) or {}
+        current = item.get("current") or {}
+        previous = item.get("previous") or {}
+        current_rows = list(current.get("rows") or [])
+        previous_rows = list(previous.get("rows") or [])
+        revenue = _sum_by(current_rows, "sale_price")
+        profit = _sum_by(current_rows, "profit")
+        orders_count = int((current.get("kpis") or {}).get("orders_count") or len(current_rows))
+        previous_revenue = _sum_by(previous_rows, "sale_price")
+        previous_profit = _sum_by(previous_rows, "profit")
+        previous_orders_count = int((previous.get("kpis") or {}).get("orders_count") or len(previous_rows))
+        rows.append(
+            {
+                "storeId": store_id,
+                "label": str(store.get("label") or store_id).strip(),
+                "platformLabel": str(store.get("platform_label") or "").strip(),
+                "revenue": revenue,
+                "profit": profit,
+                "orders": orders_count,
+                "marginPct": (profit / revenue * 100.0) if revenue > 0 else None,
+                "revenueDeltaPct": _compare_delta(revenue, previous_revenue),
+                "profitDeltaPct": _compare_delta(profit, previous_profit),
+                "ordersDeltaPct": _compare_delta(float(orders_count), float(previous_orders_count)),
+            }
+        )
+    return sorted(rows, key=lambda item: float(item.get("revenue") or 0.0), reverse=True)
+
+
+async def _fetch_primary_store_dashboard(*, store_id: str, period: str, previous_start: str, previous_end: str) -> dict:
+    store_query = str(store_id or "").strip()
+    today_orders_task = get_sales_overview_history(page=1, page_size=1000, store_id=store_query, period="today")
+    yesterday_orders_task = get_sales_overview_history(page=1, page_size=1000, store_id=store_query, period="yesterday")
+    today_problems_task = get_sales_overview_problem_orders(page=1, page_size=500, store_id=store_query, period="today")
+    yesterday_problems_task = get_sales_overview_problem_orders(page=1, page_size=500, store_id=store_query, period="yesterday")
+
+    current_period = str(period or "").strip().lower()
+    if current_period == "today":
+        today, yesterday, today_problems, yesterday_problems = await asyncio.gather(
+            today_orders_task,
+            yesterday_orders_task,
+            today_problems_task,
+            yesterday_problems_task,
+        )
+        return {
+            "orders": today,
+            "problems": today_problems,
+            "today": today,
+            "yesterday": yesterday,
+            "todayProblems": today_problems,
+            "yesterdayProblems": yesterday_problems,
+            "previousOrders": yesterday,
+            "previousProblems": yesterday_problems,
+        }
+
+    current_orders_task = get_sales_overview_history(page=1, page_size=1000, store_id=store_query, period=current_period)
+    current_problems_task = get_sales_overview_problem_orders(page=1, page_size=500, store_id=store_query, period=current_period)
+    previous_orders_task = get_sales_overview_history(
+        page=1,
+        page_size=1000,
+        store_id=store_query,
+        period="custom",
+        date_from=previous_start,
+        date_to=previous_end,
+    )
+    previous_problems_task = get_sales_overview_problem_orders(
+        page=1,
+        page_size=500,
+        store_id=store_query,
+        period="custom",
+        date_from=previous_start,
+        date_to=previous_end,
+    )
+    current, current_problems, today, yesterday, today_problems, yesterday_problems, previous_orders, previous_problems = await asyncio.gather(
+        current_orders_task,
+        current_problems_task,
+        today_orders_task,
+        yesterday_orders_task,
+        today_problems_task,
+        yesterday_problems_task,
+        previous_orders_task,
+        previous_problems_task,
+    )
+    if current_period == "yesterday":
+        current = yesterday
+        current_problems = yesterday_problems
+    return {
+        "orders": current,
+        "problems": current_problems,
+        "today": today,
+        "yesterday": yesterday,
+        "todayProblems": today_problems,
+        "yesterdayProblems": yesterday_problems,
+        "previousOrders": previous_orders,
+        "previousProblems": previous_problems,
+    }
+
+
+async def _fetch_secondary_store_dashboard(*, store_id: str, period: str) -> dict:
+    date_from, date_to, grain = _overview_date_range(period)
+    store_query = str(store_id or "").strip()
+    data_flow, sku, category = await asyncio.gather(
+        asyncio.to_thread(get_sales_overview_data_flow_status, store_id=store_query),
+        get_sales_overview_retrospective(
+            store_id=store_query,
+            group_by="sku",
+            grain=grain,
+            date_mode="created",
+            date_from=date_from,
+            date_to=date_to,
+            limit=120,
+        ),
+        get_sales_overview_retrospective(
+            store_id=store_query,
+            group_by="category",
+            grain=grain,
+            date_mode="created",
+            date_from=date_from,
+            date_to=date_to,
+            limit=120,
+        ),
+    )
+    return {"dataFlow": data_flow, "sku": sku, "category": category}
 
 
 @router.get("/api/sales/overview/context")
@@ -117,6 +387,120 @@ async def sales_overview_retrospective(
         )
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось получить ретроспективу продаж: {exc}"}, status_code=500)
+
+
+@router.get("/api/sales/overview/dashboard-summary")
+async def sales_overview_dashboard_summary(
+    store_id: str = "all",
+    period: str = "today",
+):
+    try:
+        context = get_sales_overview_context()
+        stores = list(context.get("marketplace_stores") or [])
+        selected_stores = [store for store in stores if str(store.get("store_id") or "").strip()]
+        selected_store_id = str(store_id or "all").strip() or "all"
+        previous_start, previous_end, _ = _previous_period_range(period)
+        tracking = await get_sales_overview_tracking(store_id=selected_store_id, date_mode="created")
+
+        if selected_store_id == "all":
+            primary_scoped = await asyncio.gather(
+                *[
+                    _fetch_primary_store_dashboard(
+                        store_id=str(store.get("store_id") or "").strip(),
+                        period=period,
+                        previous_start=previous_start,
+                        previous_end=previous_end,
+                    )
+                    for store in selected_stores
+                ]
+            )
+            bundle = {
+                "tracking": tracking,
+                "orders": _merge_orders_responses([item["orders"] for item in primary_scoped]),
+                "problems": _merge_problem_responses([item["problems"] for item in primary_scoped]),
+                "dataFlow": {"ok": True, "flows": []},
+                "sku": {"ok": True, "rows": [], "total_count": 0},
+                "category": {"ok": True, "rows": [], "total_count": 0},
+                "today": _merge_orders_responses([item["today"] for item in primary_scoped]),
+                "yesterday": _merge_orders_responses([item["yesterday"] for item in primary_scoped]),
+                "todayProblems": _merge_problem_responses([item["todayProblems"] for item in primary_scoped]),
+                "yesterdayProblems": _merge_problem_responses([item["yesterdayProblems"] for item in primary_scoped]),
+                "previousOrders": _merge_orders_responses([item["previousOrders"] for item in primary_scoped]),
+                "previousProblems": _merge_problem_responses([item["previousProblems"] for item in primary_scoped]),
+            }
+            comparison = _build_store_comparison(
+                selected_stores,
+                [
+                    {
+                        "storeId": str(store.get("store_id") or "").strip(),
+                        "current": item["orders"],
+                        "previous": item["previousOrders"],
+                    }
+                    for store, item in zip(selected_stores, primary_scoped)
+                ],
+            )
+            secondary_scoped = await asyncio.gather(
+                *[
+                    _fetch_secondary_store_dashboard(store_id=str(store.get("store_id") or "").strip(), period=period)
+                    for store in selected_stores
+                ]
+            )
+            bundle["dataFlow"] = _merge_data_flow_responses([item["dataFlow"] for item in secondary_scoped])
+            bundle["sku"] = _merge_retrospective_responses([item["sku"] for item in secondary_scoped])
+            bundle["category"] = _merge_retrospective_responses([item["category"] for item in secondary_scoped])
+            return {"ok": True, "context": context, "bundle": bundle, "storeComparison": comparison}
+
+        primary = await _fetch_primary_store_dashboard(
+            store_id=selected_store_id,
+            period=period,
+            previous_start=previous_start,
+            previous_end=previous_end,
+        )
+        bundle = {
+            "tracking": tracking,
+            "orders": primary["orders"],
+            "problems": primary["problems"],
+            "dataFlow": {"ok": True, "flows": []},
+            "sku": {"ok": True, "rows": [], "total_count": 0},
+            "category": {"ok": True, "rows": [], "total_count": 0},
+            "today": primary["today"],
+            "yesterday": primary["yesterday"],
+            "todayProblems": primary["todayProblems"],
+            "yesterdayProblems": primary["yesterdayProblems"],
+            "previousOrders": primary["previousOrders"],
+            "previousProblems": primary["previousProblems"],
+        }
+        secondary, comparison_scoped = await asyncio.gather(
+            _fetch_secondary_store_dashboard(store_id=selected_store_id, period=period),
+            asyncio.gather(
+                *[
+                    _fetch_primary_store_dashboard(
+                        store_id=str(store.get("store_id") or "").strip(),
+                        period=period,
+                        previous_start=previous_start,
+                        previous_end=previous_end,
+                    )
+                    for store in selected_stores
+                ]
+            ),
+        )
+        bundle["dataFlow"] = secondary["dataFlow"]
+        bundle["sku"] = secondary["sku"]
+        bundle["category"] = secondary["category"]
+        comparison = _build_store_comparison(
+            selected_stores,
+            [
+                {
+                    "storeId": str(store.get("store_id") or "").strip(),
+                    "current": item["orders"],
+                    "previous": item["previousOrders"],
+                }
+                for store, item in zip(selected_stores, comparison_scoped)
+            ],
+        )
+        return {"ok": True, "context": context, "bundle": bundle, "storeComparison": comparison}
+    except Exception as exc:
+        return JSONResponse({"ok": False, "message": f"Не удалось собрать сводку dashboard: {exc}"}, status_code=500)
 
 
 @router.post("/api/sales/overview/united-orders/refresh")
