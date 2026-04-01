@@ -127,7 +127,7 @@ async def _run_startup_refreshes() -> None:
         except Exception:
             pass
     try:
-        schedule_sales_overview_dashboard_cache_warm()
+        await asyncio.to_thread(schedule_sales_overview_dashboard_cache_warm)
     except Exception:
         pass
 
