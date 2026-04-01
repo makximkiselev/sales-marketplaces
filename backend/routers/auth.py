@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
 
@@ -16,6 +18,7 @@ from backend.services.auth_service import (
 
 
 router = APIRouter()
+logger = logging.getLogger("uvicorn.error")
 
 
 def _cookie_secure(request: Request) -> bool:
@@ -52,6 +55,7 @@ async def auth_me(request: Request):
 
 @router.post("/api/auth/login")
 async def auth_login(request: Request, response: Response):
+    logger.warning("[auth] login request received")
     try:
         payload = await request.json()
     except Exception:
@@ -62,12 +66,15 @@ async def auth_login(request: Request, response: Response):
     if not identifier or not password:
         return JSONResponse({"ok": False, "message": "identifier и password обязательны"}, status_code=400)
     try:
+        logger.warning("[auth] authenticating identifier=%s", identifier)
         user = authenticate_user(identifier=identifier, password=password)
+        logger.warning("[auth] authenticated identifier=%s user_id=%s", identifier, user.get("user_id"))
         session_token, expires_at = create_session_for_user(
             user_id=user["user_id"],
             user_agent=str(request.headers.get("user-agent") or "")[:500],
             ip_address=_client_ip(request),
         )
+        logger.warning("[auth] session created identifier=%s", identifier)
     except ValueError as exc:
         return JSONResponse({"ok": False, "message": str(exc)}, status_code=400)
     response.set_cookie(
@@ -79,6 +86,7 @@ async def auth_login(request: Request, response: Response):
         max_age=60 * 60 * 24 * 30,
         path="/",
     )
+    logger.warning("[auth] login response ready identifier=%s", identifier)
     return {"ok": True, "user": user, "expires_at": expires_at}
 
 
