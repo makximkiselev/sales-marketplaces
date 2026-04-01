@@ -5,6 +5,7 @@ import hmac
 import os
 import secrets
 import sqlite3
+import threading
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from uuid import uuid4
@@ -18,6 +19,8 @@ AUTH_HINT_COOKIE_NAME = "daweb_has_session"
 AUTH_SESSION_DAYS = int(str(os.getenv("AUTH_SESSION_DAYS") or "30").strip() or "30")
 PBKDF2_ROUNDS = int(str(os.getenv("AUTH_PBKDF2_ROUNDS") or "240000").strip() or "240000")
 AUTH_LAST_SEEN_UPDATE_SECONDS = int(str(os.getenv("AUTH_LAST_SEEN_UPDATE_SECONDS") or "300").strip() or "300")
+_SYSTEM_CONN_LOCK = threading.RLock()
+_SYSTEM_CONN = None
 
 
 def _now() -> datetime:
@@ -44,6 +47,51 @@ def _connect_system():
         return psycopg.connect(SYSTEM_DATABASE_URL, row_factory=dict_row)
     conn = sqlite3.connect(str(SYSTEM_DB_PATH))  # pragma: no cover
     return apply_sqlite_pragmas(conn, history=False)  # pragma: no cover
+
+
+def _get_shared_system_conn():
+    global _SYSTEM_CONN
+    if not is_postgres_backend():
+        return _connect_system()
+    with _SYSTEM_CONN_LOCK:
+        conn = _SYSTEM_CONN
+        if conn is not None and not getattr(conn, "closed", False):
+            return conn
+        try:
+            import psycopg
+            from psycopg.rows import dict_row
+        except Exception as exc:
+            raise RuntimeError("Для PostgreSQL backend требуется psycopg[binary]") from exc
+        if not SYSTEM_DATABASE_URL:
+            raise RuntimeError("APP_SYSTEM_DATABASE_URL/SYSTEM_DATABASE_URL не задан для auth")
+        _SYSTEM_CONN = psycopg.connect(SYSTEM_DATABASE_URL, row_factory=dict_row)
+        return _SYSTEM_CONN
+
+
+def _reset_shared_system_conn() -> None:
+    global _SYSTEM_CONN
+    with _SYSTEM_CONN_LOCK:
+        conn = _SYSTEM_CONN
+        _SYSTEM_CONN = None
+        if conn is None:
+            return
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def _with_system_conn(fn):
+    if not is_postgres_backend():
+        with _connect_system() as conn:
+            return fn(conn)
+    with _SYSTEM_CONN_LOCK:
+        conn = _get_shared_system_conn()
+        try:
+            return fn(conn)
+        except Exception:
+            _reset_shared_system_conn()
+            raise
 
 
 def _row_value(row: Any, key: str, idx: int | None = None) -> Any:
@@ -120,7 +168,7 @@ def create_or_update_user(
     shown = str(display_name or ident).strip() or ident
     user_role = str(role or "viewer").strip() or "viewer"
     _init_system_store_tables()
-    with _connect_system() as conn:
+    def _op(conn):
         conn.execute(
             f"""
             INSERT INTO app_users (user_id, identifier, display_name, password_hash, role, is_active, created_at, updated_at)
@@ -139,12 +187,13 @@ def create_or_update_user(
             (ident,),
         ).fetchone()
         conn.commit()
-    return _public_user(row)
+        return _public_user(row)
+    return _with_system_conn(_op)
 
 
 def list_users() -> list[dict[str, Any]]:
     _init_system_store_tables()
-    with _connect_system() as conn:
+    def _op(conn):
         rows = conn.execute(
             """
             SELECT user_id, identifier, display_name, password_hash, role, is_active, created_at, updated_at
@@ -152,6 +201,8 @@ def list_users() -> list[dict[str, Any]]:
             ORDER BY created_at ASC, identifier ASC
             """
         ).fetchall()
+        return rows
+    rows = _with_system_conn(_op)
     return [
         {
             **_public_user(row),
@@ -174,7 +225,7 @@ def update_user(
     if not uid:
         raise ValueError("user_id обязателен")
     _init_system_store_tables()
-    with _connect_system() as conn:
+    def _op(conn):
         row = conn.execute(
             f"SELECT user_id, identifier, display_name, password_hash, role, is_active, created_at, updated_at FROM app_users WHERE user_id = {_ph()}",
             (uid,),
@@ -205,11 +256,12 @@ def update_user(
             (uid,),
         ).fetchone()
         conn.commit()
-    return {
-        **_public_user(updated),
-        "created_at": str(_row_value(updated, "created_at", 6) or "").strip(),
-        "updated_at": str(_row_value(updated, "updated_at", 7) or "").strip(),
-    }
+        return {
+            **_public_user(updated),
+            "created_at": str(_row_value(updated, "created_at", 6) or "").strip(),
+            "updated_at": str(_row_value(updated, "updated_at", 7) or "").strip(),
+        }
+    return _with_system_conn(_op)
 
 
 def delete_user(*, user_id: str) -> None:
@@ -217,7 +269,7 @@ def delete_user(*, user_id: str) -> None:
     if not uid:
         raise ValueError("user_id обязателен")
     _init_system_store_tables()
-    with _connect_system() as conn:
+    def _op(conn):
         row = conn.execute(
             f"SELECT user_id, role FROM app_users WHERE user_id = {_ph()}",
             (uid,),
@@ -245,6 +297,7 @@ def delete_user(*, user_id: str) -> None:
             (uid,),
         )
         conn.commit()
+    _with_system_conn(_op)
 
 
 def authenticate_user(*, identifier: str, password: str) -> dict[str, Any]:
@@ -252,11 +305,12 @@ def authenticate_user(*, identifier: str, password: str) -> dict[str, Any]:
     if not ident:
         raise ValueError("Логин обязателен")
     _init_system_store_tables()
-    with _connect_system() as conn:
-        row = conn.execute(
+    def _op(conn):
+        return conn.execute(
             f"SELECT user_id, identifier, display_name, password_hash, role, is_active FROM app_users WHERE identifier = {_ph()}",
             (ident,),
         ).fetchone()
+    row = _with_system_conn(_op)
     if not row:
         raise ValueError("Неверный логин или пароль")
     if not bool(int(_row_value(row, "is_active", 5) or 0)):
@@ -275,7 +329,7 @@ def create_session_for_user(*, user_id: str, user_agent: str = "", ip_address: s
     now_iso = _now_iso()
     session_expires_at = (_now() + timedelta(days=max(1, AUTH_SESSION_DAYS))).isoformat()
     _init_system_store_tables()
-    with _connect_system() as conn:
+    def _op(conn):
         conn.execute(
             f"""
             INSERT INTO app_sessions (
@@ -296,7 +350,8 @@ def create_session_for_user(*, user_id: str, user_agent: str = "", ip_address: s
             ),
         )
         conn.commit()
-    return raw_session_token, session_expires_at
+        return raw_session_token, session_expires_at
+    return _with_system_conn(_op)
 
 
 def get_user_by_session_token(session_token: str | None) -> dict[str, Any] | None:
@@ -305,7 +360,7 @@ def get_user_by_session_token(session_token: str | None) -> dict[str, Any] | Non
         return None
     now_iso = _now_iso()
     _init_system_store_tables()
-    with _connect_system() as conn:
+    def _op(conn):
         row = conn.execute(
             f"""
             SELECT
@@ -349,7 +404,8 @@ def get_user_by_session_token(session_token: str | None) -> dict[str, Any] | Non
                 (now_iso, now_iso, str(_row_value(row, "session_id", 0) or "").strip()),
             )
             conn.commit()
-    return _public_user(row)
+        return _public_user(row)
+    return _with_system_conn(_op)
 
 
 def revoke_session(session_token: str | None) -> None:
@@ -358,9 +414,10 @@ def revoke_session(session_token: str | None) -> None:
         return
     now_iso = _now_iso()
     _init_system_store_tables()
-    with _connect_system() as conn:
+    def _op(conn):
         conn.execute(
             f"UPDATE app_sessions SET revoked_at = {_ph()}, updated_at = {_ph()} WHERE token_hash = {_ph()}",
             (now_iso, now_iso, _hash_token(token)),
         )
         conn.commit()
+    _with_system_conn(_op)
