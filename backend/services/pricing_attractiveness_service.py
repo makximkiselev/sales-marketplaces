@@ -25,13 +25,16 @@ from backend.services.pricing_prices_service import (
     refresh_prices_data,
 )
 from backend.services.store_data_model import (
+    clear_pricing_attractiveness_recommendations_for_store,
     get_fx_rates_cache,
+    get_pricing_attractiveness_recommendations_map,
     get_pricing_attractiveness_results_map,
     get_pricing_promo_offer_results_map,
     get_pricing_promo_results_map,
     get_pricing_price_results_map,
     get_pricing_strategy_iteration_latest_map,
     get_pricing_strategy_results_map,
+    upsert_pricing_attractiveness_recommendations_raw_bulk,
     upsert_pricing_attractiveness_results_bulk,
 )
 from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
@@ -683,6 +686,53 @@ async def _fetch_yandex_offer_recommendations_map(
     return out, debug_calls
 
 
+async def refresh_yandex_attractiveness_recommendations_for_store(
+    *,
+    store_uid: str,
+    store_id: str,
+    skus: list[str],
+) -> dict[str, Any]:
+    suid = str(store_uid or "").strip()
+    sid = str(store_id or "").strip()
+    sku_list = [str(sku or "").strip() for sku in skus if str(sku or "").strip()]
+    if not suid or not sid or not sku_list:
+        return {"ok": False, "reason": "empty_store_or_skus", "count": 0}
+    creds = _find_yandex_shop_credentials(sid)
+    if not creds:
+        clear_pricing_attractiveness_recommendations_for_store(store_uid=suid)
+        return {"ok": False, "reason": "credentials_not_found", "count": 0}
+    bid, cid, api_key = creds
+    ym_map, ym_debug = await _fetch_yandex_offer_recommendations_map(
+        business_id=bid,
+        campaign_id=cid,
+        api_key=api_key,
+        offer_ids=sku_list,
+    )
+    if _has_terminal_yandex_403(ym_debug):
+        return {
+            "ok": False,
+            "reason": "yandex_recommendations_403_forbidden",
+            "count": 0,
+            "debug": ym_debug,
+        }
+    prepared_rows = [
+        {
+            "store_uid": suid,
+            "sku": sku,
+            "attractiveness_overpriced_price": values.get("attractiveness_overpriced_price"),
+            "attractiveness_moderate_price": values.get("attractiveness_moderate_price"),
+            "attractiveness_profitable_price": values.get("attractiveness_profitable_price"),
+            "payload": values.get("payload") or {},
+            "source_updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+        for sku, values in ym_map.items()
+        if isinstance(values, dict)
+    ]
+    clear_pricing_attractiveness_recommendations_for_store(store_uid=suid)
+    count = upsert_pricing_attractiveness_recommendations_raw_bulk(rows=prepared_rows)
+    return {"ok": True, "count": count, "debug": ym_debug}
+
+
 def _has_terminal_yandex_403(debug_calls: list[dict[str, Any]] | None) -> bool:
     calls = debug_calls if isinstance(debug_calls, list) else []
     if not calls:
@@ -748,6 +798,7 @@ async def get_attractiveness_overview(
     page_size: int = 50,
     fetch_live: bool = False,
     force_full_live: bool = False,
+    materialize: bool = False,
 ):
     status_filter_norm = str(status_filter or "all").strip().lower()
     if status_filter_norm not in {"all", "profitable", "moderate", "overpriced"}:
@@ -949,12 +1000,12 @@ async def get_attractiveness_overview(
             }
         row["iteration_scenarios_by_store"] = iteration_scenarios_by_store
 
-    ym_map_by_store_uid: dict[str, dict[str, dict]] = {}
     ym_debug_by_store_uid: dict[str, list[dict[str, Any]]] = {}
     oz_map_by_store_uid: dict[str, dict[str, dict]] = {}
     # Existing materialized values: used in DB-only mode and as fallback in live refresh
     # to avoid wiping previously known competitor prices with NULL.
     attr_db_map = get_pricing_attractiveness_results_map(store_uids=store_uids, skus=skus)
+    ym_raw_map = get_pricing_attractiveness_recommendations_map(store_uids=store_uids, skus=skus)
     promo_summary_map = get_pricing_promo_results_map(store_uids=store_uids, skus=skus)
     promo_offer_map = get_pricing_promo_offer_results_map(store_uids=store_uids, skus=skus)
 
@@ -965,38 +1016,11 @@ async def get_attractiveness_overview(
         if not suid or not sid:
             continue
 
+        if platform_id == "yandex_market":
+            ym_debug_by_store_uid[suid] = [{"ok": True, "source": "materialized_recommendations"}]
         if not fetch_live:
-            ym_map_by_store_uid[suid] = {}
-            ym_debug_by_store_uid[suid] = [{"ok": True, "source": "db_only_mode"}]
             oz_map_by_store_uid[suid] = {}
             continue
-
-        if platform_id == "yandex_market":
-            creds = _find_yandex_shop_credentials(sid)
-            if creds:
-                bid, cid, api_key = creds
-                try:
-                    ym_map, ym_debug = await _fetch_yandex_offer_recommendations_map(
-                        business_id=bid,
-                        campaign_id=cid,
-                        api_key=api_key,
-                        offer_ids=skus,
-                    )
-                    ym_map_by_store_uid[suid] = ym_map
-                    ym_debug_by_store_uid[suid] = ym_debug
-                except Exception:
-                    ym_map_by_store_uid[suid] = {}
-                    ym_debug_by_store_uid[suid] = [
-                        {
-                            "ok": False,
-                            "business_id": bid,
-                            "campaign_id": cid,
-                            "error": "fetch_wrapper_failed",
-                        }
-                    ]
-            else:
-                ym_map_by_store_uid[suid] = {}
-                ym_debug_by_store_uid[suid] = [{"ok": False, "error": "credentials_not_found"}]
 
         if platform_id == "ozon":
             creds = _find_ozon_account_credentials(sid)
@@ -1104,7 +1128,7 @@ async def get_attractiveness_overview(
                     metric["attractiveness_chosen_boost_bid_percent"] = db_attr.get("attractiveness_chosen_boost_bid_percent")
                     chosen_boost_bid_map[suid] = db_attr.get("attractiveness_chosen_boost_bid_percent")
             elif platform_id == "yandex_market":
-                ym = (ym_map_by_store_uid.get(suid) or {}).get(sku) or {}
+                ym = (ym_raw_map.get(suid) or {}).get(sku) or {}
                 metric["attractiveness_overpriced_price"] = ym.get("attractiveness_overpriced_price")
                 metric["attractiveness_moderate_price"] = ym.get("attractiveness_moderate_price")
                 metric["attractiveness_profitable_price"] = ym.get("attractiveness_profitable_price")
@@ -1248,7 +1272,7 @@ async def get_attractiveness_overview(
                 chosen_boost_bid_map[suid] = metric.get("attractiveness_chosen_boost_bid_percent")
             attr_by_store[suid] = metric
             pm = (row.get("price_metrics_by_store") or {}).get(suid) if isinstance(row.get("price_metrics_by_store"), dict) else {}
-            if fetch_live:
+            if fetch_live or materialize:
                 materialized_rows.append(
                     {
                         "store_uid": suid,
@@ -1305,7 +1329,7 @@ async def get_attractiveness_overview(
         row["status_by_store"] = status_by_store
         rows_with_status.append(row)
 
-    if fetch_live:
+    if fetch_live or materialize:
         try:
             if materialized_rows:
                 upsert_pricing_attractiveness_results_bulk(rows=materialized_rows)
@@ -1387,6 +1411,31 @@ async def refresh_attractiveness_data(*, refresh_base: bool = True, store_uids: 
         store_id = str(store.get("store_id") or "").strip()
         store_uid = str(store.get("store_uid") or "").strip()
         try:
+            base = await get_prices_overview_full(
+                scope="store",
+                platform="yandex_market",
+                store_id=store_id,
+                tree_mode="marketplaces",
+                tree_source_store_id=store_id,
+                stock_filter="all",
+                force_refresh=False,
+            )
+            rows_all = base.get("rows") if isinstance(base, dict) and isinstance(base.get("rows"), list) else []
+            skus = [str(row.get("sku") or "").strip() for row in rows_all if str(row.get("sku") or "").strip()]
+            fetch_result = await refresh_yandex_attractiveness_recommendations_for_store(
+                store_uid=store_uid,
+                store_id=store_id,
+                skus=skus,
+            )
+            if not fetch_result.get("ok"):
+                return {
+                    "ok": False,
+                    "store_uid": store_uid,
+                    "store_id": store_id,
+                    "reason": str(fetch_result.get("reason") or "recommendations_refresh_failed"),
+                    "total": len(skus),
+                    "processed": 0,
+                }
             resp = await get_attractiveness_overview(
                 scope="store",
                 platform="yandex_market",
@@ -1395,21 +1444,10 @@ async def refresh_attractiveness_data(*, refresh_base: bool = True, store_uids: 
                 tree_source_store_id=store_id,
                 page=1,
                 page_size=200,
-                fetch_live=True,
-                force_full_live=True,
+                fetch_live=False,
+                materialize=True,
             )
             local_total = int(resp.get("total_count") or 0)
-            debug_live = resp.get("debug_yandex_recommendations") if isinstance(resp, dict) else {}
-            store_debug = debug_live.get(store_uid) if isinstance(debug_live, dict) else []
-            if _has_terminal_yandex_403(store_debug):
-                return {
-                    "ok": False,
-                    "store_uid": store_uid,
-                    "store_id": store_id,
-                    "reason": "yandex_recommendations_403_forbidden",
-                    "total": local_total,
-                    "processed": 0,
-                }
             return {"ok": True, "store_uid": store_uid, "store_id": store_id, "total": local_total, "processed": local_total}
         except Exception as exc:
             return {"ok": False, "store_uid": store_uid, "store_id": store_id, "reason": str(exc)}

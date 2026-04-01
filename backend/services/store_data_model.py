@@ -2429,6 +2429,24 @@ def _init_store_data_model_sqlite_strategy_tables(conn: sqlite3.Connection) -> N
 def _init_store_data_model_sqlite_attractiveness_promo_tables(conn: sqlite3.Connection) -> None:
     conn.execute(
         """
+        CREATE TABLE IF NOT EXISTS pricing_attractiveness_recommendations_raw (
+            store_uid TEXT NOT NULL,
+            sku TEXT NOT NULL,
+            attractiveness_overpriced_price REAL NULL,
+            attractiveness_moderate_price REAL NULL,
+            attractiveness_profitable_price REAL NULL,
+            payload_json TEXT NOT NULL DEFAULT '{}',
+            source_updated_at TEXT NULL,
+            loaded_at TEXT NOT NULL,
+            PRIMARY KEY (store_uid, sku),
+            FOREIGN KEY (store_uid) REFERENCES stores(store_uid) ON DELETE CASCADE
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_attr_recommendations_raw_store ON pricing_attractiveness_recommendations_raw(store_uid)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_pricing_attr_recommendations_raw_sku ON pricing_attractiveness_recommendations_raw(sku)")
+    conn.execute(
+        """
         CREATE TABLE IF NOT EXISTS pricing_attractiveness_results (
             store_uid TEXT NOT NULL,
             sku TEXT NOT NULL,
@@ -5220,6 +5238,61 @@ def upsert_pricing_attractiveness_results_bulk(*, rows: list[dict[str, Any]]) ->
         conn.commit()
     return len(prepared)
 
+
+def upsert_pricing_attractiveness_recommendations_raw_bulk(*, rows: list[dict[str, Any]]) -> int:
+    init_store_data_model()
+    if not rows:
+        return 0
+    now = _now_iso()
+    prepared: list[tuple[Any, ...]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        suid = str(row.get("store_uid") or "").strip()
+        sku = str(row.get("sku") or "").strip()
+        if not suid or not sku:
+            continue
+        prepared.append(
+            (
+                suid,
+                sku,
+                row.get("attractiveness_overpriced_price"),
+                row.get("attractiveness_moderate_price"),
+                row.get("attractiveness_profitable_price"),
+                json.dumps(row.get("payload") or {}, ensure_ascii=False, default=str),
+                row.get("source_updated_at"),
+                now,
+            )
+        )
+    if not prepared:
+        return 0
+    values_sql = _placeholders(8)
+    with _connect() as conn:
+        _executemany(
+            conn,
+            f"""
+            INSERT INTO pricing_attractiveness_recommendations_raw (
+                store_uid, sku,
+                attractiveness_overpriced_price,
+                attractiveness_moderate_price,
+                attractiveness_profitable_price,
+                payload_json,
+                source_updated_at,
+                loaded_at
+            ) VALUES ({values_sql})
+            ON CONFLICT(store_uid, sku) DO UPDATE SET
+                attractiveness_overpriced_price = excluded.attractiveness_overpriced_price,
+                attractiveness_moderate_price = excluded.attractiveness_moderate_price,
+                attractiveness_profitable_price = excluded.attractiveness_profitable_price,
+                payload_json = excluded.payload_json,
+                source_updated_at = excluded.source_updated_at,
+                loaded_at = excluded.loaded_at
+            """,
+            prepared,
+        )
+        conn.commit()
+    return len(prepared)
+
 def get_pricing_attractiveness_results_map(*, store_uids: list[str], skus: list[str]) -> dict[str, dict[str, dict[str, Any]]]:
     init_store_data_model()
     suids = [str(x or "").strip() for x in store_uids if str(x or "").strip()]
@@ -5253,6 +5326,41 @@ def get_pricing_attractiveness_results_map(*, store_uids: list[str], skus: list[
     return out
 
 
+def get_pricing_attractiveness_recommendations_map(*, store_uids: list[str], skus: list[str]) -> dict[str, dict[str, dict[str, Any]]]:
+    init_store_data_model()
+    suids = [str(x or "").strip() for x in store_uids if str(x or "").strip()]
+    sku_list = [str(x or "").strip() for x in skus if str(x or "").strip()]
+    if not suids or not sku_list:
+        return {suid: {} for suid in suids}
+    out: dict[str, dict[str, dict[str, Any]]] = {suid: {} for suid in suids}
+    with _connect() as conn:
+        suid_placeholders = _placeholders(len(suids))
+        sku_placeholders = _placeholders(len(sku_list))
+        rows = conn.execute(
+            f"""
+            SELECT store_uid, sku,
+                   attractiveness_overpriced_price,
+                   attractiveness_moderate_price,
+                   attractiveness_profitable_price,
+                   payload_json,
+                   source_updated_at,
+                   loaded_at
+            FROM pricing_attractiveness_recommendations_raw
+            WHERE store_uid IN ({suid_placeholders}) AND sku IN ({sku_placeholders})
+            """,
+            [*suids, *sku_list],
+        ).fetchall()
+        for row in rows:
+            item = dict(row)
+            try:
+                item["payload"] = json.loads(item.get("payload_json") or "{}")
+            except Exception:
+                item["payload"] = {}
+            suid = str(row["store_uid"])
+            out.setdefault(suid, {})[str(row["sku"])] = item
+    return out
+
+
 def clear_pricing_attractiveness_results_for_store(*, store_uid: str) -> None:
     init_store_data_model()
     suid = str(store_uid or "").strip()
@@ -5261,6 +5369,19 @@ def clear_pricing_attractiveness_results_for_store(*, store_uid: str) -> None:
     with _connect() as conn:
         conn.execute(
             f"DELETE FROM pricing_attractiveness_results WHERE store_uid = {'%s' if is_postgres_backend() else '?'}",
+            (suid,),
+        )
+        conn.commit()
+
+
+def clear_pricing_attractiveness_recommendations_for_store(*, store_uid: str) -> None:
+    init_store_data_model()
+    suid = str(store_uid or "").strip()
+    if not suid:
+        return
+    with _connect() as conn:
+        conn.execute(
+            f"DELETE FROM pricing_attractiveness_recommendations_raw WHERE store_uid = {'%s' if is_postgres_backend() else '?'}",
             (suid,),
         )
         conn.commit()
