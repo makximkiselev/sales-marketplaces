@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+import time
 from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter
@@ -20,9 +22,21 @@ from backend.services.yandex_united_orders_report_service import (
     refresh_sales_overview_order_rows_today_for_store,
 )
 from backend.services.yandex_united_netting_report_service import refresh_sales_united_netting_history
+from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 from backend.services.store_data_model import get_pricing_store_settings, upsert_pricing_store_settings
 
 router = APIRouter()
+logger = logging.getLogger("uvicorn.error")
+
+_DASHBOARD_CACHE: dict[str, dict] = {}
+_DASHBOARD_CACHE_GEN = 1
+_DASHBOARD_CACHE_MAX = 128
+_DASHBOARD_CACHE_TTL_SECONDS = 180
+_DASHBOARD_RECENT_PAYLOADS: dict[str, dict] = {}
+_DASHBOARD_RECENT_MAX = 24
+_DASHBOARD_DEFAULT_PERIODS = ("today", "yesterday", "week", "month", "quarter")
+_DASHBOARD_WARM_TASK: asyncio.Task | None = None
+_DASHBOARD_IN_FLIGHT: dict[str, asyncio.Task] = {}
 
 
 def _local_date_only() -> date:
@@ -196,6 +210,113 @@ def _build_store_comparison(
     return sorted(rows, key=lambda item: float(item.get("revenue") or 0.0), reverse=True)
 
 
+def _dashboard_cache_payload(*, store_id: str, period: str) -> dict[str, str]:
+    return {
+        "store_id": str(store_id or "all").strip() or "all",
+        "period": str(period or "today").strip().lower() or "today",
+    }
+
+
+def _dashboard_cache_key(payload: dict[str, str]) -> str:
+    return make_cache_key("sales_overview_dashboard_summary", payload, _DASHBOARD_CACHE_GEN)
+
+
+def _dashboard_cache_get(payload: dict[str, str]) -> dict | None:
+    key = _dashboard_cache_key(payload)
+    wrapped = cache_get_copy(_DASHBOARD_CACHE, key)
+    if not isinstance(wrapped, dict):
+        return None
+    expires_at = float(wrapped.get("expires_at") or 0.0)
+    if expires_at and expires_at < time.time():
+        _DASHBOARD_CACHE.pop(key, None)
+        return None
+    data = wrapped.get("data")
+    return data if isinstance(data, dict) else None
+
+
+def _dashboard_cache_set(payload: dict[str, str], value: dict) -> None:
+    key = _dashboard_cache_key(payload)
+    cache_set_copy(
+        _DASHBOARD_CACHE,
+        key,
+        {"expires_at": time.time() + _DASHBOARD_CACHE_TTL_SECONDS, "data": value},
+        _DASHBOARD_CACHE_MAX,
+    )
+    recent_key = f"{payload['store_id']}|{payload['period']}"
+    _DASHBOARD_RECENT_PAYLOADS[recent_key] = dict(payload)
+    if len(_DASHBOARD_RECENT_PAYLOADS) > _DASHBOARD_RECENT_MAX:
+        oldest_key = next(iter(_DASHBOARD_RECENT_PAYLOADS.keys()))
+        _DASHBOARD_RECENT_PAYLOADS.pop(oldest_key, None)
+
+
+def _dashboard_default_payloads() -> list[dict[str, str]]:
+    payloads = [_dashboard_cache_payload(store_id="all", period=period) for period in _DASHBOARD_DEFAULT_PERIODS]
+    try:
+        context = get_sales_overview_context()
+    except Exception:
+        return payloads
+    stores = list(context.get("marketplace_stores") or [])
+    for store in stores:
+        store_id = str(store.get("store_id") or "").strip()
+        if not store_id:
+            continue
+        for period in _DASHBOARD_DEFAULT_PERIODS:
+            payloads.append(_dashboard_cache_payload(store_id=store_id, period=period))
+    return payloads
+
+
+def invalidate_sales_overview_dashboard_cache() -> None:
+    global _DASHBOARD_CACHE_GEN
+    _DASHBOARD_CACHE.clear()
+    _DASHBOARD_CACHE_GEN += 1
+
+
+async def _warm_sales_overview_dashboard_cache(payloads: list[dict[str, str]]) -> None:
+    payload_map: dict[tuple[str, str], dict[str, str]] = {}
+    for raw_payload in payloads:
+        store_id = str(raw_payload.get("store_id") or "all").strip() or "all"
+        period = str(raw_payload.get("period") or "today").strip().lower() or "today"
+        payload_map[(store_id, period)] = {"store_id": store_id, "period": period}
+    for payload in payload_map.values():
+        key = _dashboard_cache_key(payload)
+        if _dashboard_cache_get(payload):
+            continue
+        existing_task = _DASHBOARD_IN_FLIGHT.get(key)
+        if existing_task and not existing_task.done():
+            continue
+        task = asyncio.create_task(_build_dashboard_summary_response(store_id=payload["store_id"], period=payload["period"]))
+        _DASHBOARD_IN_FLIGHT[key] = task
+        try:
+            built = await task
+            _dashboard_cache_set(payload, built)
+        except Exception as exc:
+            logger.warning(
+                "[sales_overview] dashboard cache warm failed store_id=%s period=%s error=%s",
+                payload["store_id"],
+                payload["period"],
+                exc,
+            )
+        finally:
+            _DASHBOARD_IN_FLIGHT.pop(key, None)
+
+
+def schedule_sales_overview_dashboard_cache_warm(payloads: list[dict[str, str]] | None = None) -> None:
+    global _DASHBOARD_WARM_TASK
+    next_payloads = list(_dashboard_default_payloads())
+    next_payloads.extend(list(_DASHBOARD_RECENT_PAYLOADS.values()))
+    if payloads:
+        next_payloads.extend(payloads)
+    if not next_payloads:
+        return
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
+    if _DASHBOARD_WARM_TASK and not _DASHBOARD_WARM_TASK.done():
+        return
+    _DASHBOARD_WARM_TASK = loop.create_task(_warm_sales_overview_dashboard_cache(next_payloads))
+
+
 async def _fetch_primary_store_dashboard(*, store_id: str, period: str, previous_start: str, previous_end: str) -> dict:
     store_query = str(store_id or "").strip()
     today_orders_task = get_sales_overview_history(page=1, page_size=1000, store_id=store_query, period="today")
@@ -290,6 +411,113 @@ async def _fetch_secondary_store_dashboard(*, store_id: str, period: str) -> dic
         ),
     )
     return {"dataFlow": data_flow, "sku": sku, "category": category}
+
+
+async def _build_dashboard_summary_response(*, store_id: str, period: str) -> dict:
+    context = get_sales_overview_context()
+    stores = list(context.get("marketplace_stores") or [])
+    selected_stores = [store for store in stores if str(store.get("store_id") or "").strip()]
+    selected_store_id = str(store_id or "all").strip() or "all"
+    previous_start, previous_end, _ = _previous_period_range(period)
+    tracking = await get_sales_overview_tracking(store_id=selected_store_id, date_mode="created")
+
+    if selected_store_id == "all":
+        primary_scoped = await asyncio.gather(
+            *[
+                _fetch_primary_store_dashboard(
+                    store_id=str(store.get("store_id") or "").strip(),
+                    period=period,
+                    previous_start=previous_start,
+                    previous_end=previous_end,
+                )
+                for store in selected_stores
+            ]
+        )
+        bundle = {
+            "tracking": tracking,
+            "orders": _merge_orders_responses([item["orders"] for item in primary_scoped]),
+            "problems": _merge_problem_responses([item["problems"] for item in primary_scoped]),
+            "dataFlow": {"ok": True, "flows": []},
+            "sku": {"ok": True, "rows": [], "total_count": 0},
+            "category": {"ok": True, "rows": [], "total_count": 0},
+            "today": _merge_orders_responses([item["today"] for item in primary_scoped]),
+            "yesterday": _merge_orders_responses([item["yesterday"] for item in primary_scoped]),
+            "todayProblems": _merge_problem_responses([item["todayProblems"] for item in primary_scoped]),
+            "yesterdayProblems": _merge_problem_responses([item["yesterdayProblems"] for item in primary_scoped]),
+            "previousOrders": _merge_orders_responses([item["previousOrders"] for item in primary_scoped]),
+            "previousProblems": _merge_problem_responses([item["previousProblems"] for item in primary_scoped]),
+        }
+        comparison = _build_store_comparison(
+            selected_stores,
+            [
+                {
+                    "storeId": str(store.get("store_id") or "").strip(),
+                    "current": item["orders"],
+                    "previous": item["previousOrders"],
+                }
+                for store, item in zip(selected_stores, primary_scoped)
+            ],
+        )
+        secondary_scoped = await asyncio.gather(
+            *[
+                _fetch_secondary_store_dashboard(store_id=str(store.get("store_id") or "").strip(), period=period)
+                for store in selected_stores
+            ]
+        )
+        bundle["dataFlow"] = _merge_data_flow_responses([item["dataFlow"] for item in secondary_scoped])
+        bundle["sku"] = _merge_retrospective_responses([item["sku"] for item in secondary_scoped])
+        bundle["category"] = _merge_retrospective_responses([item["category"] for item in secondary_scoped])
+        return {"ok": True, "context": context, "bundle": bundle, "storeComparison": comparison}
+
+    primary = await _fetch_primary_store_dashboard(
+        store_id=selected_store_id,
+        period=period,
+        previous_start=previous_start,
+        previous_end=previous_end,
+    )
+    bundle = {
+        "tracking": tracking,
+        "orders": primary["orders"],
+        "problems": primary["problems"],
+        "dataFlow": {"ok": True, "flows": []},
+        "sku": {"ok": True, "rows": [], "total_count": 0},
+        "category": {"ok": True, "rows": [], "total_count": 0},
+        "today": primary["today"],
+        "yesterday": primary["yesterday"],
+        "todayProblems": primary["todayProblems"],
+        "yesterdayProblems": primary["yesterdayProblems"],
+        "previousOrders": primary["previousOrders"],
+        "previousProblems": primary["previousProblems"],
+    }
+    secondary, comparison_scoped = await asyncio.gather(
+        _fetch_secondary_store_dashboard(store_id=selected_store_id, period=period),
+        asyncio.gather(
+            *[
+                _fetch_primary_store_dashboard(
+                    store_id=str(store.get("store_id") or "").strip(),
+                    period=period,
+                    previous_start=previous_start,
+                    previous_end=previous_end,
+                )
+                for store in selected_stores
+            ]
+        ),
+    )
+    bundle["dataFlow"] = secondary["dataFlow"]
+    bundle["sku"] = secondary["sku"]
+    bundle["category"] = secondary["category"]
+    comparison = _build_store_comparison(
+        selected_stores,
+        [
+            {
+                "storeId": str(store.get("store_id") or "").strip(),
+                "current": item["orders"],
+                "previous": item["previousOrders"],
+            }
+            for store, item in zip(selected_stores, comparison_scoped)
+        ],
+    )
+    return {"ok": True, "context": context, "bundle": bundle, "storeComparison": comparison}
 
 
 @router.get("/api/sales/overview/context")
@@ -395,110 +623,25 @@ async def sales_overview_dashboard_summary(
     period: str = "today",
 ):
     try:
-        context = get_sales_overview_context()
-        stores = list(context.get("marketplace_stores") or [])
-        selected_stores = [store for store in stores if str(store.get("store_id") or "").strip()]
-        selected_store_id = str(store_id or "all").strip() or "all"
-        previous_start, previous_end, _ = _previous_period_range(period)
-        tracking = await get_sales_overview_tracking(store_id=selected_store_id, date_mode="created")
-
-        if selected_store_id == "all":
-            primary_scoped = await asyncio.gather(
-                *[
-                    _fetch_primary_store_dashboard(
-                        store_id=str(store.get("store_id") or "").strip(),
-                        period=period,
-                        previous_start=previous_start,
-                        previous_end=previous_end,
-                    )
-                    for store in selected_stores
-                ]
-            )
-            bundle = {
-                "tracking": tracking,
-                "orders": _merge_orders_responses([item["orders"] for item in primary_scoped]),
-                "problems": _merge_problem_responses([item["problems"] for item in primary_scoped]),
-                "dataFlow": {"ok": True, "flows": []},
-                "sku": {"ok": True, "rows": [], "total_count": 0},
-                "category": {"ok": True, "rows": [], "total_count": 0},
-                "today": _merge_orders_responses([item["today"] for item in primary_scoped]),
-                "yesterday": _merge_orders_responses([item["yesterday"] for item in primary_scoped]),
-                "todayProblems": _merge_problem_responses([item["todayProblems"] for item in primary_scoped]),
-                "yesterdayProblems": _merge_problem_responses([item["yesterdayProblems"] for item in primary_scoped]),
-                "previousOrders": _merge_orders_responses([item["previousOrders"] for item in primary_scoped]),
-                "previousProblems": _merge_problem_responses([item["previousProblems"] for item in primary_scoped]),
-            }
-            comparison = _build_store_comparison(
-                selected_stores,
-                [
-                    {
-                        "storeId": str(store.get("store_id") or "").strip(),
-                        "current": item["orders"],
-                        "previous": item["previousOrders"],
-                    }
-                    for store, item in zip(selected_stores, primary_scoped)
-                ],
-            )
-            secondary_scoped = await asyncio.gather(
-                *[
-                    _fetch_secondary_store_dashboard(store_id=str(store.get("store_id") or "").strip(), period=period)
-                    for store in selected_stores
-                ]
-            )
-            bundle["dataFlow"] = _merge_data_flow_responses([item["dataFlow"] for item in secondary_scoped])
-            bundle["sku"] = _merge_retrospective_responses([item["sku"] for item in secondary_scoped])
-            bundle["category"] = _merge_retrospective_responses([item["category"] for item in secondary_scoped])
-            return {"ok": True, "context": context, "bundle": bundle, "storeComparison": comparison}
-
-        primary = await _fetch_primary_store_dashboard(
-            store_id=selected_store_id,
-            period=period,
-            previous_start=previous_start,
-            previous_end=previous_end,
-        )
-        bundle = {
-            "tracking": tracking,
-            "orders": primary["orders"],
-            "problems": primary["problems"],
-            "dataFlow": {"ok": True, "flows": []},
-            "sku": {"ok": True, "rows": [], "total_count": 0},
-            "category": {"ok": True, "rows": [], "total_count": 0},
-            "today": primary["today"],
-            "yesterday": primary["yesterday"],
-            "todayProblems": primary["todayProblems"],
-            "yesterdayProblems": primary["yesterdayProblems"],
-            "previousOrders": primary["previousOrders"],
-            "previousProblems": primary["previousProblems"],
-        }
-        secondary, comparison_scoped = await asyncio.gather(
-            _fetch_secondary_store_dashboard(store_id=selected_store_id, period=period),
-            asyncio.gather(
-                *[
-                    _fetch_primary_store_dashboard(
-                        store_id=str(store.get("store_id") or "").strip(),
-                        period=period,
-                        previous_start=previous_start,
-                        previous_end=previous_end,
-                    )
-                    for store in selected_stores
-                ]
-            ),
-        )
-        bundle["dataFlow"] = secondary["dataFlow"]
-        bundle["sku"] = secondary["sku"]
-        bundle["category"] = secondary["category"]
-        comparison = _build_store_comparison(
-            selected_stores,
-            [
-                {
-                    "storeId": str(store.get("store_id") or "").strip(),
-                    "current": item["orders"],
-                    "previous": item["previousOrders"],
-                }
-                for store, item in zip(selected_stores, comparison_scoped)
-            ],
-        )
-        return {"ok": True, "context": context, "bundle": bundle, "storeComparison": comparison}
+        payload = _dashboard_cache_payload(store_id=store_id, period=period)
+        cached = _dashboard_cache_get(payload)
+        if cached:
+            logger.warning("[sales_overview] dashboard cache hit store_id=%s period=%s", payload["store_id"], payload["period"])
+            return cached
+        logger.warning("[sales_overview] dashboard cache miss store_id=%s period=%s", payload["store_id"], payload["period"])
+        key = _dashboard_cache_key(payload)
+        existing_task = _DASHBOARD_IN_FLIGHT.get(key)
+        if existing_task and not existing_task.done():
+            built = await existing_task
+        else:
+            task = asyncio.create_task(_build_dashboard_summary_response(store_id=payload["store_id"], period=payload["period"]))
+            _DASHBOARD_IN_FLIGHT[key] = task
+            try:
+                built = await task
+            finally:
+                _DASHBOARD_IN_FLIGHT.pop(key, None)
+        _dashboard_cache_set(payload, built)
+        return built
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось собрать сводку dashboard: {exc}"}, status_code=500)
 
@@ -509,7 +652,10 @@ async def sales_overview_united_orders_refresh(payload: dict | None = None):
     date_from = str(body.get("date_from") or "").strip() or "2025-07-01"
     date_to = str(body.get("date_to") or "").strip()
     try:
-        return await refresh_sales_overview_history(date_from=date_from, date_to=date_to)
+        result = await refresh_sales_overview_history(date_from=date_from, date_to=date_to)
+        invalidate_sales_overview_dashboard_cache()
+        schedule_sales_overview_dashboard_cache_warm()
+        return result
     except ValueError as exc:
         return JSONResponse({"ok": False, "message": str(exc)}, status_code=400)
     except Exception as exc:
@@ -523,7 +669,10 @@ async def sales_overview_current_month_refresh(payload: dict | None = None):
     if not store_id:
         return JSONResponse({"ok": False, "message": "store_id обязателен"}, status_code=400)
     try:
-        return await refresh_sales_overview_order_rows_current_month_for_store(store_uid=f"yandex_market:{store_id}")
+        result = await refresh_sales_overview_order_rows_current_month_for_store(store_uid=f"yandex_market:{store_id}")
+        invalidate_sales_overview_dashboard_cache()
+        schedule_sales_overview_dashboard_cache_warm()
+        return result
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось обновить текущий месяц продаж: {exc}"}, status_code=500)
 
@@ -535,7 +684,10 @@ async def sales_overview_today_refresh(payload: dict | None = None):
     if not store_id:
         return JSONResponse({"ok": False, "message": "store_id обязателен"}, status_code=400)
     try:
-        return await refresh_sales_overview_order_rows_today_for_store(store_uid=f"yandex_market:{store_id}")
+        result = await refresh_sales_overview_order_rows_today_for_store(store_uid=f"yandex_market:{store_id}")
+        invalidate_sales_overview_dashboard_cache()
+        schedule_sales_overview_dashboard_cache_warm()
+        return result
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось обновить заказы дня: {exc}"}, status_code=500)
 
@@ -546,7 +698,10 @@ async def sales_overview_united_netting_refresh(payload: dict | None = None):
     date_from = str(body.get("date_from") or "").strip() or "2025-07-01"
     date_to = str(body.get("date_to") or "").strip() or "2026-03-11"
     try:
-        return await refresh_sales_united_netting_history(date_from=date_from, date_to=date_to)
+        result = await refresh_sales_united_netting_history(date_from=date_from, date_to=date_to)
+        invalidate_sales_overview_dashboard_cache()
+        schedule_sales_overview_dashboard_cache_warm()
+        return result
     except ValueError as exc:
         return JSONResponse({"ok": False, "message": str(exc)}, status_code=400)
     except Exception as exc:
@@ -595,6 +750,8 @@ async def sales_overview_cogs_source_upsert(payload: dict | None = None):
         )
         refresh_sales_overview_cogs_source_for_store(store_uid=f"yandex_market:{store_id}")
         await refresh_sales_overview_order_rows_for_store(store_uid=f"yandex_market:{store_id}")
+        invalidate_sales_overview_dashboard_cache()
+        schedule_sales_overview_dashboard_cache_warm()
         return {
             "ok": True,
             "source": {
