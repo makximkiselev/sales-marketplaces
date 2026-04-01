@@ -1105,6 +1105,21 @@ def _init_system_store_tables() -> None:
         )
         conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS dashboard_snapshots (
+                cache_key TEXT PRIMARY KEY,
+                snapshot_name TEXT NOT NULL,
+                scope_id TEXT NOT NULL DEFAULT '',
+                period TEXT NOT NULL DEFAULT '',
+                payload_json TEXT NOT NULL DEFAULT '{}',
+                response_json TEXT NOT NULL DEFAULT '{}',
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_dashboard_snapshots_name_scope_period ON dashboard_snapshots(snapshot_name, scope_id, period)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_dashboard_snapshots_updated_at ON dashboard_snapshots(updated_at)")
+        conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS app_users (
                 user_id TEXT PRIMARY KEY,
                 identifier TEXT NOT NULL UNIQUE,
@@ -1251,6 +1266,105 @@ def _save_system_store_settings_document_with_conn(
             ts,
         ),
     )
+
+
+def get_dashboard_snapshot(*, snapshot_name: str, cache_key: str) -> dict[str, Any] | None:
+    name = str(snapshot_name or "").strip()
+    key = str(cache_key or "").strip()
+    if not name or not key:
+        return None
+    _init_system_store_tables()
+    marker = "%s" if is_postgres_backend() and SYSTEM_DATABASE_URL else "?"
+    with _connect_system() as conn:
+        row = conn.execute(
+            f"""
+            SELECT snapshot_name, scope_id, period, payload_json, response_json, updated_at
+            FROM dashboard_snapshots
+            WHERE snapshot_name = {marker} AND cache_key = {marker}
+            """,
+            (name, key),
+        ).fetchone()
+    if not row:
+        return None
+    try:
+        payload = json.loads(str(row["payload_json"] or "{}") or "{}")
+        if not isinstance(payload, dict):
+            payload = {}
+    except Exception:
+        payload = {}
+    try:
+        response = json.loads(str(row["response_json"] or "{}") or "{}")
+        if not isinstance(response, dict):
+            response = {}
+    except Exception:
+        response = {}
+    return {
+        "snapshot_name": str(row["snapshot_name"] or "").strip(),
+        "scope_id": str(row["scope_id"] or "").strip(),
+        "period": str(row["period"] or "").strip(),
+        "payload": payload,
+        "response": response,
+        "updated_at": str(row["updated_at"] or "").strip(),
+    }
+
+
+def upsert_dashboard_snapshot(
+    *,
+    snapshot_name: str,
+    cache_key: str,
+    scope_id: str = "",
+    period: str = "",
+    payload: dict[str, Any] | None = None,
+    response: dict[str, Any] | None = None,
+    updated_at: str | None = None,
+) -> None:
+    name = str(snapshot_name or "").strip()
+    key = str(cache_key or "").strip()
+    if not name or not key:
+        return
+    _init_system_store_tables()
+    ts = str(updated_at or _now_iso()).strip() or _now_iso()
+    conn_payload = payload if isinstance(payload, dict) else {}
+    conn_response = response if isinstance(response, dict) else {}
+    with _connect_system() as conn:
+        conn.execute(
+            f"""
+            INSERT INTO dashboard_snapshots (
+                cache_key, snapshot_name, scope_id, period, payload_json, response_json, updated_at
+            ) VALUES ({_system_placeholders(7)})
+            ON CONFLICT(cache_key) DO UPDATE SET
+                snapshot_name = excluded.snapshot_name,
+                scope_id = excluded.scope_id,
+                period = excluded.period,
+                payload_json = excluded.payload_json,
+                response_json = excluded.response_json,
+                updated_at = excluded.updated_at
+            """,
+            (
+                key,
+                name,
+                str(scope_id or "").strip(),
+                str(period or "").strip(),
+                json.dumps(conn_payload, ensure_ascii=False, default=str),
+                json.dumps(conn_response, ensure_ascii=False, default=str),
+                ts,
+            ),
+        )
+        conn.commit()
+
+
+def delete_dashboard_snapshots(*, snapshot_name: str) -> None:
+    name = str(snapshot_name or "").strip()
+    if not name:
+        return
+    _init_system_store_tables()
+    marker = "%s" if is_postgres_backend() and SYSTEM_DATABASE_URL else "?"
+    with _connect_system() as conn:
+        conn.execute(
+            f"DELETE FROM dashboard_snapshots WHERE snapshot_name = {marker}",
+            (name,),
+        )
+        conn.commit()
 
 
 def _merge_system_store_settings_sections(*, store_uid: str, sections: dict[str, dict[str, Any]], updated_at: str | None = None) -> None:

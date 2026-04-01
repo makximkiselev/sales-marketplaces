@@ -23,7 +23,13 @@ from backend.services.yandex_united_orders_report_service import (
 )
 from backend.services.yandex_united_netting_report_service import refresh_sales_united_netting_history
 from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
-from backend.services.store_data_model import get_pricing_store_settings, upsert_pricing_store_settings
+from backend.services.store_data_model import (
+    delete_dashboard_snapshots,
+    get_dashboard_snapshot,
+    get_pricing_store_settings,
+    upsert_dashboard_snapshot,
+    upsert_pricing_store_settings,
+)
 
 router = APIRouter()
 logger = logging.getLogger("uvicorn.error")
@@ -37,6 +43,7 @@ _DASHBOARD_RECENT_MAX = 24
 _DASHBOARD_DEFAULT_PERIODS = ("today", "yesterday", "week", "month", "quarter")
 _DASHBOARD_WARM_TASK: asyncio.Task | None = None
 _DASHBOARD_IN_FLIGHT: dict[str, asyncio.Task] = {}
+_DASHBOARD_SNAPSHOT_NAME = "sales_overview_dashboard_summary"
 
 
 def _local_date_only() -> date:
@@ -218,7 +225,11 @@ def _dashboard_cache_payload(*, store_id: str, period: str) -> dict[str, str]:
 
 
 def _dashboard_cache_key(payload: dict[str, str]) -> str:
-    return make_cache_key("sales_overview_dashboard_summary", payload, _DASHBOARD_CACHE_GEN)
+    return make_cache_key(_DASHBOARD_SNAPSHOT_NAME, payload, _DASHBOARD_CACHE_GEN)
+
+
+def _dashboard_snapshot_key(payload: dict[str, str]) -> str:
+    return make_cache_key(_DASHBOARD_SNAPSHOT_NAME, payload, 1)
 
 
 def _dashboard_cache_get(payload: dict[str, str]) -> dict | None:
@@ -236,6 +247,7 @@ def _dashboard_cache_get(payload: dict[str, str]) -> dict | None:
 
 def _dashboard_cache_set(payload: dict[str, str], value: dict) -> None:
     key = _dashboard_cache_key(payload)
+    snapshot_key = _dashboard_snapshot_key(payload)
     cache_set_copy(
         _DASHBOARD_CACHE,
         key,
@@ -247,6 +259,25 @@ def _dashboard_cache_set(payload: dict[str, str], value: dict) -> None:
     if len(_DASHBOARD_RECENT_PAYLOADS) > _DASHBOARD_RECENT_MAX:
         oldest_key = next(iter(_DASHBOARD_RECENT_PAYLOADS.keys()))
         _DASHBOARD_RECENT_PAYLOADS.pop(oldest_key, None)
+    upsert_dashboard_snapshot(
+        snapshot_name=_DASHBOARD_SNAPSHOT_NAME,
+        cache_key=snapshot_key,
+        scope_id=payload["store_id"],
+        period=payload["period"],
+        payload=payload,
+        response=value,
+    )
+
+
+def _dashboard_snapshot_get(payload: dict[str, str]) -> dict | None:
+    snapshot = get_dashboard_snapshot(
+        snapshot_name=_DASHBOARD_SNAPSHOT_NAME,
+        cache_key=_dashboard_snapshot_key(payload),
+    )
+    if not isinstance(snapshot, dict):
+        return None
+    response = snapshot.get("response")
+    return response if isinstance(response, dict) else None
 
 
 def _dashboard_default_payloads() -> list[dict[str, str]]:
@@ -269,6 +300,7 @@ def invalidate_sales_overview_dashboard_cache() -> None:
     global _DASHBOARD_CACHE_GEN
     _DASHBOARD_CACHE.clear()
     _DASHBOARD_CACHE_GEN += 1
+    delete_dashboard_snapshots(snapshot_name=_DASHBOARD_SNAPSHOT_NAME)
 
 
 async def _warm_sales_overview_dashboard_cache(payloads: list[dict[str, str]]) -> None:
@@ -639,6 +671,11 @@ async def sales_overview_dashboard_summary(
         if cached:
             logger.warning("[sales_overview] dashboard cache hit store_id=%s period=%s", payload["store_id"], payload["period"])
             return cached
+        snapshot_cached = _dashboard_snapshot_get(payload)
+        if snapshot_cached:
+            logger.warning("[sales_overview] dashboard snapshot hit store_id=%s period=%s", payload["store_id"], payload["period"])
+            _dashboard_cache_set(payload, snapshot_cached)
+            return snapshot_cached
         logger.warning("[sales_overview] dashboard cache miss store_id=%s period=%s", payload["store_id"], payload["period"])
         key = _dashboard_cache_key(payload)
         existing_task = _DASHBOARD_IN_FLIGHT.get(key)
