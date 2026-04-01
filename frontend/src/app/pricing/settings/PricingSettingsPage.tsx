@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import styles from "./PricingSettingsPage.module.css";
-import { PageFrame } from "../../../components/page/PageKit";
 import { LogisticsImportModal } from "./components/LogisticsImportModal";
 import { BulkFillColumnModal } from "./components/BulkFillColumnModal";
 import { usePricingSettingsController } from "./usePricingSettingsController";
@@ -111,12 +110,7 @@ export default function PricingSettingsPage() {
 
   return (
     <>
-      <PageFrame
-        title="Настройки ценообразования"
-        subtitle="Единая рабочая зона для целей продаж, категорийных правил и логистики магазинов."
-        className={styles.headCard}
-        innerClassName={styles.headCardInner}
-      >
+      <div className={styles.settingsPageRoot}>
         {isMobile ? (
           <PricingSettingsMobile
             controller={controller}
@@ -150,7 +144,7 @@ export default function PricingSettingsPage() {
             bulkFillColumns={bulkFillColumns}
           />
         )}
-      </PageFrame>
+      </div>
 
       {settingsTab === "categories" && bulkFillOpen && bulkFillColumns.length ? (
         <BulkFillColumnModal
