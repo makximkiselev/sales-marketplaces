@@ -273,21 +273,37 @@ export function GeneralSettingsSection({
                     ) : null}
 
                     <div className={`${styles.categoryEditor} ${mobileMode ? styles.categoryEditorMobile : ""}`}>
-                      <div className={styles.categoryEditorHead}>
-                        <div>
-                          <div className={styles.categoryEditorEyebrow}>Категория</div>
-                          <h3 className={styles.categoryEditorTitle}>{selectedRow.category || "-"}</h3>
-                          <div className={styles.categoryEditorPath}>
-                            {selectedRow.subcategoryLevels.length ? selectedRow.subcategoryLevels.join(" / ") : "Корневая категория"}
+                      <div className={styles.categoryEditorRail}>
+                        <div className={styles.categoryEditorHead}>
+                          <div>
+                            <div className={styles.categoryEditorEyebrow}>Рабочая категория</div>
+                            <h3 className={styles.categoryEditorTitle}>
+                              {selectedRow.subcategoryLevels.at(-1) || selectedRow.category || "-"}
+                            </h3>
+                            <div className={styles.categoryEditorPath}>
+                              {selectedRow.subcategoryLevels.length
+                                ? [selectedRow.category, ...selectedRow.subcategoryLevels].filter(Boolean).join(" / ")
+                                : "Корневая категория"}
+                            </div>
+                          </div>
+                          <div className={styles.categoryEditorMeta}>
+                            <span className={styles.categoryEditorMetaChip}>{selectedRow.itemsCount} SKU</span>
+                            <span className={styles.categoryEditorMetaChip}>
+                              {rowHasOverrides(selectedRow) ? "Свои правила" : "Общие правила"}
+                            </span>
+                            {mobileMode ? (
+                              <button type="button" className="btn ghost" onClick={() => onOpenMobileCatalog?.()}>
+                                Каталог
+                              </button>
+                            ) : null}
                           </div>
                         </div>
-                        <div className={styles.categoryEditorMeta}>
-                          <span className={styles.categoryEditorMetaChip}>{selectedRow.itemsCount} SKU</span>
-                          {mobileMode ? (
-                            <button type="button" className="btn ghost" onClick={() => onOpenMobileCatalog?.()}>
-                              Каталог
-                            </button>
-                          ) : null}
+
+                        <div className={styles.categoryEditorSummary}>
+                          <div className={styles.categoryEditorSummaryTitle}>Параметры расчета</div>
+                          <div className={styles.categoryEditorSummaryText}>
+                            Изменяй только активную ветку. Пустое значение наследует общие правила выше по дереву.
+                          </div>
                         </div>
                       </div>
 

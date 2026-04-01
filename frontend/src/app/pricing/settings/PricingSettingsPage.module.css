@@ -576,8 +576,8 @@
 
 .categoryWorkspace {
   display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  gap: 20px;
   align-items: start;
 }
 
@@ -587,17 +587,17 @@
 
 .categorySidebar,
 .categoryEditor {
-  border: 1px solid rgba(132, 161, 214, 0.18);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(12, 23, 41, 0.88), rgba(8, 16, 30, 0.84));
-  padding: 18px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(11, 21, 38, 0.96), rgba(8, 15, 28, 0.94));
+  padding: 20px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .categoryEditor {
   align-self: start;
   width: 100%;
-  max-width: 980px;
+  max-width: none;
 }
 
 .categoryEditorMobile {
@@ -606,7 +606,7 @@
 
 .categorySidebar {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   align-content: start;
 }
 
@@ -674,9 +674,11 @@
 }
 
 .categoryTreeRowActive .categoryTreeSelect {
-  border-color: rgba(76, 201, 240, 0.4);
-  background:
-    linear-gradient(180deg, rgba(28, 66, 98, 0.42), rgba(16, 30, 53, 0.88));
+  border-color: rgba(76, 201, 240, 0.44);
+  background: linear-gradient(180deg, rgba(33, 72, 104, 0.62), rgba(19, 34, 56, 0.96));
+  box-shadow:
+    inset 0 1px 0 rgba(145, 223, 255, 0.18),
+    0 0 0 1px rgba(76, 201, 240, 0.12);
 }
 
 .categoryTreeToggle {
@@ -697,12 +699,12 @@
 
 .categoryTreeSelect {
   flex: 1 1 auto;
-  border: 1px solid rgba(132, 161, 214, 0.14);
-  border-radius: 12px;
-  background: rgba(7, 14, 27, 0.42);
+  border: 1px solid rgba(132, 161, 214, 0.12);
+  border-radius: 14px;
+  background: rgba(9, 17, 31, 0.72);
   text-align: left;
   color: inherit;
-  padding: 10px 12px;
+  padding: 12px 13px;
   display: grid;
   gap: 6px;
   align-content: start;
@@ -774,18 +776,23 @@
 
 .categoryEditor {
   display: grid;
-  gap: 12px;
+  gap: 18px;
+}
+
+.categoryEditorRail {
+  display: grid;
+  gap: 14px;
 }
 
 .categoryEditorHead {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid rgba(132, 161, 214, 0.12);
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(12, 22, 39, 0.48), rgba(8, 16, 30, 0.3));
+  gap: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .categoryEditorEyebrow {
@@ -797,7 +804,7 @@
 
 .categoryEditorTitle {
   margin: 2px 0;
-  font-size: 24px;
+  font-size: 30px;
   line-height: 1.08;
   color: #f1f6ff;
 }
@@ -818,20 +825,41 @@
 .categoryEditorMetaChip {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 0 12px;
+  min-height: 32px;
+  padding: 0 13px;
   border-radius: 999px;
   border: 1px solid rgba(132, 161, 214, 0.18);
-  background: rgba(7, 14, 27, 0.46);
+  background: rgba(12, 22, 40, 0.78);
   color: #dbe8ff;
   font-size: 12px;
   font-weight: 700;
 }
 
+.categoryEditorSummary {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(15, 29, 49, 0.84), rgba(8, 16, 30, 0.74));
+}
+
+.categoryEditorSummaryTitle {
+  color: #edf4ff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.categoryEditorSummaryText {
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .categoryEditorGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
   align-items: start;
 }
 
@@ -841,13 +869,14 @@
 
 .categoryEditorField {
   display: grid;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 14px;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 18px;
   border: 1px solid rgba(132, 161, 214, 0.14);
-  background: linear-gradient(180deg, rgba(10, 18, 33, 0.48), rgba(7, 14, 27, 0.4));
+  background: linear-gradient(180deg, rgba(12, 23, 40, 0.92), rgba(8, 15, 28, 0.9));
   align-content: start;
   min-width: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
 .categoryEditorFieldHead {
@@ -1010,9 +1039,13 @@
 
 .logisticsPanelShell {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   width: 100%;
-  max-width: 1120px;
+  max-width: none;
+  padding: 18px 20px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(11, 21, 38, 0.96), rgba(8, 15, 28, 0.94));
 }
 
 .logisticsPanelHead {
@@ -1058,19 +1091,19 @@
 
 .logisticsStoreGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(220px, 1fr));
-  gap: 14px;
+  grid-template-columns: minmax(340px, 1.3fr) repeat(3, minmax(220px, 1fr));
+  gap: 16px;
   align-items: start;
 }
 
 .logisticsStoreCard {
   min-height: 0;
   border: 1px solid rgba(132, 161, 214, 0.16);
-  border-radius: 14px;
-  background: rgba(9, 17, 31, 0.5);
-  padding: 14px;
+  border-radius: 18px;
+  background: rgba(9, 17, 31, 0.74);
+  padding: 16px;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   align-content: start;
 }
 
@@ -1124,8 +1157,8 @@
 
 .logisticsWorkspace {
   display: grid;
-  grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+  gap: 20px;
   align-items: start;
 }
 
@@ -1133,16 +1166,16 @@
 .logisticsSidebar,
 .logisticsEditor,
 .logisticsTablePane {
-  border: 1px solid rgba(132, 161, 214, 0.18);
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(12, 23, 41, 0.88), rgba(8, 16, 30, 0.84));
-  padding: 16px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(11, 21, 38, 0.96), rgba(8, 15, 28, 0.94));
+  padding: 18px;
 }
 
 .logisticsCatalogPane {
   display: grid;
   align-content: start;
+  gap: 16px;
   max-height: min(62vh, 720px);
   overflow: hidden;
 }
@@ -1150,8 +1183,55 @@
 .logisticsTablePane {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
-  gap: 16px;
+  gap: 18px;
   min-height: min(64vh, 760px);
+}
+
+.logisticsStageHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.logisticsStageIntro {
+  display: grid;
+  gap: 6px;
+}
+
+.logisticsStageTitle {
+  color: #edf4ff;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.08;
+}
+
+.logisticsStageText {
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 680px;
+}
+
+.logisticsStageMeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.logisticsStageStat {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(12, 22, 40, 0.78);
+  color: #dbe8ff;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .logisticsTableHead {
@@ -1276,51 +1356,9 @@
 
 .logisticsFilterBar {
   display: grid;
-  grid-template-columns: minmax(240px, 280px) minmax(320px, 1fr) minmax(280px, auto) auto;
+  grid-template-columns: minmax(320px, 1fr) auto auto;
   gap: 14px;
   align-items: end;
-}
-
-.logisticsCatalogLauncher {
-  min-height: 72px;
-  border: 1px solid rgba(132, 161, 214, 0.16);
-  border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgba(10, 18, 33, 0.84), rgba(7, 14, 27, 0.9));
-  color: inherit;
-  padding: 12px 14px;
-  display: grid;
-  gap: 4px;
-  text-align: left;
-  transition:
-    border-color 0.16s ease,
-    background 0.16s ease,
-    transform 0.16s ease;
-}
-
-.logisticsCatalogLauncher:hover {
-  border-color: rgba(76, 201, 240, 0.34);
-  background: rgba(16, 29, 51, 0.94);
-  transform: translateY(-1px);
-}
-
-.logisticsCatalogLauncherActive {
-  border-color: rgba(76, 201, 240, 0.4);
-  background:
-    linear-gradient(180deg, rgba(30, 66, 98, 0.4), rgba(12, 24, 43, 0.9));
-}
-
-.logisticsCatalogLauncherTitle {
-  color: #edf4ff;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.logisticsCatalogLauncherMeta {
-  color: var(--text-soft);
-  font-size: 12px;
-  line-height: 1.4;
 }
 
 .logisticsCatalogToggle {
@@ -2908,7 +2946,7 @@
   }
 
   .categoryEditorHead {
-    padding: 12px;
+    gap: 12px;
   }
 
   .categoryEditorGrid {
@@ -3084,17 +3122,9 @@
   }
 
   .logisticsSummaryGrid,
-  .logisticsCatalogWorkspace {
+  .logisticsCatalogWorkspace,
+  .logisticsWorkspace {
     grid-template-columns: 1fr;
-  }
-
-  .logisticsCatalogInlineHead {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .logisticsCatalogLauncher {
-    min-height: 64px;
   }
 
   .logisticsToolbarChipRow,
@@ -3281,6 +3311,14 @@
 
   .logisticsSettingsGrid {
     grid-template-columns: minmax(460px, 1.4fr) minmax(280px, 1fr) minmax(280px, 1fr);
+  }
+
+  .logisticsStoreGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .logisticsStoreCardWide {
+    grid-column: 1 / -1;
   }
 
   .logisticsSettingsGrid > :last-child {
