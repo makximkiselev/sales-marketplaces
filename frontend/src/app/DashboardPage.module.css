@@ -1,6 +1,6 @@
 .heroSurface {
-  padding: 18px;
-  gap: 14px;
+  padding: 14px;
+  gap: 10px;
 }
 
 .heroToolbar {
@@ -20,8 +20,8 @@
 
 .kpiCard {
   display: grid;
-  gap: 14px;
-  padding: 18px;
+  gap: 10px;
+  padding: 15px 16px;
   border: 1px solid rgba(132, 161, 214, 0.18);
   border-radius: 22px;
   background:
@@ -45,9 +45,9 @@
 }
 
 .kpiValue {
-  margin-top: 6px;
+  margin-top: 4px;
   color: #f4f8ff;
-  font-size: 28px;
+  font-size: 25px;
   font-weight: 800;
   line-height: 1.04;
 }
@@ -55,10 +55,10 @@
 .kpiMeta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 14px;
+  gap: 8px 12px;
   color: #9db2d4;
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .kpiBadge {
@@ -222,7 +222,7 @@
   background:
     radial-gradient(circle at top right, rgba(59, 111, 214, 0.12), transparent 34%),
     linear-gradient(180deg, rgba(12, 23, 41, 0.92), rgba(8, 16, 30, 0.9));
-  padding: 18px;
+  padding: 16px;
 }
 
 .chartHead {
@@ -230,7 +230,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .panelHead {
@@ -256,16 +256,16 @@
 
 .panelTitle {
   color: #f2f7ff;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
   line-height: 1.12;
 }
 
 .panelHint {
-  margin-top: 4px;
+  margin-top: 2px;
   color: #93a9cc;
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .chartLegend {
@@ -334,7 +334,7 @@
 
 .chartSvg {
   width: 100%;
-  min-height: 280px;
+  min-height: 220px;
 }
 
 .chartGrid {
@@ -358,7 +358,7 @@
 
 .sideStack {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 .tempoMiniGrid {
@@ -453,7 +453,7 @@
 .insightCard {
   display: grid;
   gap: 6px;
-  padding: 16px;
+  padding: 14px;
   border: 1px solid rgba(132, 161, 214, 0.14);
   border-radius: 18px;
   background: rgba(8, 16, 30, 0.52);
@@ -481,7 +481,7 @@
 
 .insightValue {
   color: #f4f8ff;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
 }
 
@@ -493,7 +493,7 @@
 
 .analysisSection {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .analysisTabs {
@@ -588,9 +588,9 @@
 .storeList,
 .watchList,
 .flowList {
-  margin-top: 14px;
+  margin-top: 10px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .rankingRow,
@@ -773,7 +773,7 @@
   }
 
   .chartSvg {
-    min-height: 210px;
+    min-height: 190px;
   }
 
   .chartTools,
@@ -873,7 +873,7 @@
   }
 
   .chartSvg {
-    min-height: 180px;
+    min-height: 160px;
   }
 
   .chartLegend,

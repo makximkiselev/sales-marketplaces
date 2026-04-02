@@ -381,8 +381,8 @@ function TrendChart({
     );
   }
   const chartWidth = 760;
-  const chartHeight = 264;
-  const pad = { top: 22, right: 20, bottom: 34, left: 52 };
+  const chartHeight = 228;
+  const pad = { top: 18, right: 18, bottom: 32, left: 48 };
   const innerWidth = chartWidth - pad.left - pad.right;
   const innerHeight = chartHeight - pad.top - pad.bottom;
   const revenueValues = days.map((day) => Number(day.revenue || 0));
@@ -809,7 +809,7 @@ export default function Page() {
         <WorkspaceSurface className={`${layoutStyles.heroSurface} ${styles.heroSurface}`}>
           <WorkspaceHeader
             title="Оперативная сводка"
-            subtitle="Готовые дневные данные из обзора продаж: оборот, прибыль, заказы и риски."
+            subtitle="Готовые дневные данные: оборот, прибыль, заказы и риски."
             meta={(
               <div className={layoutStyles.heroMeta}>
                 <span className={layoutStyles.metaChip}>{selectedStore ? selectedStore.label : "Все магазины"}</span>
@@ -832,7 +832,7 @@ export default function Page() {
               </select>
             </div>
             <div className={`${layoutStyles.toolbarGroup} ${styles.toolbarActions}`}>
-              <Link className="btn ghost" to={buildOverviewLink("orders", { storeId: selectedOverviewStoreId, period })}>Открыть обзор</Link>
+              <Link className="btn ghost" to={buildOverviewLink("orders", { storeId: selectedOverviewStoreId, period })}>Обзор</Link>
               <Link className={`btn ghost ${styles.monitoringLink}`} to="/settings/monitoring">Мониторинг</Link>
             </div>
           </WorkspaceToolbar>
@@ -855,7 +855,7 @@ export default function Page() {
                 <div className={styles.kpiMeta}>
                   <span>{selectedDayLabel} · {formatLongDate(selectedDayDate)}</span>
                   <span className={selectedRevenueDeltaPct != null && selectedRevenueDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                    vs соседний день {formatPercent(selectedRevenueDeltaPct)}
+                    vs день {formatPercent(selectedRevenueDeltaPct)}
                   </span>
                 </div>
               </div>
@@ -871,7 +871,7 @@ export default function Page() {
                 <div className={styles.kpiMeta}>
                   <span>Маржа: {formatPercent(selectedDayMarginPct)}</span>
                   <span className={selectedProfitDeltaPct != null && selectedProfitDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                    vs соседний день {formatPercent(selectedProfitDeltaPct)}
+                    vs день {formatPercent(selectedProfitDeltaPct)}
                   </span>
                 </div>
               </div>
@@ -887,7 +887,7 @@ export default function Page() {
                 <div className={styles.kpiMeta}>
                   <span>Средний соинвест: {formatPercent(period === "yesterday" ? bundle?.yesterday?.kpis?.avg_coinvest_pct : bundle?.today?.kpis?.avg_coinvest_pct)}</span>
                   <span className={selectedOrdersDeltaPct != null && selectedOrdersDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                    vs соседний день {formatPercent(selectedOrdersDeltaPct)}
+                    vs день {formatPercent(selectedOrdersDeltaPct)}
                   </span>
                 </div>
               </div>
@@ -902,7 +902,7 @@ export default function Page() {
                 </div>
                 <div className={styles.kpiMeta}>
                   <span className={selectedProblemsDeltaPct != null && selectedProblemsDeltaPct <= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                    vs соседний день {formatPercent(selectedProblemsDeltaPct)}
+                    vs день {formatPercent(selectedProblemsDeltaPct)}
                   </span>
                   <span>{selectedDayOrdersLoadedAt ? `Обновлено: ${formatDateTime(selectedDayOrdersLoadedAt)}` : "Дневной срез"}</span>
                 </div>
