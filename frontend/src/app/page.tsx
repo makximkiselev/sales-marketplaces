@@ -725,15 +725,7 @@ export default function Page() {
   const todayProblemsCount = Number(bundle?.todayProblems?.total_count || 0);
   const yesterdayProblemsCount = Number(bundle?.yesterdayProblems?.total_count || 0);
   const previousProblemsCount = Number(bundle?.previousProblems?.total_count || 0);
-  const todayRevenueDeltaPct = compareDelta(todayRevenue, yesterdayRevenue);
-  const todayProfitDeltaPct = compareDelta(todayProfit, yesterdayProfit);
   const todayOrdersDeltaPct = compareDelta(todayOrdersCount, yesterdayOrdersCount);
-  const todayProblemsDeltaPct = compareDelta(todayProblemsCount, yesterdayProblemsCount);
-  const periodRevenueDeltaPct = compareDelta(revenueTotal, previousRevenue);
-  const periodProfitDeltaPct = compareDelta(profitTotal, previousProfit);
-  const periodOrdersDeltaPct = compareDelta(Number(bundle?.orders?.kpis?.orders_count || 0), previousOrdersCount);
-  const periodProblemsDeltaPct = compareDelta(Number(bundle?.problems?.total_count || 0), previousProblemsCount);
-  const yesterdayMarginPct = yesterdayRevenue > 0 ? (yesterdayProfit / yesterdayRevenue) * 100 : null;
   const weakestSku = (bundle?.sku?.rows || [])
     .filter((row) => Number(row.revenue || 0) > 0)
     .sort((a, b) => Number(a.profit_pct ?? 999999) - Number(b.profit_pct ?? 999999))
@@ -755,8 +747,6 @@ export default function Page() {
       marginPct: row.profit_pct ?? null,
     }));
   const flowRows = bundle?.dataFlow?.flows || [];
-  const todayDate = localDateOnly();
-  const yesterdayDate = shiftDate(todayDate, -1);
   const currentRange = getCurrentPeriodRange(period);
   const previousRange = getPreviousPeriodRange(period);
   const trendDays = useMemo(() => {
@@ -766,17 +756,16 @@ export default function Page() {
   const profitSpark = trendDays.map((day) => Number(day.profit_amount || 0));
   const marginSpark = trendDays.map((day) => Number(day.profit_pct || 0));
   const currentRangeLabel = `${formatLongDate(currentRange.start)} - ${formatLongDate(currentRange.end)}`;
-  const previousRangeLabel = `${formatLongDate(previousRange.start)} - ${formatLongDate(previousRange.end)}`;
   const selectedDayRevenue = period === "yesterday" ? yesterdayRevenue : todayRevenue;
   const selectedDayProfit = period === "yesterday" ? yesterdayProfit : todayProfit;
   const selectedDayOrdersCount = period === "yesterday" ? yesterdayOrdersCount : todayOrdersCount;
   const selectedDayProblemsCount = period === "yesterday" ? yesterdayProblemsCount : todayProblemsCount;
   const selectedDayOrdersLoadedAt = period === "yesterday" ? bundle?.yesterday?.loaded_at : bundle?.today?.loaded_at;
   const selectedDayMarginPct = selectedDayRevenue > 0 ? (selectedDayProfit / selectedDayRevenue) * 100 : null;
-  const selectedRevenueDeltaPct = period === "yesterday" ? compareDelta(yesterdayRevenue, todayRevenue) : todayRevenueDeltaPct;
-  const selectedProfitDeltaPct = period === "yesterday" ? compareDelta(yesterdayProfit, todayProfit) : todayProfitDeltaPct;
+  const selectedRevenueDeltaPct = period === "yesterday" ? compareDelta(yesterdayRevenue, todayRevenue) : compareDelta(todayRevenue, yesterdayRevenue);
+  const selectedProfitDeltaPct = period === "yesterday" ? compareDelta(yesterdayProfit, todayProfit) : compareDelta(todayProfit, yesterdayProfit);
   const selectedOrdersDeltaPct = period === "yesterday" ? compareDelta(yesterdayOrdersCount, todayOrdersCount) : todayOrdersDeltaPct;
-  const selectedProblemsDeltaPct = period === "yesterday" ? compareDelta(yesterdayProblemsCount, todayProblemsCount) : todayProblemsDeltaPct;
+  const selectedProblemsDeltaPct = period === "yesterday" ? compareDelta(yesterdayProblemsCount, todayProblemsCount) : compareDelta(todayProblemsCount, yesterdayProblemsCount);
   const averageDayRevenue = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.revenue || 0), 0) / trendDays.length : null;
   const averageDayProfit = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.profit_amount || 0), 0) / trendDays.length : null;
   const chartTitle = isSingleDayPeriod ? "День в контексте диапазона" : "Оборот и прибыль по дням";
@@ -933,156 +922,6 @@ export default function Page() {
                   )}
                 </div>
               </div>
-            </section>
-
-            <section className={styles.dailyGrid}>
-              <div className={styles.dailyCard}>
-                <div className={styles.dailyTitle}>Сегодня · {formatLongDate(todayDate)}</div>
-                <div className={styles.dailyMetrics}>
-                  <div className={styles.dailyMetric}>
-                    <span>Оборот</span>
-                    <strong>{formatMoney(todayRevenue, currencyCode)}</strong>
-                    <em className={todayRevenueDeltaPct != null && todayRevenueDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                      vs вчера {formatPercent(todayRevenueDeltaPct)}
-                    </em>
-                  </div>
-                  <div className={styles.dailyMetric}>
-                    <span>Прибыль</span>
-                    <strong>{formatMoney(todayProfit, currencyCode)}</strong>
-                    <em className={todayProfitDeltaPct != null && todayProfitDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                      vs вчера {formatPercent(todayProfitDeltaPct)}
-                    </em>
-                  </div>
-                  <div className={styles.dailyMetric}>
-                    <span>Заказы</span>
-                    <strong>{formatNumber(todayOrdersCount)}</strong>
-                    <em className={todayOrdersDeltaPct != null && todayOrdersDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                      vs вчера {formatPercent(todayOrdersDeltaPct)}
-                    </em>
-                  </div>
-                  <div className={styles.dailyMetric}>
-                    <span>Проблемные</span>
-                    <strong>{formatNumber(todayProblemsCount)}</strong>
-                    <em className={todayProblemsDeltaPct != null && todayProblemsDeltaPct <= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                      vs вчера {formatPercent(todayProblemsDeltaPct)}
-                    </em>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.dailyCard}>
-                <div className={styles.dailyTitle}>Вчера · {formatLongDate(yesterdayDate)}</div>
-                <div className={styles.dailyMetrics}>
-                  <div className={styles.dailyMetric}>
-                    <span>Оборот</span>
-                    <strong>{formatMoney(yesterdayRevenue, currencyCode)}</strong>
-                    <em>{bundle?.yesterday?.loaded_at ? `Срез: ${formatDateTime(bundle.yesterday.loaded_at)}` : "Дневной срез"}</em>
-                  </div>
-                  <div className={styles.dailyMetric}>
-                    <span>Прибыль</span>
-                    <strong>{formatMoney(yesterdayProfit, currencyCode)}</strong>
-                    <em>Маржа: {formatPercent(yesterdayRevenue > 0 ? (yesterdayProfit / yesterdayRevenue) * 100 : null)}</em>
-                  </div>
-                  <div className={styles.dailyMetric}>
-                    <span>Заказы</span>
-                    <strong>{formatNumber(yesterdayOrdersCount)}</strong>
-                    <em>Средний соинвест: {formatPercent(bundle?.yesterday?.kpis?.avg_coinvest_pct)}</em>
-                  </div>
-                  <div className={styles.dailyMetric}>
-                    <span>Проблемные</span>
-                    <strong>{formatNumber(yesterdayProblemsCount)}</strong>
-                    <em>{bundle?.yesterdayProblems?.loaded_at ? `Обновлено: ${formatDateTime(bundle.yesterdayProblems.loaded_at)}` : "Контроль качества"}</em>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className={styles.tempoGrid}>
-              {isSingleDayPeriod ? (
-                <>
-                  <div className={styles.tempoCard}>
-                    <div className={styles.tempoLabel}>Выбранный день</div>
-                    <div className={styles.tempoValue}>{selectedDayLabel}</div>
-                    <div className={styles.tempoMeta}>
-                      <span>{formatLongDate(selectedDayDate)}</span>
-                      <span>{selectedDayOrdersLoadedAt ? `Срез: ${formatDateTime(selectedDayOrdersLoadedAt)}` : "Дневной срез"}</span>
-                    </div>
-                  </div>
-                  <div className={styles.tempoCard}>
-                    <div className={styles.tempoLabel}>Оборот дня</div>
-                    <div className={styles.tempoValue}>{formatMoney(selectedDayRevenue, currencyCode)}</div>
-                    <div className={styles.tempoMeta}>
-                      <span>Заказы: {formatNumber(selectedDayOrdersCount)}</span>
-                      <span className={selectedRevenueDeltaPct != null && selectedRevenueDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        vs соседний день {formatPercent(selectedRevenueDeltaPct)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={styles.tempoCard}>
-                    <div className={styles.tempoLabel}>Прибыль дня</div>
-                    <div className={styles.tempoValue}>{formatMoney(selectedDayProfit, currencyCode)}</div>
-                    <div className={styles.tempoMeta}>
-                      <span>Маржа: {formatPercent(selectedDayMarginPct)}</span>
-                      <span className={selectedProfitDeltaPct != null && selectedProfitDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        vs соседний день {formatPercent(selectedProfitDeltaPct)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={styles.tempoCard}>
-                    <div className={styles.tempoLabel}>Проблемы дня</div>
-                    <div className={styles.tempoValue}>{formatNumber(selectedDayProblemsCount)}</div>
-                    <div className={styles.tempoMeta}>
-                      <span>Доля: {formatPercent(selectedDayOrdersCount > 0 ? (selectedDayProblemsCount / selectedDayOrdersCount) * 100 : null)}</span>
-                      <span className={selectedProblemsDeltaPct != null && selectedProblemsDeltaPct <= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        vs соседний день {formatPercent(selectedProblemsDeltaPct)}
-                      </span>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className={styles.tempoCard}>
-                    <div className={styles.tempoLabel}>Период к периоду</div>
-                    <div className={styles.tempoValue}>{formatMoney(revenueTotal, currencyCode)}</div>
-                    <div className={styles.tempoMeta}>
-                      <span>{currentRangeLabel}</span>
-                      <span className={periodRevenueDeltaPct != null && periodRevenueDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        Оборот: {periodRevenueDeltaPct == null ? "—" : `${periodRevenueDeltaPct >= 0 ? "+" : ""}${formatPercent(periodRevenueDeltaPct)}`} к прошлому периоду
-                      </span>
-                    </div>
-                  </div>
-                  <div className={styles.tempoCard}>
-                    <div className={styles.tempoLabel}>Прибыль периода</div>
-                    <div className={styles.tempoValue}>{formatMoney(profitTotal, currencyCode)}</div>
-                    <div className={styles.tempoMeta}>
-                      <span>Прошлый период: {formatMoney(previousProfit, currencyCode)}</span>
-                      <span className={periodProfitDeltaPct != null && periodProfitDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        Прибыль: {periodProfitDeltaPct == null ? "—" : `${periodProfitDeltaPct >= 0 ? "+" : ""}${formatPercent(periodProfitDeltaPct)}`}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={styles.tempoCard}>
-                    <div className={styles.tempoLabel}>Заказы периода</div>
-                    <div className={styles.tempoValue}>{formatNumber(bundle?.orders?.kpis?.orders_count)}</div>
-                    <div className={styles.tempoMeta}>
-                      <span>Прошлый период: {formatNumber(previousOrdersCount)}</span>
-                      <span className={periodOrdersDeltaPct != null && periodOrdersDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        Заказы: {periodOrdersDeltaPct == null ? "—" : `${periodOrdersDeltaPct >= 0 ? "+" : ""}${formatPercent(periodOrdersDeltaPct)}`}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={styles.tempoCard}>
-                    <div className={styles.tempoLabel}>Проблемы периода</div>
-                    <div className={styles.tempoValue}>{formatNumber(bundle?.problems?.total_count)}</div>
-                    <div className={styles.tempoMeta}>
-                      <span>{previousRangeLabel}</span>
-                      <span className={periodProblemsDeltaPct != null && periodProblemsDeltaPct <= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        Проблемы: {periodProblemsDeltaPct == null ? "—" : `${periodProblemsDeltaPct >= 0 ? "+" : ""}${formatPercent(periodProblemsDeltaPct)}`}
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
             </section>
 
             <section className={styles.dashboardGrid}>
