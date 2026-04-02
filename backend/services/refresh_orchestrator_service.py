@@ -27,6 +27,7 @@ from backend.services.store_data_model import (
     finish_refresh_job_run,
     get_pricing_store_settings,
     get_refresh_job_runs_latest,
+    get_refresh_job_runs_latest_success,
     get_refresh_jobs,
     upsert_dashboard_snapshot,
     replace_pricing_cogs_snapshot_rows,
@@ -618,6 +619,52 @@ def _snapshot_message(*, job_code: str, status: str, started_at: str, message: s
     if raw in {"running", "queued"} and _is_stale_running(job_code=job_code, started_at=started_at):
         return "Зависшее выполнение"
     return str(message or "").strip()
+
+
+def _job_freshness_limit_minutes(job_row: dict[str, Any], job_code: str) -> int:
+    schedule_kind = str(job_row.get("schedule_kind") or "").strip().lower()
+    interval_minutes = int(job_row.get("interval_minutes") or 0)
+    code = str(job_code or "").strip()
+    if schedule_kind == "interval" and interval_minutes > 0:
+        return max(interval_minutes * 2, interval_minutes + 15)
+    if schedule_kind == "daily":
+        return 36 * 60
+    return max(JOB_STALE_TIMEOUT_MINUTES.get(code, 30) * 2, 30)
+
+
+def _job_freshness_snapshot(*, job_row: dict[str, Any], job_code: str, success_run: dict[str, Any] | None) -> dict[str, Any]:
+    success = success_run if isinstance(success_run, dict) else {}
+    success_finished_at = str(success.get("finished_at") or success.get("started_at") or "").strip()
+    limit_minutes = _job_freshness_limit_minutes(job_row, job_code)
+    if not success_finished_at:
+        return {
+            "freshness_status": "unknown",
+            "freshness_minutes": None,
+            "freshness_limit_minutes": limit_minutes,
+            "last_success_at": "",
+            "is_stale": False,
+        }
+    try:
+        dt = datetime.fromisoformat(success_finished_at.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        age_minutes = max(0, int((datetime.now(timezone.utc) - dt.astimezone(timezone.utc)).total_seconds() // 60))
+        is_stale = age_minutes > limit_minutes
+        return {
+            "freshness_status": "stale" if is_stale else "fresh",
+            "freshness_minutes": age_minutes,
+            "freshness_limit_minutes": limit_minutes,
+            "last_success_at": success_finished_at,
+            "is_stale": is_stale,
+        }
+    except Exception:
+        return {
+            "freshness_status": "unknown",
+            "freshness_minutes": None,
+            "freshness_limit_minutes": limit_minutes,
+            "last_success_at": success_finished_at,
+            "is_stale": False,
+        }
 
 
 def _derive_progress_percent(meta: dict[str, Any] | None, *, terminal: bool = False) -> int:
@@ -1828,6 +1875,7 @@ def get_refresh_monitoring_snapshot() -> dict[str, Any]:
         if str(row.get("job_code") or "").strip() not in HIDDEN_MONITORING_JOB_CODES
     ]
     latest_runs = get_refresh_job_runs_latest()
+    latest_success_runs = get_refresh_job_runs_latest_success()
     run_all = latest_runs.get("run_all") or {}
     order_map = {str(item["job_code"]): idx for idx, item in enumerate(JOB_DEFAULTS)}
     jobs.sort(key=lambda row: order_map.get(str(row.get("job_code") or "").strip(), 10_000))
@@ -1875,6 +1923,11 @@ def get_refresh_monitoring_snapshot() -> dict[str, Any]:
             last_meta = json.loads(str(run.get("meta_json") or "{}") or "{}")
         except Exception:
             last_meta = {}
+        freshness = _job_freshness_snapshot(
+            job_row=job,
+            job_code=code,
+            success_run=latest_success_runs.get(code) or {},
+        )
         rows.append(
             {
                 **job,
@@ -1892,6 +1945,7 @@ def get_refresh_monitoring_snapshot() -> dict[str, Any]:
                 "last_run_id": run_id,
                 "progress_percent": _derive_progress_percent(last_meta, terminal=normalized_status in {"success", "error"}),
                 "current_stage": str(last_meta.get("current_stage") or "").strip() if isinstance(last_meta, dict) else "",
+                **freshness,
             }
         )
     try:

@@ -159,6 +159,11 @@ export type RefreshMonitoringRowApi = {
   last_run_id?: number | null;
   progress_percent?: number | null;
   current_stage?: string | null;
+  freshness_status?: "fresh" | "stale" | "unknown" | string | null;
+  freshness_minutes?: number | null;
+  freshness_limit_minutes?: number | null;
+  last_success_at?: string | null;
+  is_stale?: boolean | null;
 };
 
 export type RefreshMonitoringStoreApi = {

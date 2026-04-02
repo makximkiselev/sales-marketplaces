@@ -43,6 +43,7 @@ function formatTs(value?: string | null) {
 
 function statusLabel(row: RefreshMonitoringRowApi) {
   const raw = String(row.last_status || "").trim().toLowerCase();
+  if (raw === "success" && row.is_stale) return "Устарело";
   if (!raw) return "Ожидание";
   if (raw === "queued") return "В очереди";
   if (raw === "running") return "Идет";
@@ -58,6 +59,20 @@ function statusClass(status: string | null | undefined) {
   if (raw === "queued") return styles.monitoringStatusIdle;
   if (raw === "error") return styles.monitoringStatusError;
   return styles.monitoringStatusIdle;
+}
+
+
+function freshnessHint(row: RefreshMonitoringRowApi) {
+  if (String(row.last_status || "").trim().toLowerCase() === "running") return "";
+  if (row.is_stale) {
+    const age = Number(row.freshness_minutes || 0);
+    const hours = age >= 60 ? `${Math.floor(age / 60)} ч` : `${age} мин`;
+    return `Последний успешный прогон был ${hours} назад`;
+  }
+  if (String(row.last_success_at || "").trim()) {
+    return `Последний успешный прогон: ${formatTs(row.last_success_at)}`;
+  }
+  return "";
 }
 
 function progressValue(value: number | null | undefined) {
@@ -438,7 +453,7 @@ export function MonitoringSection({
                         <td>{formatTs(row.last_finished_at || row.last_started_at)}</td>
                         <td>
                           <span
-                            title={row.last_message || statusLabel(row)}
+                            title={row.last_message || freshnessHint(row) || statusLabel(row)}
                             className={`${styles.monitoringJobStatus} ${statusClass(row.last_status)}`}
                           >
                             <span className={styles.monitoringStatusDot} />
@@ -453,6 +468,7 @@ export function MonitoringSection({
                               />
                             </div>
                           ) : null}
+                          {freshnessHint(row) ? <div className={styles.monitoringRunAllMeta}>{freshnessHint(row)}</div> : null}
                         </td>
                         <td>
                           <button
@@ -487,6 +503,7 @@ export function MonitoringSection({
                         {statusLabel(row)}
                       </span>
                     </div>
+                    {freshnessHint(row) ? <div className={styles.monitoringRunAllMeta}>{freshnessHint(row)}</div> : null}
                     <div className={styles.monitoringMobileField}>
                       <span className={styles.monitoringMobileLabel}>Частота</span>
                       {renderScheduleSelect(row, Boolean(savingMap[code]), onSaveJob)}

@@ -7240,6 +7240,29 @@ def get_refresh_job_runs_latest() -> dict[str, dict[str, Any]]:
     return {str(row["job_code"]): dict(row) for row in rows}
 
 
+def get_refresh_job_runs_latest_success() -> dict[str, dict[str, Any]]:
+    init_store_data_model()
+    with _connect() as conn:
+        rows = conn.execute(
+            """
+            WITH ranked AS (
+                SELECT
+                    r.*,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY r.job_code
+                        ORDER BY r.run_id DESC
+                    ) AS rn
+                FROM refresh_job_runs r
+                WHERE lower(coalesce(r.status, '')) = 'success'
+            )
+            SELECT *
+            FROM ranked
+            WHERE rn = 1
+            """
+        ).fetchall()
+    return {str(row["job_code"]): dict(row) for row in rows}
+
+
 def get_yandex_goods_price_report_map(*, store_uids: list[str], skus: list[str]) -> dict[str, dict[str, dict[str, Any]]]:
     init_store_data_model()
     suids = [str(x or "").strip() for x in store_uids if str(x or "").strip()]
