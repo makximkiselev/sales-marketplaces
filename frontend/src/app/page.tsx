@@ -186,14 +186,11 @@ type DashboardSummaryResp = {
   storeComparison: StoreComparison[];
 };
 
-type DashboardPeriod = "today" | "yesterday" | "week" | "month" | "quarter";
+type DashboardPeriod = "today" | "yesterday";
 
 const PERIOD_OPTIONS: Array<{ value: DashboardPeriod; label: string }> = [
   { value: "today", label: "Сегодня" },
   { value: "yesterday", label: "Вчера" },
-  { value: "week", label: "7 дней" },
-  { value: "month", label: "30 дней" },
-  { value: "quarter", label: "90 дней" },
 ];
 
 function moneySign(currencyCode: string | undefined | null) {
@@ -265,10 +262,7 @@ function toIsoDate(base: Date) {
 }
 
 function getPeriodSpanDays(period: DashboardPeriod) {
-  if (period === "today" || period === "yesterday") return 1;
-  if (period === "week") return 7;
-  if (period === "quarter") return 90;
-  return 30;
+  return 1;
 }
 
 function splitCategoryPath(value: string | undefined) {
@@ -330,18 +324,6 @@ function getPreviousPeriodRange(period: DashboardPeriod) {
   const previousEnd = shiftDate(currentStart, -1);
   const previousStart = shiftDate(previousEnd, -(current.span - 1));
   return { start: toIsoDate(previousStart), end: toIsoDate(previousEnd), span: current.span };
-}
-
-function getActiveMonth(tracking: TrackingResp | null) {
-  const years = tracking?.years || [];
-  const activeKey = String(tracking?.active_month_key || "").trim();
-  for (const year of years) {
-    for (const month of year.months || []) {
-      if (activeKey && month.month_key === activeKey) return month;
-      if (month.is_active) return month;
-    }
-  }
-  return years[0]?.months?.[0] || null;
 }
 
 function buildPolyline(values: number[], width: number, height: number) {
@@ -811,11 +793,9 @@ export default function Page() {
   const stores = useMemo(() => context?.marketplace_stores || [], [context]);
   const selectedStore = useMemo(() => stores.find((store) => String(store.store_id) === String(storeId)) || null, [stores, storeId]);
   const currencyCode = selectedStore?.currency_code || stores[0]?.currency_code || "RUB";
-  const isSingleDayPeriod = period === "today" || period === "yesterday";
   const selectedDayLabel = period === "yesterday" ? "Вчера" : "Сегодня";
   const selectedDayDate = period === "yesterday" ? shiftDate(localDateOnly(), -1) : localDateOnly();
   const selectedOverviewStoreId = storeId === "all" ? "all" : storeId;
-  const activeMonth = useMemo(() => getActiveMonth(bundle?.tracking || null), [bundle?.tracking]);
   const allTrendDays = useMemo(
     () =>
       (bundle?.tracking?.years || [])
@@ -826,13 +806,6 @@ export default function Page() {
     [bundle?.tracking?.years],
   );
 
-  const revenueTotal = sumBy(bundle?.orders?.rows || [], (row) => row.sale_price);
-  const profitTotal = sumBy(bundle?.orders?.rows || [], (row) => row.profit);
-  const marginPct = revenueTotal > 0 ? (profitTotal / revenueTotal) * 100 : null;
-  const planRevenue = Number(activeMonth?.revenue_plan_amount || 0);
-  const planProfit = Number(activeMonth?.profit_plan_amount || 0);
-  const revenueDelta = planRevenue > 0 ? revenueTotal - planRevenue : null;
-  const profitDelta = planProfit > 0 ? profitTotal - planProfit : null;
   const topSku = (bundle?.sku?.rows || []).slice(0, 5).map((row) => ({
     label: row.label || row.item_name || row.sku || "SKU",
     value: Number(row.revenue || 0),
@@ -907,11 +880,9 @@ export default function Page() {
       setSelectedCategoryLabel(categoryAggregates[0].label);
     }
   }, [categoryAggregates, selectedCategoryLabel]);
-  const currentRange = getCurrentPeriodRange(period);
   const revenueSpark = trendDays.map((day) => Number(day.revenue || 0));
   const profitSpark = trendDays.map((day) => Number(day.profit_amount || 0));
   const marginSpark = trendDays.map((day) => Number(day.profit_pct || 0));
-  const currentRangeLabel = `${formatLongDate(currentRange.start)} - ${formatLongDate(currentRange.end)}`;
   const chartRangeLabel = `${formatLongDate(chartRangeWindow.start)} - ${formatLongDate(chartRangeWindow.end)}`;
   const selectedDayRevenue = period === "yesterday" ? yesterdayRevenue : todayRevenue;
   const selectedDayProfit = period === "yesterday" ? yesterdayProfit : todayProfit;
@@ -925,18 +896,18 @@ export default function Page() {
   const selectedProblemsDeltaPct = period === "yesterday" ? compareDelta(yesterdayProblemsCount, todayProblemsCount) : compareDelta(todayProblemsCount, yesterdayProblemsCount);
   const averageDayRevenue = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.revenue || 0), 0) / trendDays.length : null;
   const averageDayProfit = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.profit_amount || 0), 0) / trendDays.length : null;
-  const isSelectedDayEmpty = isSingleDayPeriod && selectedDayOrdersCount === 0 && selectedDayRevenue === 0 && selectedDayProblemsCount === 0;
+  const isSelectedDayEmpty = selectedDayOrdersCount === 0 && selectedDayRevenue === 0 && selectedDayProblemsCount === 0;
   const chartTitle = "Динамика оборота и прибыли";
   const chartHint = `Последние ${chartSpan} дней независимо от выбранного режима сводки. Сейчас: ${chartRangeLabel}.`;
   const chartEmptyText = `За последние ${chartSpan} дней в графике пока нет дневных точек.`;
 
   return (
-    <PageFrame title="Сводка" subtitle="Финальный dashboard по продажам, эффективности и зонам риска.">
+    <PageFrame title="Сводка" subtitle="Оперативный слой по сегодняшнему и вчерашнему дню без глубоких периодных срезов.">
       <div className={layoutStyles.shell}>
         <WorkspaceSurface className={`${layoutStyles.heroSurface} ${styles.heroSurface}`}>
           <WorkspaceHeader
-            title="Executive dashboard"
-            subtitle="Сводка собирает ключевые сигналы из обзора продаж: оборот, прибыль, маржу, проблемные заказы, лидеров роста и отстающие зоны."
+            title="Оперативная сводка"
+            subtitle="Только готовые дневные данные из обзора продаж: оборот, прибыль, заказы, риски и быстрые витринные срезы."
             meta={(
               <div className={layoutStyles.heroMeta}>
                 <span className={layoutStyles.metaChip}>{selectedStore ? selectedStore.label : "Все магазины"}</span>
@@ -976,26 +947,15 @@ export default function Page() {
                 <div className={styles.kpiHead}>
                   <div>
                     <div className={styles.kpiLabel}>Оборот</div>
-                    <div className={styles.kpiValue}>{formatMoney(isSingleDayPeriod ? selectedDayRevenue : revenueTotal, currencyCode)}</div>
+                    <div className={styles.kpiValue}>{formatMoney(selectedDayRevenue, currencyCode)}</div>
                   </div>
                   <Sparkline values={revenueSpark} tone="cyan" />
                 </div>
                 <div className={styles.kpiMeta}>
-                  {isSingleDayPeriod ? (
-                    <>
-                      <span>{selectedDayLabel} · {formatLongDate(selectedDayDate)}</span>
-                      <span className={selectedRevenueDeltaPct != null && selectedRevenueDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        vs соседний день {formatPercent(selectedRevenueDeltaPct)}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span>План: {formatMoney(planRevenue, currencyCode)}</span>
-                      <span className={revenueDelta != null && revenueDelta >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        Δ {formatMoney(revenueDelta, currencyCode)}
-                      </span>
-                    </>
-                  )}
+                  <span>{selectedDayLabel} · {formatLongDate(selectedDayDate)}</span>
+                  <span className={selectedRevenueDeltaPct != null && selectedRevenueDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                    vs соседний день {formatPercent(selectedRevenueDeltaPct)}
+                  </span>
                 </div>
               </div>
 
@@ -1003,51 +963,31 @@ export default function Page() {
                 <div className={styles.kpiHead}>
                   <div>
                     <div className={styles.kpiLabel}>Прибыль</div>
-                    <div className={styles.kpiValue}>{formatMoney(isSingleDayPeriod ? selectedDayProfit : profitTotal, currencyCode)}</div>
+                    <div className={styles.kpiValue}>{formatMoney(selectedDayProfit, currencyCode)}</div>
                   </div>
                   <Sparkline values={profitSpark} tone="green" />
                 </div>
                 <div className={styles.kpiMeta}>
-                  {isSingleDayPeriod ? (
-                    <>
-                      <span>Маржа: {formatPercent(selectedDayMarginPct)}</span>
-                      <span className={selectedProfitDeltaPct != null && selectedProfitDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        vs соседний день {formatPercent(selectedProfitDeltaPct)}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span>План: {formatMoney(planProfit, currencyCode)}</span>
-                      <span className={profitDelta != null && profitDelta >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        Δ {formatMoney(profitDelta, currencyCode)}
-                      </span>
-                    </>
-                  )}
+                  <span>Маржа: {formatPercent(selectedDayMarginPct)}</span>
+                  <span className={selectedProfitDeltaPct != null && selectedProfitDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                    vs соседний день {formatPercent(selectedProfitDeltaPct)}
+                  </span>
                 </div>
               </div>
 
               <div className={styles.kpiCard}>
                 <div className={styles.kpiHead}>
                   <div>
-                    <div className={styles.kpiLabel}>{isSingleDayPeriod ? "Заказы дня" : "Маржа"}</div>
-                    <div className={styles.kpiValue}>{isSingleDayPeriod ? formatNumber(selectedDayOrdersCount) : formatPercent(marginPct)}</div>
+                    <div className={styles.kpiLabel}>Заказы дня</div>
+                    <div className={styles.kpiValue}>{formatNumber(selectedDayOrdersCount)}</div>
                   </div>
                   <Sparkline values={marginSpark} tone="amber" />
                 </div>
                 <div className={styles.kpiMeta}>
-                  {isSingleDayPeriod ? (
-                    <>
-                      <span>Средний соинвест: {formatPercent(period === "yesterday" ? bundle?.yesterday?.kpis?.avg_coinvest_pct : bundle?.today?.kpis?.avg_coinvest_pct)}</span>
-                      <span className={selectedOrdersDeltaPct != null && selectedOrdersDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        vs соседний день {formatPercent(selectedOrdersDeltaPct)}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Средний соинвест: {formatPercent(bundle?.orders?.kpis?.avg_coinvest_pct)}</span>
-                      <span>Реклама: {formatMoney(bundle?.orders?.kpis?.additional_ads, currencyCode)}</span>
-                    </>
-                  )}
+                  <span>Средний соинвест: {formatPercent(period === "yesterday" ? bundle?.yesterday?.kpis?.avg_coinvest_pct : bundle?.today?.kpis?.avg_coinvest_pct)}</span>
+                  <span className={selectedOrdersDeltaPct != null && selectedOrdersDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                    vs соседний день {formatPercent(selectedOrdersDeltaPct)}
+                  </span>
                 </div>
               </div>
 
@@ -1055,24 +995,15 @@ export default function Page() {
                 <div className={styles.kpiHead}>
                   <div>
                     <div className={styles.kpiLabel}>Проблемные заказы</div>
-                    <div className={styles.kpiValue}>{formatNumber(isSingleDayPeriod ? selectedDayProblemsCount : bundle?.problems?.total_count)}</div>
+                    <div className={styles.kpiValue}>{formatNumber(selectedDayProblemsCount)}</div>
                   </div>
                   <div className={styles.kpiBadge}>Риски</div>
                 </div>
                 <div className={styles.kpiMeta}>
-                  {isSingleDayPeriod ? (
-                    <>
-                      <span className={selectedProblemsDeltaPct != null && selectedProblemsDeltaPct <= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                        vs соседний день {formatPercent(selectedProblemsDeltaPct)}
-                      </span>
-                      <span>{selectedDayOrdersLoadedAt ? `Обновлено: ${formatDateTime(selectedDayOrdersLoadedAt)}` : "Дневной срез"}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Ошибки: {formatMoney(bundle?.orders?.kpis?.operational_errors, currencyCode)}</span>
-                      <span>{bundle?.problems?.loaded_at ? `Обновлено: ${formatDateTime(bundle.problems.loaded_at)}` : "Требует контроля"}</span>
-                    </>
-                  )}
+                  <span className={selectedProblemsDeltaPct != null && selectedProblemsDeltaPct <= 0 ? styles.deltaPositive : styles.deltaNegative}>
+                    vs соседний день {formatPercent(selectedProblemsDeltaPct)}
+                  </span>
+                  <span>{selectedDayOrdersLoadedAt ? `Обновлено: ${formatDateTime(selectedDayOrdersLoadedAt)}` : "Дневной срез"}</span>
                 </div>
               </div>
             </section>
@@ -1105,57 +1036,30 @@ export default function Page() {
               />
 
               <div className={styles.sideStack}>
-                {period === "month" ? (
-                  <div className={styles.panelCard}>
-                    <div className={styles.panelTitle}>Выполнение плана</div>
-                    <div className={styles.panelHint}>{activeMonth?.month_label || "Текущий месяц"}</div>
-                    <div className={styles.progressGroup}>
-                      <div className={styles.progressRow}>
-                        <div className={styles.progressHead}>
-                          <span>Оборот</span>
-                          <strong>{planRevenue > 0 ? formatPercent((revenueTotal / planRevenue) * 100) : "—"}</strong>
-                        </div>
-                        <div className={styles.progressTrack}>
-                          <div className={styles.progressFillRevenue} style={{ width: `${Math.max(6, Math.min(100, planRevenue > 0 ? (revenueTotal / planRevenue) * 100 : 0))}%` }} />
-                        </div>
+                <div className={styles.panelCard}>
+                  <div className={styles.panelTitle}>Ритм последних дней</div>
+                  <div className={styles.panelHint}>{chartRangeLabel}</div>
+                  <div className={styles.progressGroup}>
+                    <div className={styles.progressRow}>
+                      <div className={styles.progressHead}>
+                        <span>Средний оборот в день</span>
+                        <strong>{formatMoney(averageDayRevenue, currencyCode)}</strong>
                       </div>
-                      <div className={styles.progressRow}>
-                        <div className={styles.progressHead}>
-                          <span>Прибыль</span>
-                          <strong>{planProfit > 0 ? formatPercent((profitTotal / planProfit) * 100) : "—"}</strong>
-                        </div>
-                        <div className={styles.progressTrack}>
-                          <div className={styles.progressFillProfit} style={{ width: `${Math.max(6, Math.min(100, planProfit > 0 ? (profitTotal / planProfit) * 100 : 0))}%` }} />
-                        </div>
+                    </div>
+                    <div className={styles.progressRow}>
+                      <div className={styles.progressHead}>
+                        <span>Средняя прибыль в день</span>
+                        <strong>{formatMoney(averageDayProfit, currencyCode)}</strong>
+                      </div>
+                    </div>
+                    <div className={styles.progressRow}>
+                      <div className={styles.progressHead}>
+                        <span>Активных дней в графике</span>
+                        <strong>{formatNumber(trendDays.length)}</strong>
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div className={styles.panelCard}>
-                    <div className={styles.panelTitle}>Ритм выбранного периода</div>
-                    <div className={styles.panelHint}>{currentRangeLabel}</div>
-                    <div className={styles.progressGroup}>
-                      <div className={styles.progressRow}>
-                        <div className={styles.progressHead}>
-                          <span>Средний оборот в день</span>
-                          <strong>{formatMoney(averageDayRevenue, currencyCode)}</strong>
-                        </div>
-                      </div>
-                      <div className={styles.progressRow}>
-                        <div className={styles.progressHead}>
-                          <span>Средняя прибыль в день</span>
-                          <strong>{formatMoney(averageDayProfit, currencyCode)}</strong>
-                        </div>
-                      </div>
-                      <div className={styles.progressRow}>
-                        <div className={styles.progressHead}>
-                          <span>Активных дней в графике</span>
-                          <strong>{formatNumber(trendDays.length)}</strong>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                </div>
 
                 <div className={styles.insightGrid}>
                   {isSelectedDayEmpty ? (
@@ -1191,7 +1095,7 @@ export default function Page() {
             <section className={styles.analysisGrid}>
               <RankingCard
                 title="Топ SKU"
-                hint={isSingleDayPeriod ? "Лидеры выбранного дня по обороту." : "Лидеры по обороту за выбранный период."}
+                hint="Лидеры выбранного операционного дня по обороту."
                 rows={topSku}
                 currencyCode={currencyCode}
                 actionTo={buildOverviewLink("sku", { storeId: selectedOverviewStoreId, period })}
