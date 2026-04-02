@@ -86,6 +86,28 @@ def _maybe_queue_today_orders_refresh(*, period: str, loaded_at: str) -> None:
         pass
 
 
+def _loaded_at_is_before_today(raw: str) -> bool:
+    value = str(raw or "").strip()
+    if not value:
+        return True
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=MSK)
+        return dt.astimezone(MSK).date() < _local_date_only()
+    except Exception:
+        return True
+
+
+def _today_response_needs_refresh(response: dict | None) -> bool:
+    payload = response if isinstance(response, dict) else {}
+    rows = list(payload.get("rows") or [])
+    loaded_at = str(payload.get("loaded_at") or "").strip()
+    if rows:
+        return False
+    return _loaded_at_is_before_today(loaded_at) or _is_loaded_at_stale(loaded_at)
+
+
 def _period_span_days(period: str) -> int:
     value = str(period or "").strip().lower()
     if value in {"today", "yesterday"}:
@@ -403,6 +425,12 @@ async def _fetch_primary_store_dashboard(*, store_id: str, period: str, previous
             today_problems_task,
             yesterday_problems_task,
         )
+        if store_query and _today_response_needs_refresh(today):
+            await refresh_sales_overview_order_rows_today_for_store(store_uid=f"yandex_market:{store_query}")
+            today, today_problems = await asyncio.gather(
+                get_sales_overview_history(page=1, page_size=1000, store_id=store_query, period="today"),
+                get_sales_overview_problem_orders(page=1, page_size=500, store_id=store_query, period="today"),
+            )
         return {
             "orders": today,
             "problems": today_problems,
@@ -442,6 +470,12 @@ async def _fetch_primary_store_dashboard(*, store_id: str, period: str, previous
         previous_orders_task,
         previous_problems_task,
     )
+    if store_query and _today_response_needs_refresh(today):
+        await refresh_sales_overview_order_rows_today_for_store(store_uid=f"yandex_market:{store_query}")
+        today, today_problems = await asyncio.gather(
+            get_sales_overview_history(page=1, page_size=1000, store_id=store_query, period="today"),
+            get_sales_overview_problem_orders(page=1, page_size=500, store_id=store_query, period="today"),
+        )
     if current_period == "yesterday":
         current = yesterday
         current_problems = yesterday_problems
