@@ -313,10 +313,9 @@ async def _fetch_yandex_business_orders_for_range(
     if not bid or not cid:
         return []
     url = f"https://api.partner.market.yandex.ru/v1/businesses/{bid}/orders"
-    # Yandex business orders rejects intervals longer than 30 days.
-    # For month/current-month refreshes `date_to + 1 day` can overflow the allowed range,
-    # so keep the upper bound inclusive and equal to the requested date_to.
-    request_to = date_to
+    # Market business orders effectively treats the upper date bound as the start of the day.
+    # Shift it by one day to include the full requested `date_to`, but keep the interval within 30 days.
+    request_to = min(date_to + datetime.timedelta(days=1), date_from + datetime.timedelta(days=29))
     out: list[dict[str, Any]] = []
     page_token = ""
     seen_page_tokens: set[str] = set()
