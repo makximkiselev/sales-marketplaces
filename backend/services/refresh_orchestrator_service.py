@@ -1800,8 +1800,19 @@ def _spawn_async_job(coro: Callable[[], Any]) -> None:
 def start_refresh_job(job_code: str, *, trigger_source: str = "manual") -> dict[str, Any]:
     code = str(job_code or "").strip()
     _ensure_manual_queue_worker()
+    _recover_stale_job_run(code)
+    if trigger_source != "manual" and _job_has_active_or_queued_run(code):
+        latest = get_refresh_job_runs_latest().get(code) or {}
+        return {
+            "ok": True,
+            "job_code": code,
+            "started": False,
+            "queued": False,
+            "skipped": True,
+            "reason": "already_running",
+            "run_id": int(latest.get("run_id") or 0) or None,
+        }
     if trigger_source == "manual":
-        _recover_stale_job_run(code)
         if _job_has_active_or_queued_run(code):
             latest = get_refresh_job_runs_latest().get(code) or {}
             return {
