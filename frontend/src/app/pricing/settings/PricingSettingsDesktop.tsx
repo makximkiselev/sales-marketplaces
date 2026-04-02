@@ -5,6 +5,7 @@ import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
 import { SalesPlanSection } from "./components/SalesPlanSection";
 import type { PricingSettingsRendererProps } from "./PricingSettingsRendererTypes";
+import layoutStyles from "../../_shared/AppPageLayout.module.css";
 
 export function PricingSettingsDesktop({
   controller,
@@ -85,7 +86,7 @@ export function PricingSettingsDesktop({
     <div className={styles.settingsShell}>
       <div className={styles.settingsMain}>
         <div className={styles.pricingWorkbenchShell}>
-          <WorkspaceSurface className={styles.pricingHeroSurface}>
+          <WorkspaceSurface className={layoutStyles.heroSurface}>
             <div className={styles.pricingModeStrip}>
               <WorkspaceTabs
                 className={styles.pricingPrimaryTabs}
@@ -96,23 +97,12 @@ export function PricingSettingsDesktop({
             </div>
 
             <WorkspaceHeader
-              className={styles.pricingHeroHeader}
               title="Настройки ценообразования"
               subtitle="Единое рабочее пространство для целей продаж, категорийных правил и логистики магазинов."
-              meta={(
-                <div className={styles.pricingHeroMeta}>
-                  <span className={styles.pricingMetaChip}>{activeSection.title}</span>
-                  {!isSalesPlanSection && activeStore ? (
-                    <span className={styles.pricingMetaChip}>{activeStore.storeName}</span>
-                  ) : (
-                    <span className={styles.pricingMetaChip}>Все магазины</span>
-                  )}
-                </div>
-              )}
             />
 
-            <WorkspaceToolbar className={styles.pricingToolbar}>
-              {!isSalesPlanSection ? (
+            {!isSalesPlanSection ? (
+              <WorkspaceToolbar className={layoutStyles.toolbar}>
                 <div className={styles.pricingToolbarBlock}>
                   <div className={styles.pricingStripLabel}>Магазин</div>
                   <WorkspaceTabs
@@ -126,19 +116,8 @@ export function PricingSettingsDesktop({
                     onChange={setActiveStoreTabKey}
                   />
                 </div>
-              ) : (
-                <div className={styles.pricingToolbarMeta}>
-                  <span className={styles.pricingMetaChip}>Все магазины</span>
-                </div>
-              )}
-
-              {!isSalesPlanSection && activeStore ? (
-                <div className={styles.pricingToolbarMeta}>
-                  <span className={styles.pricingMetaChip}>{activeStore.platformLabel}</span>
-                  <span className={styles.pricingMetaChip}>Валюта {moneySign}</span>
-                </div>
-              ) : null}
-            </WorkspaceToolbar>
+              </WorkspaceToolbar>
+            ) : null}
           </WorkspaceSurface>
 
           {settingsTab === "logistics" ? (

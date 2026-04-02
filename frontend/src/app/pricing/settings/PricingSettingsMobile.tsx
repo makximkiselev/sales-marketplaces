@@ -6,6 +6,7 @@ import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
 import { SalesPlanSection } from "./components/SalesPlanSection";
 import type { PricingSettingsRendererProps } from "./PricingSettingsRendererTypes";
+import layoutStyles from "../../_shared/AppPageLayout.module.css";
 
 export function PricingSettingsMobile({
   controller,
@@ -114,7 +115,7 @@ export function PricingSettingsMobile({
     <div className={`${styles.settingsShell} ${styles.mobileSettingsShell}`}>
       <div className={`${styles.settingsMain} ${styles.mobileSettingsMain}`}>
         <MobileDockLayout dock={mobileDock} dockVisible={mobileDockVisible} dockHeight={232} dockOffset={82}>
-        <WorkspaceSurface className={`${styles.pricingHeroSurface} ${styles.pricingHeroSurfaceMobile}`}>
+        <WorkspaceSurface className={layoutStyles.heroSurface}>
           <div className={styles.mobileNavStack}>
             <WorkspaceTabs
               className={styles.pricingPrimaryTabs}
@@ -140,29 +141,27 @@ export function PricingSettingsMobile({
           </div>
 
           <WorkspaceHeader
-            className={styles.pricingHeroHeader}
             title="Настройки ценообразования"
             subtitle="Единая рабочая зона для целей продаж, категорийных правил и логистики магазинов."
-            meta={(
-              <div className={styles.pricingHeroMeta}>
-                <span className={styles.pricingMetaChip}>{activeSection.title}</span>
-              </div>
-            )}
           />
 
-          <WorkspaceToolbar className={styles.pricingToolbarMobile}>
-            {!isSalesPlanSection && activeStore ? (
-              <div className={styles.pricingToolbarMeta}>
-                <span className={styles.pricingMetaChip}>{activeStore.platformLabel}</span>
-                <span className={styles.pricingMetaChip}>{activeStore.storeName}</span>
-                <span className={styles.pricingMetaChip}>Валюта {moneySign}</span>
+          {!isSalesPlanSection ? (
+            <WorkspaceToolbar className={styles.pricingToolbarMobile}>
+              <div className={styles.pricingToolbarBlock}>
+                <div className={styles.pricingStripLabel}>Магазин</div>
+                <WorkspaceTabs
+                  className={styles.pricingStoreTabs}
+                  items={storeTabs.map((store) => ({
+                    id: store.key,
+                    label: store.storeName,
+                    meta: store.platformLabel,
+                  }))}
+                  activeId={activeStoreTabKey}
+                  onChange={setActiveStoreTabKey}
+                />
               </div>
-            ) : (
-              <div className={styles.pricingToolbarMeta}>
-                <span className={styles.pricingMetaChip}>Все магазины</span>
-              </div>
-            )}
-          </WorkspaceToolbar>
+            </WorkspaceToolbar>
+          ) : null}
         </WorkspaceSurface>
 
         {settingsTab === "sales_plan" ? (
