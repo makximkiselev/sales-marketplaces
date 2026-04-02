@@ -140,6 +140,7 @@ type RetrospectiveResp = {
 };
 
 type ChartRange = "7d" | "30d";
+type AnalysisView = "sku" | "category" | "status";
 
 type CategoryAggregate = {
   label: string;
@@ -661,6 +662,7 @@ export default function Page() {
   const [period, setPeriod] = useState<DashboardPeriod>("today");
   const [storeId, setStoreId] = useState("all");
   const [chartRange, setChartRange] = useState<ChartRange>("7d");
+  const [analysisView, setAnalysisView] = useState<AnalysisView>("sku");
   const [selectedCategoryLabel, setSelectedCategoryLabel] = useState("");
 
   useEffect(() => {
@@ -771,7 +773,7 @@ export default function Page() {
   const averageDayProfit = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.profit_amount || 0), 0) / trendDays.length : null;
   const isSelectedDayEmpty = selectedDayOrdersCount === 0 && selectedDayRevenue === 0 && selectedDayProblemsCount === 0;
   const chartTitle = "Динамика оборота и прибыли";
-  const chartHint = `Последние ${chartSpan} дней независимо от выбранного режима сводки. Сейчас: ${chartRangeLabel}.`;
+  const chartHint = `Последние ${chartSpan} дней. Сейчас: ${chartRangeLabel}.`;
   const chartEmptyText = `За последние ${chartSpan} дней в графике пока нет дневных точек.`;
 
   return (
@@ -780,17 +782,16 @@ export default function Page() {
         <WorkspaceSurface className={`${layoutStyles.heroSurface} ${styles.heroSurface}`}>
           <WorkspaceHeader
             title="Оперативная сводка"
-            subtitle="Только готовые дневные данные из обзора продаж: оборот, прибыль, заказы, риски и быстрые витринные срезы."
+            subtitle="Готовые дневные данные из обзора продаж: оборот, прибыль, заказы и риски."
             meta={(
               <div className={layoutStyles.heroMeta}>
                 <span className={layoutStyles.metaChip}>{selectedStore ? selectedStore.label : "Все магазины"}</span>
                 <span className={layoutStyles.metaChip}>{PERIOD_OPTIONS.find((item) => item.value === period)?.label}</span>
-                <span className={layoutStyles.metaChip}>{bundle?.orders?.loaded_at ? `Обновлено: ${formatDateTime(bundle.orders.loaded_at)}` : "Ожидание данных"}</span>
               </div>
             )}
           />
-          <WorkspaceToolbar className={layoutStyles.toolbar}>
-            <div className={layoutStyles.toolbarGroup}>
+          <WorkspaceToolbar className={`${layoutStyles.toolbar} ${styles.heroToolbar}`}>
+            <div className={`${layoutStyles.toolbarGroup} ${styles.toolbarFilters}`}>
               <select className="input input-size-lg" value={storeId} onChange={(e) => setStoreId(e.target.value)}>
                 <option value="all">Все магазины</option>
                 {stores.map((store) => (
@@ -803,9 +804,9 @@ export default function Page() {
                 ))}
               </select>
             </div>
-            <div className={layoutStyles.toolbarGroup}>
+            <div className={`${layoutStyles.toolbarGroup} ${styles.toolbarActions}`}>
               <Link className="btn ghost" to={buildOverviewLink("orders", { storeId: selectedOverviewStoreId, period })}>Открыть обзор</Link>
-              <Link className="btn ghost" to="/settings/monitoring">Мониторинг</Link>
+              <Link className={`btn ghost ${styles.monitoringLink}`} to="/settings/monitoring">Мониторинг</Link>
             </div>
           </WorkspaceToolbar>
         </WorkspaceSurface>
@@ -910,26 +911,20 @@ export default function Page() {
 
               <div className={styles.sideStack}>
                 <div className={styles.panelCard}>
-                  <div className={styles.panelTitle}>Ритм последних дней</div>
-                  <div className={styles.panelHint}>{chartRangeLabel}</div>
-                  <div className={styles.progressGroup}>
-                    <div className={styles.progressRow}>
-                      <div className={styles.progressHead}>
-                        <span>Средний оборот в день</span>
-                        <strong>{formatMoney(averageDayRevenue, currencyCode)}</strong>
-                      </div>
+                <div className={styles.panelTitle}>Ритм последних дней</div>
+                <div className={styles.panelHint}>{chartRangeLabel}</div>
+                  <div className={styles.tempoMiniGrid}>
+                    <div className={styles.tempoMiniCard}>
+                      <span>Средний оборот</span>
+                      <strong>{formatMoney(averageDayRevenue, currencyCode)}</strong>
                     </div>
-                    <div className={styles.progressRow}>
-                      <div className={styles.progressHead}>
-                        <span>Средняя прибыль в день</span>
-                        <strong>{formatMoney(averageDayProfit, currencyCode)}</strong>
-                      </div>
+                    <div className={styles.tempoMiniCard}>
+                      <span>Средняя прибыль</span>
+                      <strong>{formatMoney(averageDayProfit, currencyCode)}</strong>
                     </div>
-                    <div className={styles.progressRow}>
-                      <div className={styles.progressHead}>
-                        <span>Активных дней в графике</span>
-                        <strong>{formatNumber(trendDays.length)}</strong>
-                      </div>
+                    <div className={styles.tempoMiniCard}>
+                      <span>Активных дней</span>
+                      <strong>{formatNumber(trendDays.length)}</strong>
                     </div>
                   </div>
                 </div>
@@ -965,23 +960,60 @@ export default function Page() {
               </div>
             </section>
 
-            <section className={styles.analysisGrid}>
-              <RankingCard
-                title="Топ SKU"
-                hint="Лидеры выбранного операционного дня по обороту."
-                rows={topSku}
-                currencyCode={currencyCode}
-                actionTo={buildOverviewLink("sku", { storeId: selectedOverviewStoreId, period })}
-                actionLabel="Открыть товары"
-              />
-              <CategoryDrilldownCard
-                categories={categoryAggregates}
-                currencyCode={currencyCode}
-                selectedCategory={selectedCategoryLabel}
-                onSelectCategory={setSelectedCategoryLabel}
-                actionTo={buildOverviewLink("category", { storeId: selectedOverviewStoreId, period })}
-              />
-              <StatusBreakdownCard rows={problemStatusRows} total={Number(bundle?.problems?.total_count || 0)} />
+            <section className={styles.analysisSection}>
+              <div className={styles.panelHead}>
+                <div>
+                  <div className={styles.panelTitle}>Быстрые срезы</div>
+                  <div className={styles.panelHint}>Один операционный блок без длинного хвоста из трех карточек подряд.</div>
+                </div>
+                <div className={styles.analysisTabs}>
+                  <button
+                    type="button"
+                    className={`${styles.analysisTab} ${analysisView === "sku" ? styles.analysisTabActive : ""}`}
+                    onClick={() => setAnalysisView("sku")}
+                  >
+                    SKU
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.analysisTab} ${analysisView === "category" ? styles.analysisTabActive : ""}`}
+                    onClick={() => setAnalysisView("category")}
+                  >
+                    Категории
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.analysisTab} ${analysisView === "status" ? styles.analysisTabActive : ""}`}
+                    onClick={() => setAnalysisView("status")}
+                  >
+                    Риски
+                  </button>
+                </div>
+              </div>
+              <div className={styles.analysisViewport}>
+                {analysisView === "sku" ? (
+                  <RankingCard
+                    title="Топ SKU"
+                    hint="Лидеры выбранного операционного дня по обороту."
+                    rows={topSku}
+                    currencyCode={currencyCode}
+                    actionTo={buildOverviewLink("sku", { storeId: selectedOverviewStoreId, period })}
+                    actionLabel="Открыть товары"
+                  />
+                ) : null}
+                {analysisView === "category" ? (
+                  <CategoryDrilldownCard
+                    categories={categoryAggregates}
+                    currencyCode={currencyCode}
+                    selectedCategory={selectedCategoryLabel}
+                    onSelectCategory={setSelectedCategoryLabel}
+                    actionTo={buildOverviewLink("category", { storeId: selectedOverviewStoreId, period })}
+                  />
+                ) : null}
+                {analysisView === "status" ? (
+                  <StatusBreakdownCard rows={problemStatusRows} total={Number(bundle?.problems?.total_count || 0)} />
+                ) : null}
+              </div>
             </section>
           </>
         ) : null}

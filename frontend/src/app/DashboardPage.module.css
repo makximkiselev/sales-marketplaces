@@ -1,6 +1,15 @@
 .heroSurface {
-  padding: 22px;
-  gap: 18px;
+  padding: 18px;
+  gap: 14px;
+}
+
+.heroToolbar {
+  gap: 10px;
+}
+
+.toolbarFilters,
+.toolbarActions {
+  align-items: stretch;
 }
 
 .kpiGrid {
@@ -368,6 +377,36 @@
   gap: 16px;
 }
 
+.tempoMiniGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.tempoMiniCard {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid rgba(132, 161, 214, 0.12);
+  border-radius: 16px;
+  background: rgba(8, 16, 30, 0.42);
+}
+
+.tempoMiniCard span {
+  color: #8ea5c8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tempoMiniCard strong {
+  color: #f4f8ff;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
 .progressGroup {
   display: grid;
   gap: 14px;
@@ -424,6 +463,7 @@
 .insightGrid {
   display: grid;
   gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .insightCard {
@@ -467,10 +507,40 @@
   line-height: 1.45;
 }
 
-.analysisGrid {
+.analysisSection {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
+}
+
+.analysisTabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 999px;
+  background: rgba(7, 14, 27, 0.46);
+}
+
+.analysisTab {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #9eb5d7;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.analysisTabActive {
+  background: linear-gradient(180deg, rgba(57, 178, 229, 0.3), rgba(25, 82, 141, 0.24));
+  box-shadow: inset 0 0 0 1px rgba(93, 207, 255, 0.45);
+  color: #f3f8ff;
+}
+
+.analysisViewport {
+  min-width: 0;
 }
 
 .analysisGridSingle {
@@ -673,8 +743,7 @@
 
   .dashboardGrid,
   .dailyGrid,
-  .tempoGrid,
-  .analysisGrid {
+  .tempoGrid {
     grid-template-columns: 1fr;
   }
 
@@ -685,8 +754,19 @@
 
 @media (max-width: 960px) {
   .heroSurface {
-    padding: 16px;
-    gap: 14px;
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .toolbarFilters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 132px;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .toolbarActions {
+    width: 100%;
   }
 
   .kpiCard,
@@ -713,11 +793,12 @@
   }
 
   .chartSvg {
-    min-height: 220px;
+    min-height: 210px;
   }
 
   .chartTools,
-  .rangeTabs {
+  .rangeTabs,
+  .analysisTabs {
     width: 100%;
     justify-content: flex-start;
   }
@@ -725,19 +806,38 @@
   .categorySplit {
     grid-template-columns: 1fr;
   }
+
+  .tempoMiniGrid,
+  .insightGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
-  .kpiGrid,
   .dailyGrid,
   .tempoGrid,
-  .actionGrid {
+  .actionGrid,
+  .tempoMiniGrid,
+  .insightGrid {
     grid-template-columns: 1fr;
   }
 
   .heroSurface {
     padding: 12px;
-    gap: 12px;
+    gap: 10px;
+  }
+
+  .toolbarFilters {
+    grid-template-columns: 1fr;
+  }
+
+  .monitoringLink {
+    display: none;
+  }
+
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .kpiCard,
@@ -752,7 +852,7 @@
   }
 
   .kpiValue {
-    font-size: 21px;
+    font-size: 19px;
   }
 
   .dailyMetrics {
@@ -774,6 +874,12 @@
     gap: 6px;
   }
 
+  .panelHint,
+  .insightDetail,
+  .rankingDetail {
+    font-size: 12px;
+  }
+
   .watchRowHead,
   .flowRowHead {
     flex-direction: column;
@@ -781,6 +887,26 @@
   }
 
   .sparkline {
-    width: 96px;
+    width: 92px;
+    height: 24px;
+  }
+
+  .chartSvg {
+    min-height: 180px;
+  }
+
+  .analysisTabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .analysisTab {
+    flex: 1 0 auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .kpiGrid {
+    grid-template-columns: 1fr;
   }
 }
