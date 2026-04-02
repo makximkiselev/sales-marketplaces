@@ -81,7 +81,7 @@ LOGISTICS_IMPORT_HEADERS = [
 
 
 def _pricing_monitoring_snapshot_key() -> str:
-    return _PRICING_MONITORING_SNAPSHOT_NAME
+    return f"{_PRICING_MONITORING_SNAPSHOT_NAME}:v2"
 
 
 def _pricing_monitoring_exports_snapshot_key() -> str:

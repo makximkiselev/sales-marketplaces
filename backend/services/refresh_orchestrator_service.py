@@ -168,6 +168,7 @@ FULL_CYCLE_JOB_CODES: list[str] = [
 ]
 
 HIDDEN_MONITORING_JOB_CODES: set[str] = {
+    "prices_refresh",
     "boost_refresh",
     "attractiveness_refresh",
     "promos_refresh",
