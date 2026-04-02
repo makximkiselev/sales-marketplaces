@@ -30,24 +30,49 @@ from backend.routers._shared import (
     upsert_store,
 )
 from backend.services.store_data_model import upsert_pricing_logistics_store_settings
+from backend.services.store_data_model import (
+    delete_dashboard_snapshots,
+    get_dashboard_snapshot,
+    upsert_dashboard_snapshot,
+)
 
 router = APIRouter()
+_SOURCES_ITEMS_SNAPSHOT_NAME = "page_sources_items"
+_INTEGRATIONS_SNAPSHOT_NAME = "page_integrations_context"
 
 
-@router.get("/api/sources")
-async def api_list_sources():
+def _sources_snapshot_key() -> str:
+    return _SOURCES_ITEMS_SNAPSHOT_NAME
+
+
+def _integrations_snapshot_key() -> str:
+    return _INTEGRATIONS_SNAPSHOT_NAME
+
+
+def _invalidate_sources_snapshots() -> None:
+    delete_dashboard_snapshots(snapshot_name=_SOURCES_ITEMS_SNAPSHOT_NAME)
+    delete_dashboard_snapshots(snapshot_name=_INTEGRATIONS_SNAPSHOT_NAME)
+
+
+def _build_sources_response() -> dict:
     from backend.routers._shared import _mapping_configured, load_sources
+
     items = load_sources()
     enriched = []
     for src in items:
         row = dict(src)
         row["mapping_configured"] = _mapping_configured(row)
         enriched.append(row)
-    return {"ok": True, "items": enriched, "total_count": len(enriched)}
+    response = {"ok": True, "items": enriched, "total_count": len(enriched)}
+    upsert_dashboard_snapshot(
+        snapshot_name=_SOURCES_ITEMS_SNAPSHOT_NAME,
+        cache_key=_sources_snapshot_key(),
+        response=response,
+    )
+    return response
 
 
-@router.get("/api/integrations")
-async def api_get_integrations():
+def _build_integrations_response() -> dict:
     data = load_integrations()
     ym = data.get("yandex_market") or {}
     ym_api = (ym.get("api_key") or "").strip()
@@ -87,7 +112,7 @@ async def api_get_integrations():
     ym_platform_flow = ((flow.get("platforms") or {}).get("yandex_market") or {}) if isinstance(flow, dict) else {}
     oz_platform_flow = ((flow.get("platforms") or {}).get("ozon") or {}) if isinstance(flow, dict) else {}
 
-    return {
+    response = {
         "ok": True,
         "data_flow": flow,
         "imports": {
@@ -171,6 +196,34 @@ async def api_get_integrations():
             "accounts": g_accounts,
         },
     }
+    upsert_dashboard_snapshot(
+        snapshot_name=_INTEGRATIONS_SNAPSHOT_NAME,
+        cache_key=_integrations_snapshot_key(),
+        response=response,
+    )
+    return response
+
+
+@router.get("/api/sources")
+async def api_list_sources():
+    snapshot = get_dashboard_snapshot(
+        snapshot_name=_SOURCES_ITEMS_SNAPSHOT_NAME,
+        cache_key=_sources_snapshot_key(),
+    )
+    if isinstance(snapshot, dict) and isinstance(snapshot.get("response"), dict):
+        return snapshot["response"]
+    return _build_sources_response()
+
+
+@router.get("/api/integrations")
+async def api_get_integrations():
+    snapshot = get_dashboard_snapshot(
+        snapshot_name=_INTEGRATIONS_SNAPSHOT_NAME,
+        cache_key=_integrations_snapshot_key(),
+    )
+    if isinstance(snapshot, dict) and isinstance(snapshot.get("response"), dict):
+        return snapshot["response"]
+    return _build_integrations_response()
 
 
 @router.post("/api/integrations/data-flow")
@@ -207,6 +260,9 @@ async def update_data_flow(payload: dict):
     except ValueError as e:
         return JSONResponse({"ok": False, "message": str(e)}, status_code=400)
 
+    _invalidate_sources_snapshots()
+    _build_sources_response()
+    _build_integrations_response()
     return {"ok": True, "data_flow": settings}
 
 
@@ -364,6 +420,9 @@ async def connect_yandex_market(payload: dict):
         "shops": all_shops,  # legacy flat view
     }
     save_integrations(data)
+    _invalidate_sources_snapshots()
+    _build_sources_response()
+    _build_integrations_response()
     return {
         "ok": True,
         "message": "Яндекс.Маркет подключен",
@@ -406,6 +465,9 @@ async def delete_yandex_account(payload: dict):
 
     data["yandex_market"] = ym
     save_integrations(data)
+    _invalidate_sources_snapshots()
+    _build_sources_response()
+    _build_integrations_response()
     return {"ok": True}
 
 
@@ -440,6 +502,9 @@ async def delete_yandex_shop(payload: dict):
     ym["shops"] = [s for a in accounts if isinstance(a, dict) for s in (a.get("shops") or []) if isinstance(s, dict)]
     data["yandex_market"] = ym
     save_integrations(data)
+    _invalidate_sources_snapshots()
+    _build_sources_response()
+    _build_integrations_response()
     return {"ok": True}
 
 
@@ -515,6 +580,8 @@ async def check_yandex_shop(campaign_id: str, payload: dict | None = None):
         ok=True,
         message="",
     )
+    _invalidate_sources_snapshots()
+    _build_integrations_response()
     return {"ok": True, "campaign": target, "message": "Подключение активно", "checked_at": _now_iso()}
 
 
@@ -611,6 +678,9 @@ async def connect_ozon(payload: dict):
         source_type="ozon",
         title=f"Ozon {client_id}",
     )
+    _invalidate_sources_snapshots()
+    _build_sources_response()
+    _build_integrations_response()
     return {
         "ok": True,
         "seller": {"seller_id": seller_id, "seller_name": seller_name},
@@ -711,6 +781,9 @@ async def set_integration_store_currency(payload: dict):
     else:
         return JSONResponse({"ok": False, "message": "Поддержаны только yandex_market и ozon"}, status_code=400)
 
+    _invalidate_sources_snapshots()
+    _build_sources_response()
+    _build_integrations_response()
     return {"ok": True, "platform": platform, "currency_code": currency_code, "store_uid": store_uid}
 
 
@@ -810,6 +883,9 @@ async def set_integration_store_fulfillment(payload: dict):
     else:
         return JSONResponse({"ok": False, "message": "Поддержаны только yandex_market и ozon"}, status_code=400)
 
+    _invalidate_sources_snapshots()
+    _build_sources_response()
+    _build_integrations_response()
     return {"ok": True, "platform": platform, "fulfillment_model": fulfillment_model, "store_uid": store_uid}
 
 
@@ -840,6 +916,9 @@ async def delete_ozon_account(payload: dict):
         oz["seller_name"] = ""
     data["ozon"] = oz
     save_integrations(data)
+    _invalidate_sources_snapshots()
+    _build_sources_response()
+    _build_integrations_response()
     return {"ok": True}
 
 
@@ -879,6 +958,8 @@ async def check_ozon_account(client_id: str):
         oz["accounts"] = accounts
         data["ozon"] = oz
         save_integrations(data)
+        _invalidate_sources_snapshots()
+        _build_integrations_response()
         return {"ok": True, "seller": {"seller_id": account["seller_id"], "seller_name": account["seller_name"]}, "checked_at": account["health_checked_at"]}
     except Exception as e:
         account["health_status"] = "error"
@@ -892,6 +973,8 @@ async def check_ozon_account(client_id: str):
         oz["accounts"] = accounts
         data["ozon"] = oz
         save_integrations(data)
+        _invalidate_sources_snapshots()
+        _build_integrations_response()
         return JSONResponse({"ok": False, "message": f"Ошибка проверки Ozon: {e}"}, status_code=400)
 
 
@@ -922,6 +1005,8 @@ async def select_gsheets_account(payload: dict):
     google["active_account_id"] = account_id
     data["google"] = google
     save_integrations(data)
+    _invalidate_sources_snapshots()
+    _build_integrations_response()
     return {"ok": True, "active_account_id": account_id}
 
 
@@ -936,6 +1021,8 @@ async def upsert_gsheets_account(payload: dict):
     except ValueError as e:
         return JSONResponse({"ok": False, "message": str(e)}, status_code=400)
 
+    _invalidate_sources_snapshots()
+    _build_integrations_response()
     return {
         "ok": True,
         "account": account,
@@ -966,6 +1053,8 @@ async def upload_gsheets_account_key(
     except ValueError as e:
         return JSONResponse({"ok": False, "message": str(e)}, status_code=400)
 
+    _invalidate_sources_snapshots()
+    _build_integrations_response()
     return {
         "ok": True,
         "account": account,
@@ -1008,6 +1097,8 @@ async def delete_gsheets_account(payload: dict):
                 except Exception:
                     pass
 
+    _invalidate_sources_snapshots()
+    _build_integrations_response()
     return {"ok": True, "active_account_id": google.get("active_account_id") or ""}
 
 
@@ -1084,9 +1175,13 @@ async def check_gsheets_source(source_id: str):
     try:
         preview = read_sheet_preview(spreadsheet_id, worksheet=worksheet, limit=1)
         _persist_source_health(source_id=source_id, ok=True, message="")
+        _invalidate_sources_snapshots()
+        _build_sources_response()
         headers = preview["preview"][0] if preview.get("preview") else []
         return {"ok": True, "message": "Источник доступен", "headers": headers, "checked_at": _now_iso()}
     except Exception as e:
         msg = str(e)
         _persist_source_health(source_id=source_id, ok=False, message=msg)
+        _invalidate_sources_snapshots()
+        _build_sources_response()
         return JSONResponse({"ok": False, "message": msg}, status_code=400)

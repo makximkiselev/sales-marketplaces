@@ -18,9 +18,34 @@ from backend.services.auth_service import (
     revoke_session,
     update_user,
 )
+from backend.services.store_data_model import (
+    delete_dashboard_snapshots,
+    get_dashboard_snapshot,
+    upsert_dashboard_snapshot,
+)
 
 
 router = APIRouter()
+_ADMIN_USERS_SNAPSHOT_NAME = "page_admin_users"
+
+
+def _admin_users_snapshot_key() -> str:
+    return _ADMIN_USERS_SNAPSHOT_NAME
+
+
+def _get_admin_users_response() -> dict:
+    rows = list_users()
+    response = {"ok": True, "rows": rows}
+    upsert_dashboard_snapshot(
+        snapshot_name=_ADMIN_USERS_SNAPSHOT_NAME,
+        cache_key=_admin_users_snapshot_key(),
+        response=response,
+    )
+    return response
+
+
+def _invalidate_admin_users_snapshot() -> None:
+    delete_dashboard_snapshots(snapshot_name=_ADMIN_USERS_SNAPSHOT_NAME)
 
 
 class LoginPayload(BaseModel):
@@ -114,7 +139,13 @@ async def admin_users_list(request: Request):
     except PermissionError as exc:
         code = 401 if str(exc) == "unauthorized" else 403
         return JSONResponse({"ok": False, "message": str(exc)}, status_code=code)
-    return {"ok": True, "rows": list_users()}
+    snapshot = get_dashboard_snapshot(
+        snapshot_name=_ADMIN_USERS_SNAPSHOT_NAME,
+        cache_key=_admin_users_snapshot_key(),
+    )
+    if isinstance(snapshot, dict) and isinstance(snapshot.get("response"), dict):
+        return snapshot["response"]
+    return _get_admin_users_response()
 
 
 @router.post("/api/admin/users")
@@ -135,6 +166,8 @@ async def admin_users_create(payload: dict | None, request: Request):
         )
     except ValueError as exc:
         return JSONResponse({"ok": False, "message": str(exc)}, status_code=400)
+    _invalidate_admin_users_snapshot()
+    _get_admin_users_response()
     return {"ok": True, "user": user}
 
 
@@ -160,6 +193,8 @@ async def admin_users_update(user_id: str, payload: dict | None, request: Reques
         )
     except ValueError as exc:
         return JSONResponse({"ok": False, "message": str(exc)}, status_code=400)
+    _invalidate_admin_users_snapshot()
+    _get_admin_users_response()
     return {"ok": True, "user": user}
 
 
@@ -178,4 +213,6 @@ async def admin_users_delete(user_id: str, request: Request):
         delete_user(user_id=target_user_id)
     except ValueError as exc:
         return JSONResponse({"ok": False, "message": str(exc)}, status_code=400)
+    _invalidate_admin_users_snapshot()
+    _get_admin_users_response()
     return {"ok": True}

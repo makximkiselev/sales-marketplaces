@@ -41,9 +41,12 @@ from backend.services.store_data_model import (
     clear_pricing_promo_results_for_store,
     clear_pricing_price_results_for_store,
     clear_pricing_strategy_results_for_store,
+    delete_dashboard_snapshots,
+    get_dashboard_snapshot,
     get_monitoring_export_snapshot,
     get_pricing_logistics_product_settings_map,
     get_pricing_logistics_store_settings,
+    upsert_dashboard_snapshot,
     upsert_refresh_job,
     upsert_pricing_logistics_product_settings_bulk,
     upsert_pricing_logistics_store_settings,
@@ -62,6 +65,10 @@ from backend.services.pricing_export_service import (
 router = APIRouter()
 logger = logging.getLogger("uvicorn.error")
 
+_PRICING_MONITORING_SNAPSHOT_NAME = "page_pricing_monitoring"
+_PRICING_MONITORING_EXPORTS_SNAPSHOT_NAME = "page_pricing_monitoring_exports"
+_PRICING_FX_RATES_SNAPSHOT_NAME = "page_pricing_fx_rates"
+
 LOGISTICS_IMPORT_HEADERS = [
     "SKU",
     "Наименование товара",
@@ -71,6 +78,44 @@ LOGISTICS_IMPORT_HEADERS = [
     "Вес, кг",
     "Комментарии",
 ]
+
+
+def _pricing_monitoring_snapshot_key() -> str:
+    return _PRICING_MONITORING_SNAPSHOT_NAME
+
+
+def _pricing_monitoring_exports_snapshot_key() -> str:
+    return _PRICING_MONITORING_EXPORTS_SNAPSHOT_NAME
+
+
+def _pricing_fx_rates_snapshot_key(*, period: str, date_from: str | None, date_to: str | None) -> str:
+    return f"{period}|{str(date_from or '').strip()}|{str(date_to or '').strip()}"
+
+
+def _invalidate_pricing_page_snapshots() -> None:
+    delete_dashboard_snapshots(snapshot_name=_PRICING_MONITORING_SNAPSHOT_NAME)
+    delete_dashboard_snapshots(snapshot_name=_PRICING_MONITORING_EXPORTS_SNAPSHOT_NAME)
+    delete_dashboard_snapshots(snapshot_name=_PRICING_FX_RATES_SNAPSHOT_NAME)
+
+
+def _build_pricing_monitoring_response() -> dict:
+    response = get_refresh_monitoring_snapshot()
+    upsert_dashboard_snapshot(
+        snapshot_name=_PRICING_MONITORING_SNAPSHOT_NAME,
+        cache_key=_pricing_monitoring_snapshot_key(),
+        response=response,
+    )
+    return response
+
+
+def _build_pricing_monitoring_exports_response() -> dict:
+    response = get_monitoring_export_snapshot()
+    upsert_dashboard_snapshot(
+        snapshot_name=_PRICING_MONITORING_EXPORTS_SNAPSHOT_NAME,
+        cache_key=_pricing_monitoring_exports_snapshot_key(),
+        response=response,
+    )
+    return response
 
 
 def _invalidate_pricing_read_caches() -> None:
@@ -103,7 +148,13 @@ def _invalidate_pricing_materialized_results_for_store(*, store_uid: str) -> Non
 @router.get("/api/pricing/settings/monitoring")
 async def pricing_settings_monitoring():
     try:
-        return get_refresh_monitoring_snapshot()
+        snapshot = get_dashboard_snapshot(
+            snapshot_name=_PRICING_MONITORING_SNAPSHOT_NAME,
+            cache_key=_pricing_monitoring_snapshot_key(),
+        )
+        if isinstance(snapshot, dict) and isinstance(snapshot.get("response"), dict):
+            return snapshot["response"]
+        return _build_pricing_monitoring_response()
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось получить мониторинг обновлений: {exc}"}, status_code=500)
 
@@ -111,7 +162,13 @@ async def pricing_settings_monitoring():
 @router.get("/api/pricing/settings/monitoring/exports")
 async def pricing_settings_monitoring_exports():
     try:
-        return get_monitoring_export_snapshot()
+        snapshot = get_dashboard_snapshot(
+            snapshot_name=_PRICING_MONITORING_EXPORTS_SNAPSHOT_NAME,
+            cache_key=_pricing_monitoring_exports_snapshot_key(),
+        )
+        if isinstance(snapshot, dict) and isinstance(snapshot.get("response"), dict):
+            return snapshot["response"]
+        return _build_pricing_monitoring_exports_response()
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось получить настройки экспорта: {exc}"}, status_code=500)
 
@@ -119,7 +176,11 @@ async def pricing_settings_monitoring_exports():
 @router.post("/api/pricing/settings/monitoring/run-all")
 async def pricing_settings_monitoring_run_all():
     try:
-        return start_refresh_all(trigger_source="manual")
+        result = start_refresh_all(trigger_source="manual")
+        _invalidate_pricing_page_snapshots()
+        _build_pricing_monitoring_response()
+        _build_pricing_monitoring_exports_response()
+        return result
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось запустить полный цикл обновлений: {exc}"}, status_code=500)
 
@@ -131,7 +192,11 @@ async def pricing_settings_monitoring_run_job(payload: dict | None = None):
     if not job_code:
         return JSONResponse({"ok": False, "message": "job_code обязателен"}, status_code=400)
     try:
-        return start_refresh_job(job_code, trigger_source="manual")
+        result = start_refresh_job(job_code, trigger_source="manual")
+        _invalidate_pricing_page_snapshots()
+        _build_pricing_monitoring_response()
+        _build_pricing_monitoring_exports_response()
+        return result
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось запустить задачу: {exc}"}, status_code=500)
 
@@ -157,6 +222,8 @@ async def pricing_settings_monitoring_export_config(payload: dict | None = None)
                 f"{prefix}_value_column": body.get("valueColumn"),
             },
         )
+        _invalidate_pricing_page_snapshots()
+        _build_pricing_monitoring_exports_response()
         return {"ok": True}
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось сохранить настройки экспорта: {exc}"}, status_code=500)
@@ -171,6 +238,8 @@ async def pricing_settings_monitoring_export_run(payload: dict | None = None):
             result = await export_strategy_outputs_for_store(store_uid=store_uid)
         else:
             result = await export_strategy_outputs_for_all_stores()
+        _invalidate_pricing_page_snapshots()
+        _build_pricing_monitoring_exports_response()
         return {
             "ok": bool(result.get("ok")),
             "message": "" if bool(result.get("ok")) else "Экспорт завершился с ошибками",
@@ -198,6 +267,8 @@ async def pricing_settings_monitoring_upsert_job(payload: dict | None = None):
         }
         job = upsert_refresh_job(job_code=job_code, values=values)
         configure_refresh_scheduler()
+        _invalidate_pricing_page_snapshots()
+        _build_pricing_monitoring_response()
         return {"ok": True, "job": job}
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось сохранить настройки обновления: {exc}"}, status_code=500)
@@ -1263,8 +1334,7 @@ async def pricing_settings_apply_defaults(payload: dict):
     return {"ok": True, "dataset_key": dataset_key, "updated_rows": updated}
 
 
-@router.get("/api/pricing/fx-rates")
-async def pricing_fx_rates(period: str = "7d", date_from: str | None = None, date_to: str | None = None):
+async def _build_pricing_fx_rates_response(*, period: str, date_from: str | None, date_to: str | None) -> dict:
     try:
         today = datetime.date.today()
         p = str(period or "7d").strip().lower()
@@ -1333,7 +1403,7 @@ async def pricing_fx_rates(period: str = "7d", date_from: str | None = None, dat
         oz_services_rows = [{"date": row["date"], "rate": row["rate"]} for row in cbr_rows]
         oz_sales_rows = [{"date": row["date"], "rate": round(float(row["rate"]) * 1.005, 6)} for row in cbr_rows]
 
-        return {
+        response = {
             "ok": True,
             "period": p,
             "date_from": start.isoformat(),
@@ -1344,5 +1414,26 @@ async def pricing_fx_rates(period: str = "7d", date_from: str | None = None, dat
                 "ozon_services": {"label": "Ozon: для услуг", "rows": oz_services_rows},
             },
         }
+        upsert_dashboard_snapshot(
+            snapshot_name=_PRICING_FX_RATES_SNAPSHOT_NAME,
+            cache_key=_pricing_fx_rates_snapshot_key(period=p, date_from=date_from, date_to=date_to),
+            response=response,
+        )
+        return response
     except Exception as e:
-        return JSONResponse({"ok": False, "message": f"Не удалось загрузить курсы валют: {e}"}, status_code=502)
+        raise RuntimeError(f"Не удалось загрузить курсы валют: {e}") from e
+
+
+@router.get("/api/pricing/fx-rates")
+async def pricing_fx_rates(period: str = "7d", date_from: str | None = None, date_to: str | None = None):
+    normalized_period = str(period or "7d").strip().lower()
+    try:
+        snapshot = get_dashboard_snapshot(
+            snapshot_name=_PRICING_FX_RATES_SNAPSHOT_NAME,
+            cache_key=_pricing_fx_rates_snapshot_key(period=normalized_period, date_from=date_from, date_to=date_to),
+        )
+        if isinstance(snapshot, dict) and isinstance(snapshot.get("response"), dict):
+            return snapshot["response"]
+        return await _build_pricing_fx_rates_response(period=normalized_period, date_from=date_from, date_to=date_to)
+    except RuntimeError as exc:
+        return JSONResponse({"ok": False, "message": str(exc)}, status_code=502)
