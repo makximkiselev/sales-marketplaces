@@ -2,59 +2,6 @@
   width: 100%;
 }
 
-.headCardInner {
-  max-width: 1320px;
-  width: 100%;
-  margin-inline: auto;
-  padding: 14px 20px 0;
-  display: grid;
-  gap: 16px;
-}
-
-.headCardInner :global(.hero) {
-  gap: 6px;
-}
-
-.headCardInner :global(.heroMain) {
-  gap: 3px;
-}
-
-.headCardInner :global(.heroTitle) {
-  font-size: 16px;
-  line-height: 1.14;
-}
-
-.headCardInner :global(.heroSubtitle) {
-  font-size: 13px;
-  line-height: 1.38;
-}
-
-.headInner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.headTitle {
-  margin: 0 0 4px;
-}
-
-.headSubtitle {
-  margin: 0;
-  color: var(--text-soft);
-}
-
-.headerControlStack {
-  display: none;
-  gap: 4px;
-  min-width: 0;
-}
-
-.headCardInner :global(.toolbar) {
-  display: none;
-}
-
 .controlsRow {
   margin-top: 0;
   display: grid;
@@ -112,234 +59,11 @@
   gap: 10px;
 }
 
-.mobileWorkspaceTabs {
-  gap: 8px;
-}
-
-.desktopRailCard {
-  border: 1px solid rgba(132, 161, 214, 0.18);
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(12, 23, 41, 0.92), rgba(8, 16, 30, 0.88)),
-    radial-gradient(circle at top right, rgba(76, 201, 240, 0.16), transparent 44%);
-  padding: 16px;
-  display: grid;
-  gap: 12px;
-}
-
-.desktopRailTitle {
-  color: var(--text-soft);
-  font-size: 11px;
-  line-height: 1;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.desktopRailNav {
-  display: grid;
-  gap: 10px;
-}
-
-.desktopStoreList {
-  display: grid;
-  gap: 8px;
-  max-height: 420px;
-  overflow: auto;
-  padding-right: 2px;
-}
-
-.desktopStoreButton {
-  border: 1px solid rgba(132, 161, 214, 0.14);
-  border-radius: 14px;
-  background: rgba(7, 14, 27, 0.42);
-  color: inherit;
-  text-align: left;
-  padding: 12px;
-  display: grid;
-  gap: 4px;
-  cursor: pointer;
-  transition:
-    border-color 0.16s ease,
-    background 0.16s ease,
-    transform 0.16s ease;
-}
-
-.desktopStoreButton:hover {
-  border-color: rgba(76, 201, 240, 0.32);
-  background: rgba(12, 24, 44, 0.78);
-  transform: translateY(-1px);
-}
-
-.desktopStoreButtonActive {
-  border-color: rgba(76, 201, 240, 0.4);
-  background:
-    linear-gradient(180deg, rgba(28, 66, 98, 0.42), rgba(16, 30, 53, 0.88));
-}
-
-.desktopStoreButtonTitle {
-  color: #edf4ff;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.desktopStoreButtonMeta {
-  color: var(--text-soft);
-  font-size: 12px;
-}
-
-.sectionNavButton {
-  border: 1px solid rgba(132, 161, 214, 0.16);
-  border-radius: 16px;
-  background: rgba(10, 18, 33, 0.62);
-  color: inherit;
-  text-align: left;
-  padding: 14px;
-  display: grid;
-  gap: 6px;
-  cursor: pointer;
-  transition:
-    border-color 0.16s ease,
-    background 0.16s ease,
-    transform 0.16s ease;
-}
-
-.sectionNavButton:hover {
-  border-color: rgba(76, 201, 240, 0.36);
-  background: rgba(18, 33, 58, 0.86);
-  transform: translateY(-1px);
-}
-
-.sectionNavButtonActive {
-  border-color: rgba(76, 201, 240, 0.42);
-  background:
-    linear-gradient(180deg, rgba(28, 66, 98, 0.5), rgba(16, 30, 53, 0.94)),
-    radial-gradient(circle at left top, rgba(76, 201, 240, 0.2), transparent 42%);
-  box-shadow: 0 0 0 1px rgba(76, 201, 240, 0.12) inset;
-}
-
-.sectionNavLabel {
-  color: #e8f1ff;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.sectionNavHint {
-  color: var(--text-soft);
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.contextFactList {
-  display: grid;
-  gap: 10px;
-}
-
-.contextFact {
-  display: grid;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(6, 14, 27, 0.46);
-  border: 1px solid rgba(132, 161, 214, 0.1);
-}
-
-.contextFactLabel {
-  color: var(--text-soft);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.contextFactValue {
-  color: #e4eeff;
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.sectionSummaryTitle {
-  font-size: 17px;
-  line-height: 1.15;
-  font-weight: 800;
-  color: #eef5ff;
-}
-
-.sectionSummaryText {
-  color: var(--text-soft);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
 .settingsMain {
   min-width: 0;
   display: grid;
   gap: 16px;
   padding-bottom: 88px;
-}
-
-.workspaceHero {
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-
-.workspaceHeroMain {
-  display: grid;
-  gap: 4px;
-}
-
-.workspaceTitleRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.workspaceEyebrow {
-  color: var(--text-soft);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.workspaceTitle {
-  margin: 0;
-  font-size: 22px;
-  line-height: 1.08;
-  color: #f1f6ff;
-}
-
-.workspaceSubtitle {
-  margin: 0;
-  max-width: 880px;
-  color: #9bb1d0;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.workspaceHeroChips {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.workspaceHeroChip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(132, 161, 214, 0.18);
-  background: rgba(7, 14, 27, 0.28);
-  color: #cfe0f8;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.workspaceHeroChip :global(*) {
-  pointer-events: none;
 }
 
 .stickyActionBar {
@@ -2829,18 +2553,6 @@
 }
 
 @media (max-width: 960px) {
-  .headerControlStack,
-  .mobileSectionTabs,
-  .mobileStoreTabs,
-  .headCardInner :global(.toolbar) {
-    display: none;
-  }
-
-  .headInner {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .settingsShell {
     grid-template-columns: 1fr;
     gap: 14px;
@@ -3158,16 +2870,8 @@
     gap: 12px;
   }
 
-  .mobileWorkspaceSurface {
-    padding: 12px;
-  }
-
   .mobileNavStack {
     gap: 6px;
-  }
-
-  .workspaceHeroChips {
-    gap: 8px;
   }
 
   .mobileActionDockPanel {
@@ -3176,10 +2880,6 @@
 }
 
 @media (min-width: 961px) {
-  .mobileSectionTabs {
-    display: none;
-  }
-
   .settingsTabsRow {
     display: none;
   }
