@@ -150,7 +150,13 @@
 
 .dashboardGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.95fr);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.dashboardSupportGrid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
   gap: 16px;
 }
 
@@ -378,7 +384,8 @@
 
 .chartSvg {
   width: 100%;
-  min-height: 220px;
+  min-height: 286px;
+  overflow: visible;
 }
 
 .chartGrid {
@@ -404,23 +411,61 @@
 
 .chartCoinvestPoint {
   fill: #ffcc66;
+  stroke: rgba(8, 16, 30, 0.92);
+  stroke-width: 1.4;
 }
 
-.chartValueLabel,
-.chartValueLabelAlt {
-  fill: #d9e7ff;
-  font-size: 9px;
-  font-weight: 700;
+.chartActiveGuide {
+  stroke: rgba(255, 204, 102, 0.22);
+  stroke-width: 1;
+  stroke-dasharray: 4 6;
 }
 
-.chartValueLabelAlt {
-  fill: #bff5d7;
+.chartBarRevenueActive {
+  filter: brightness(1.08);
+}
+
+.chartBarProfitActive {
+  filter: brightness(1.1);
+}
+
+.chartHitArea {
+  fill: transparent;
+  cursor: pointer;
 }
 
 .chartLabel,
 .chartScaleLabel {
   fill: #93a9cc;
   font-size: 11px;
+}
+
+.chartTooltipCard {
+  fill: rgba(10, 18, 33, 0.96);
+  stroke: rgba(132, 161, 214, 0.24);
+  stroke-width: 1;
+}
+
+.chartTooltipDate {
+  fill: #f3f8ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chartTooltipValue,
+.chartTooltipValueAlt,
+.chartTooltipMeta {
+  fill: #c7d8f5;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.chartTooltipValueAlt {
+  fill: #b8efd2;
+}
+
+.chartTooltipMeta {
+  fill: #ffd790;
 }
 
 .sideStack {
@@ -789,6 +834,7 @@
 
 @media (max-width: 1280px) {
   .dashboardGrid,
+  .dashboardSupportGrid,
   .dailyGrid,
   .tempoGrid {
     grid-template-columns: 1fr;
@@ -840,7 +886,7 @@
   }
 
   .chartSvg {
-    min-height: 190px;
+    min-height: 236px;
   }
 
   .chartTools,
@@ -940,11 +986,10 @@
   }
 
   .chartSvg {
-    min-height: 160px;
+    min-height: 214px;
   }
 
   .chartLegend,
-  .sideStack > .panelCard,
   .panelAction {
     display: none;
   }
@@ -974,5 +1019,9 @@
 
   .insightGrid {
     grid-template-columns: 1fr;
+  }
+
+  .dashboardSupportGrid {
+    gap: 12px;
   }
 }

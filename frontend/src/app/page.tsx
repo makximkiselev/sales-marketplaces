@@ -393,6 +393,12 @@ function TrendChart({
   emptyText?: string;
   controls?: ReactNode;
 }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    setActiveIndex(days.length ? days.length - 1 : 0);
+  }, [days]);
+
   if (days.length === 0) {
     return (
       <div className={styles.chartCard}>
@@ -407,9 +413,9 @@ function TrendChart({
       </div>
     );
   }
-  const chartWidth = 760;
-  const chartHeight = 228;
-  const pad = { top: 18, right: 18, bottom: 32, left: 48 };
+  const chartWidth = 1120;
+  const chartHeight = 308;
+  const pad = { top: 20, right: 26, bottom: 42, left: 56 };
   const innerWidth = chartWidth - pad.left - pad.right;
   const innerHeight = chartHeight - pad.top - pad.bottom;
   const revenueValues = days.map((day) => Number(day.revenue || 0));
@@ -431,7 +437,15 @@ function TrendChart({
       return `${index === 0 ? "M" : "L"} ${x} ${y}`;
     })
     .join(" ");
-  const showBarValues = bandWidth >= 22;
+  const resolvedActiveIndex = Math.min(Math.max(activeIndex, 0), Math.max(days.length - 1, 0));
+  const activeDay = days[resolvedActiveIndex];
+  const activeCenterX = pad.left + resolvedActiveIndex * bandWidth + bandWidth / 2;
+  const tooltipWidth = 188;
+  const tooltipLeft = Math.min(
+    Math.max(activeCenterX - tooltipWidth / 2, pad.left),
+    chartWidth - pad.right - tooltipWidth,
+  );
+  const tooltipTop = pad.top + 10;
 
   return (
     <div className={styles.chartCard}>
@@ -464,6 +478,7 @@ function TrendChart({
           const y = pad.top + innerHeight - tick * innerHeight;
           return <line key={tick} x1={pad.left} y1={y} x2={chartWidth - pad.right} y2={y} className={styles.chartGrid} />;
         })}
+        <line x1={activeCenterX} y1={pad.top} x2={activeCenterX} y2={pad.top + innerHeight} className={styles.chartActiveGuide} />
         <path d={coinvestPath} className={styles.chartCoinvestLine} />
         {days.map((day, index) => (
           <g key={`${day.date}-${index}`}>
@@ -482,37 +497,34 @@ function TrendChart({
                     width={singleBarWidth}
                     height={revenueH}
                     rx="5"
-                    className={styles.chartBarRevenue}
+                    className={`${styles.chartBarRevenue} ${resolvedActiveIndex === index ? styles.chartBarRevenueActive : ""}`}
                   />
-                  {showBarValues && revenueH > 16 ? (
-                    <text
-                      x={groupX + singleBarWidth / 2}
-                      y={pad.top + innerHeight - revenueH - 6}
-                      textAnchor="middle"
-                      className={styles.chartValueLabel}
-                    >
-                      {formatCompactMoney(revenue, currencyCode)}
-                    </text>
-                  ) : null}
                   <rect
                     x={groupX + singleBarWidth + barGap}
                     y={pad.top + innerHeight - profitH}
                     width={singleBarWidth}
                     height={profitH}
                     rx="5"
-                    className={styles.chartBarProfit}
+                    className={`${styles.chartBarProfit} ${resolvedActiveIndex === index ? styles.chartBarProfitActive : ""}`}
                   />
-                  {showBarValues && profitH > 16 ? (
-                    <text
-                      x={groupX + singleBarWidth + barGap + singleBarWidth / 2}
-                      y={pad.top + innerHeight - profitH - 6}
-                      textAnchor="middle"
-                      className={styles.chartValueLabelAlt}
-                    >
-                      {formatCompactMoney(profit, currencyCode)}
-                    </text>
-                  ) : null}
-                  <circle cx={pad.left + index * bandWidth + bandWidth / 2} cy={coinvestY(coinvest)} r="3.2" className={styles.chartCoinvestPoint} />
+                  <circle
+                    cx={pad.left + index * bandWidth + bandWidth / 2}
+                    cy={coinvestY(coinvest)}
+                    r={resolvedActiveIndex === index ? "5" : "3.2"}
+                    className={styles.chartCoinvestPoint}
+                  />
+                  <rect
+                    x={pad.left + index * bandWidth}
+                    y={pad.top}
+                    width={bandWidth}
+                    height={innerHeight}
+                    rx="10"
+                    className={styles.chartHitArea}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    onMouseMove={() => setActiveIndex(index)}
+                    onClick={() => setActiveIndex(index)}
+                    onTouchStart={() => setActiveIndex(index)}
+                  />
                 </>
               );
             })()}
@@ -523,6 +535,15 @@ function TrendChart({
             ) : null}
           </g>
         ))}
+        {activeDay ? (
+          <g transform={`translate(${tooltipLeft}, ${tooltipTop})`}>
+            <rect width={tooltipWidth} height="74" rx="16" className={styles.chartTooltipCard} />
+            <text x="14" y="20" className={styles.chartTooltipDate}>{formatLongDate(activeDay.date)}</text>
+            <text x="14" y="39" className={styles.chartTooltipValue}>Оборот: {formatMoney(activeDay.revenue, currencyCode)}</text>
+            <text x="14" y="55" className={styles.chartTooltipValueAlt}>Прибыль: {formatMoney(activeDay.profit_amount, currencyCode)}</text>
+            <text x="14" y="71" className={styles.chartTooltipMeta}>Соинвест: {formatPercent(activeDay.coinvest_pct)}</text>
+          </g>
+        ) : null}
         <text x={pad.left} y={14} className={styles.chartScaleLabel}>{formatMoney(maxValue, currencyCode)}</text>
         <text x={pad.left} y={chartHeight - 10} className={styles.chartScaleLabel}>{formatMoney(0, currencyCode)}</text>
         <text x={chartWidth - pad.right} y={14} textAnchor="end" className={styles.chartScaleLabel}>{formatPercent(maxCoinvest)}</text>
@@ -1009,11 +1030,13 @@ export default function Page() {
                   </div>
                 )}
               />
+            </section>
 
+            <section className={styles.dashboardSupportGrid}>
               <div className={styles.sideStack}>
                 <div className={styles.panelCard}>
-                <div className={styles.panelTitle}>Ритм последних дней</div>
-                <div className={styles.panelHint}>{chartRangeLabel}</div>
+                  <div className={styles.panelTitle}>Ритм последних дней</div>
+                  <div className={styles.panelHint}>{chartRangeLabel}</div>
                   <div className={styles.tempoMiniGrid}>
                     <div className={styles.tempoMiniCard}>
                       <span>Средний оборот</span>
@@ -1029,8 +1052,9 @@ export default function Page() {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className={styles.insightGrid}>
+              <div className={styles.insightGrid}>
                   {isSelectedDayEmpty ? (
                     <InsightCard
                       title="Статус дня"
@@ -1039,12 +1063,6 @@ export default function Page() {
                       tone="neutral"
                     />
                   ) : null}
-                  <InsightCard
-                    title="Средний день"
-                    value={formatMoney(averageDayRevenue, currencyCode)}
-                    detail={`Активных дней: ${formatNumber(trendDays.length)}`}
-                    tone="positive"
-                  />
                   <InsightCard
                     title="Топ проблема"
                     value={problematicStatuses[0] ? problematicStatuses[0][0] : "Нет сигнала"}
@@ -1057,7 +1075,6 @@ export default function Page() {
                     detail={topSku[0] ? formatMoney(topSku[0].value, currencyCode) : "Срез пока пуст"}
                     tone="neutral"
                   />
-                </div>
               </div>
             </section>
 
