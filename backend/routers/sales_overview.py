@@ -4,6 +4,7 @@ import asyncio
 import logging
 import time
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -46,11 +47,11 @@ _DASHBOARD_WARM_TASK: asyncio.Task | None = None
 _DASHBOARD_IN_FLIGHT: dict[str, asyncio.Task] = {}
 _DASHBOARD_SNAPSHOT_NAME = "sales_overview_dashboard_summary"
 _TODAY_AUTO_REFRESH_STALE_MINUTES = 20
+MSK = ZoneInfo("Europe/Moscow")
 
 
 def _local_date_only() -> date:
-    now = datetime.now()
-    return datetime(now.year, now.month, now.day).date()
+    return datetime.now(MSK).date()
 
 
 def _to_iso_date(value: date) -> str:
@@ -247,6 +248,7 @@ def _dashboard_cache_payload(*, store_id: str, period: str) -> dict[str, str]:
     return {
         "store_id": str(store_id or "all").strip() or "all",
         "period": str(period or "today").strip().lower() or "today",
+        "anchor_date": _to_iso_date(_local_date_only()),
     }
 
 
@@ -280,7 +282,7 @@ def _dashboard_cache_set(payload: dict[str, str], value: dict) -> None:
         {"expires_at": time.time() + _DASHBOARD_CACHE_TTL_SECONDS, "data": value},
         _DASHBOARD_CACHE_MAX,
     )
-    recent_key = f"{payload['store_id']}|{payload['period']}"
+    recent_key = f"{payload['store_id']}|{payload['period']}|{payload['anchor_date']}"
     _DASHBOARD_RECENT_PAYLOADS[recent_key] = dict(payload)
     if len(_DASHBOARD_RECENT_PAYLOADS) > _DASHBOARD_RECENT_MAX:
         oldest_key = next(iter(_DASHBOARD_RECENT_PAYLOADS.keys()))
