@@ -151,6 +151,33 @@ def _sum_by(rows: list[dict], key: str) -> float:
     return sum(float(item.get(key) or 0.0) for item in rows)
 
 
+def _dashboard_status_kind(status: str) -> str:
+    norm = str(status or "").strip().lower()
+    if "возврат" in norm:
+        return "return"
+    if "отмен" in norm or "невыкуп" in norm:
+        return "ignore"
+    if norm == "доставлен покупателю":
+        return "delivered"
+    if norm in {"оформлен", "отгружен"}:
+        return "open"
+    return "other"
+
+
+def _is_dashboard_commercial_row(row: dict) -> bool:
+    return _dashboard_status_kind(str((row or {}).get("item_status") or "")) in {"delivered", "open"}
+
+
+def _filter_dashboard_orders_response(response: dict | None) -> dict:
+    payload = response if isinstance(response, dict) else {}
+    rows = [row for row in list(payload.get("rows") or []) if _is_dashboard_commercial_row(row)]
+    next_payload = dict(payload)
+    next_payload["rows"] = rows
+    next_payload["total_count"] = len(rows)
+    next_payload["kpis"] = _build_orders_kpis(rows, fallback=payload.get("kpis") if isinstance(payload.get("kpis"), dict) else None)
+    return next_payload
+
+
 def _compare_delta(current: float, previous: float) -> float | None:
     if not previous:
         return None
@@ -431,6 +458,8 @@ async def _fetch_primary_store_dashboard(*, store_id: str, period: str, previous
                 get_sales_overview_history(page=1, page_size=1000, store_id=store_query, period="today"),
                 get_sales_overview_problem_orders(page=1, page_size=500, store_id=store_query, period="today"),
             )
+        today = _filter_dashboard_orders_response(today)
+        yesterday = _filter_dashboard_orders_response(yesterday)
         return {
             "orders": today,
             "problems": today_problems,
@@ -476,6 +505,10 @@ async def _fetch_primary_store_dashboard(*, store_id: str, period: str, previous
             get_sales_overview_history(page=1, page_size=1000, store_id=store_query, period="today"),
             get_sales_overview_problem_orders(page=1, page_size=500, store_id=store_query, period="today"),
         )
+    current = _filter_dashboard_orders_response(current)
+    today = _filter_dashboard_orders_response(today)
+    yesterday = _filter_dashboard_orders_response(yesterday)
+    previous_orders = _filter_dashboard_orders_response(previous_orders)
     if current_period == "yesterday":
         current = yesterday
         current_problems = yesterday_problems
