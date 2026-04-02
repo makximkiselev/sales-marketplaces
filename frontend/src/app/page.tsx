@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGetOk } from "../lib/api";
 import { PageFrame } from "../components/page/PageKit";
@@ -139,6 +139,17 @@ type RetrospectiveResp = {
   total_count?: number;
 };
 
+type ChartRange = "7d" | "30d";
+
+type CategoryAggregate = {
+  label: string;
+  value: number;
+  profit: number;
+  marginPct: number | null;
+  brandCount: number;
+  brands: Array<{ label: string; value: number; profit: number; marginPct: number | null }>;
+};
+
 type DashboardBundle = {
   tracking: TrackingResp;
   orders: OrdersResp;
@@ -259,6 +270,52 @@ function getPeriodSpanDays(period: DashboardPeriod) {
   return 30;
 }
 
+function splitCategoryPath(value: string | undefined) {
+  return String(value || "")
+    .split("/")
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function buildCategoryAggregates(rows: RetrospectiveRow[]) {
+  const categoryMap = new Map<string, { revenue: number; profit: number; brands: Map<string, { revenue: number; profit: number }> }>();
+  for (const row of rows || []) {
+    const parts = splitCategoryPath(row.category_path || row.label);
+    const category = parts[0] || "Не определено";
+    const brand = parts.length >= 2 ? parts[parts.length >= 3 ? parts.length - 2 : 1] || "Без бренда" : "Без бренда";
+    const revenue = Number(row.revenue || 0);
+    const profit = Number(row.profit_amount || 0);
+    const categoryBucket = categoryMap.get(category) || { revenue: 0, profit: 0, brands: new Map() };
+    categoryBucket.revenue += revenue;
+    categoryBucket.profit += profit;
+    const brandBucket = categoryBucket.brands.get(brand) || { revenue: 0, profit: 0 };
+    brandBucket.revenue += revenue;
+    brandBucket.profit += profit;
+    categoryBucket.brands.set(brand, brandBucket);
+    categoryMap.set(category, categoryBucket);
+  }
+  return Array.from(categoryMap.entries())
+    .map(([label, bucket]) => {
+      const brands = Array.from(bucket.brands.entries())
+        .map(([brandLabel, brandBucket]) => ({
+          label: brandLabel,
+          value: brandBucket.revenue,
+          profit: brandBucket.profit,
+          marginPct: brandBucket.revenue > 0 ? (brandBucket.profit / brandBucket.revenue) * 100 : null,
+        }))
+        .sort((a, b) => b.value - a.value);
+      return {
+        label,
+        value: bucket.revenue,
+        profit: bucket.profit,
+        marginPct: bucket.revenue > 0 ? (bucket.profit / bucket.revenue) * 100 : null,
+        brandCount: brands.length,
+        brands,
+      };
+    })
+    .sort((a, b) => b.value - a.value);
+}
+
 function getCurrentPeriodRange(period: DashboardPeriod) {
   const end = localDateOnly();
   const span = getPeriodSpanDays(period);
@@ -320,12 +377,14 @@ function TrendChart({
   title = "Оборот и прибыль по дням",
   hint = "Выбранный диапазон из обзора продаж.",
   emptyText = "Нет дневных данных для выбранного диапазона.",
+  controls,
 }: {
   days: TrackingDay[];
   currencyCode?: string | null;
   title?: string;
   hint?: string;
   emptyText?: string;
+  controls?: ReactNode;
 }) {
   if (days.length === 0) {
     return (
@@ -335,6 +394,7 @@ function TrendChart({
             <div className={styles.panelTitle}>{title}</div>
             <div className={styles.panelHint}>{hint}</div>
           </div>
+          {controls}
         </div>
         <div className={styles.placeholderCard}>{emptyText}</div>
       </div>
@@ -365,9 +425,12 @@ function TrendChart({
           <div className={styles.panelTitle}>{title}</div>
           <div className={styles.panelHint}>{hint}</div>
         </div>
-        <div className={styles.chartLegend}>
-          <span><i className={styles.legendRevenue} /> Оборот</span>
-          <span><i className={styles.legendProfit} /> Прибыль</span>
+        <div className={styles.chartTools}>
+          <div className={styles.chartLegend}>
+            <span><i className={styles.legendRevenue} /> Оборот</span>
+            <span><i className={styles.legendProfit} /> Прибыль</span>
+          </div>
+          {controls}
         </div>
       </div>
       <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className={styles.chartSvg} role="img" aria-label="Динамика оборота и прибыли по дням">
@@ -391,6 +454,79 @@ function TrendChart({
         <text x={pad.left} y={14} className={styles.chartScaleLabel}>{formatMoney(maxValue, currencyCode)}</text>
         <text x={pad.left} y={chartHeight - 10} className={styles.chartScaleLabel}>{formatMoney(minProfit, currencyCode)}</text>
       </svg>
+    </div>
+  );
+}
+
+function CategoryDrilldownCard({
+  categories,
+  currencyCode,
+  selectedCategory,
+  onSelectCategory,
+  actionTo,
+}: {
+  categories: CategoryAggregate[];
+  currencyCode?: string | null;
+  selectedCategory: string;
+  onSelectCategory: (value: string) => void;
+  actionTo?: string;
+}) {
+  const rows = categories.slice(0, 5);
+  const selected = rows.find((row) => row.label === selectedCategory) || rows[0] || null;
+  const maxValue = Math.max(1, ...rows.map((row) => row.value));
+  return (
+    <div className={styles.rankingCard}>
+      <div className={styles.panelHead}>
+        <div>
+          <div className={styles.panelTitle}>Топ категорий</div>
+          <div className={styles.panelHint}>Сначала категория, внутри нее бренды. Без SKU-листьев в верхнем списке.</div>
+        </div>
+        {actionTo ? <Link className={styles.panelAction} to={actionTo}>Открыть категории</Link> : null}
+      </div>
+      <div className={styles.categorySplit}>
+        <div className={styles.rankingList}>
+          {rows.map((row) => (
+            <button
+              key={row.label}
+              type="button"
+              className={`${styles.categoryRowButton} ${selected?.label === row.label ? styles.categoryRowButtonActive : ""}`}
+              onClick={() => onSelectCategory(row.label)}
+            >
+              <div className={styles.rankingRowHead}>
+                <div className={styles.rankingLabel}>{row.label}</div>
+                <div className={styles.rankingValue}>{formatMoney(row.value, currencyCode)}</div>
+              </div>
+              <div className={styles.rankingBarTrack}>
+                <div className={styles.rankingBarFill} style={{ width: `${(row.value / maxValue) * 100}%` }} />
+              </div>
+              <div className={styles.rankingDetail}>
+                Прибыль: {formatMoney(row.profit, currencyCode)} · Маржа: {formatPercent(row.marginPct)} · Брендов: {formatNumber(row.brandCount)}
+              </div>
+            </button>
+          ))}
+        </div>
+        <div className={styles.brandPane}>
+          <div className={styles.brandPaneTitle}>{selected ? `Бренды: ${selected.label}` : "Бренды категории"}</div>
+          <div className={styles.brandPaneHint}>{selected ? "Внутренний срез выбранной категории по обороту." : "Категория не выбрана."}</div>
+          {selected?.brands?.length ? (
+            <div className={styles.rankingList}>
+              {selected.brands.slice(0, 5).map((brand) => (
+                <div key={`${selected.label}-${brand.label}`} className={styles.rankingRow}>
+                  <div className={styles.rankingRowHead}>
+                    <div className={styles.rankingLabel}>{brand.label}</div>
+                    <div className={styles.rankingValue}>{formatMoney(brand.value, currencyCode)}</div>
+                  </div>
+                  <div className={styles.rankingDetail}>
+                    Прибыль: {formatMoney(brand.profit, currencyCode)} · Маржа: {formatPercent(brand.marginPct)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.placeholderCard}>По выбранной категории бренды пока не выделены.</div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -642,6 +778,8 @@ export default function Page() {
   const [error, setError] = useState("");
   const [period, setPeriod] = useState<DashboardPeriod>("today");
   const [storeId, setStoreId] = useState("all");
+  const [chartRange, setChartRange] = useState<ChartRange>("7d");
+  const [selectedCategoryLabel, setSelectedCategoryLabel] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -699,11 +837,7 @@ export default function Page() {
     value: Number(row.revenue || 0),
     detail: `Прибыль: ${formatMoney(row.profit_amount, currencyCode)} · Маржа: ${formatPercent(row.profit_pct)}`,
   }));
-  const topCategories = (bundle?.category?.rows || []).slice(0, 5).map((row) => ({
-    label: row.label || row.category_path || "Категория",
-    value: Number(row.revenue || 0),
-    detail: `Прибыль: ${formatMoney(row.profit_amount, currencyCode)} · Маржа: ${formatPercent(row.profit_pct)}`,
-  }));
+  const categoryAggregates = useMemo(() => buildCategoryAggregates(bundle?.category?.rows || []), [bundle?.category?.rows]);
   const problematicStatuses = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of bundle?.problems?.rows || []) {
@@ -737,25 +871,44 @@ export default function Page() {
       marginPct: row.profit_pct ?? null,
     }));
   const weakestCategories = (bundle?.category?.rows || [])
-    .filter((row) => Number(row.revenue || 0) > 0)
-    .sort((a, b) => Number(a.profit_pct ?? 999999) - Number(b.profit_pct ?? 999999))
-    .slice(0, 4)
-    .map((row) => ({
-      label: row.label || row.category_path || "Категория",
-      revenue: Number(row.revenue || 0),
-      profit: Number(row.profit_amount || 0),
-      marginPct: row.profit_pct ?? null,
-    }));
+    .length
+    ? categoryAggregates
+        .filter((row) => Number(row.value || 0) > 0)
+        .sort((a, b) => Number(a.marginPct ?? 999999) - Number(b.marginPct ?? 999999))
+        .slice(0, 4)
+        .map((row) => ({
+          label: row.label,
+          revenue: Number(row.value || 0),
+          profit: Number(row.profit || 0),
+          marginPct: row.marginPct ?? null,
+        }))
+    : []
+  ;
   const flowRows = bundle?.dataFlow?.flows || [];
-  const currentRange = getCurrentPeriodRange(period);
-  const previousRange = getPreviousPeriodRange(period);
+  const chartSpan = chartRange === "30d" ? 30 : 7;
+  const chartRangeWindow = useMemo(() => {
+    const end = localDateOnly();
+    const start = shiftDate(end, -(chartSpan - 1));
+    return { start: toIsoDate(start), end: toIsoDate(end) };
+  }, [chartSpan]);
   const trendDays = useMemo(() => {
-    return allTrendDays.filter((day) => day.date >= currentRange.start && day.date <= currentRange.end);
-  }, [allTrendDays, currentRange.end, currentRange.start]);
+    return allTrendDays.filter((day) => day.date >= chartRangeWindow.start && day.date <= chartRangeWindow.end);
+  }, [allTrendDays, chartRangeWindow.end, chartRangeWindow.start]);
+  useEffect(() => {
+    if (!categoryAggregates.length) {
+      setSelectedCategoryLabel("");
+      return;
+    }
+    if (!categoryAggregates.some((item) => item.label === selectedCategoryLabel)) {
+      setSelectedCategoryLabel(categoryAggregates[0].label);
+    }
+  }, [categoryAggregates, selectedCategoryLabel]);
+  const currentRange = getCurrentPeriodRange(period);
   const revenueSpark = trendDays.map((day) => Number(day.revenue || 0));
   const profitSpark = trendDays.map((day) => Number(day.profit_amount || 0));
   const marginSpark = trendDays.map((day) => Number(day.profit_pct || 0));
   const currentRangeLabel = `${formatLongDate(currentRange.start)} - ${formatLongDate(currentRange.end)}`;
+  const chartRangeLabel = `${formatLongDate(chartRangeWindow.start)} - ${formatLongDate(chartRangeWindow.end)}`;
   const selectedDayRevenue = period === "yesterday" ? yesterdayRevenue : todayRevenue;
   const selectedDayProfit = period === "yesterday" ? yesterdayProfit : todayProfit;
   const selectedDayOrdersCount = period === "yesterday" ? yesterdayOrdersCount : todayOrdersCount;
@@ -768,14 +921,10 @@ export default function Page() {
   const selectedProblemsDeltaPct = period === "yesterday" ? compareDelta(yesterdayProblemsCount, todayProblemsCount) : compareDelta(todayProblemsCount, yesterdayProblemsCount);
   const averageDayRevenue = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.revenue || 0), 0) / trendDays.length : null;
   const averageDayProfit = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.profit_amount || 0), 0) / trendDays.length : null;
-  const chartTitle = isSingleDayPeriod ? "День в контексте диапазона" : "Оборот и прибыль по дням";
-  const chartHint = isSingleDayPeriod
-    ? `${selectedDayLabel} внутри текущего рабочего диапазона.`
-    : `Выбранный диапазон: ${currentRangeLabel}.`;
   const isSelectedDayEmpty = isSingleDayPeriod && selectedDayOrdersCount === 0 && selectedDayRevenue === 0 && selectedDayProblemsCount === 0;
-  const chartEmptyText = isSingleDayPeriod
-    ? `За ${formatLongDate(selectedDayDate)} еще нет дневных данных в sales overview.`
-    : "В выбранном диапазоне пока нет дневных точек.";
+  const chartTitle = "Динамика оборота и прибыли";
+  const chartHint = `Последние ${chartSpan} дней независимо от выбранного режима сводки. Сейчас: ${chartRangeLabel}.`;
+  const chartEmptyText = `За последние ${chartSpan} дней в графике пока нет дневных точек.`;
 
   return (
     <PageFrame title="Сводка" subtitle="Финальный dashboard по продажам, эффективности и зонам риска.">
@@ -925,7 +1074,31 @@ export default function Page() {
             </section>
 
             <section className={styles.dashboardGrid}>
-              <TrendChart days={trendDays} currencyCode={currencyCode} title={chartTitle} hint={chartHint} emptyText={chartEmptyText} />
+              <TrendChart
+                days={trendDays}
+                currencyCode={currencyCode}
+                title={chartTitle}
+                hint={chartHint}
+                emptyText={chartEmptyText}
+                controls={(
+                  <div className={styles.rangeTabs}>
+                    <button
+                      type="button"
+                      className={`${styles.rangeTab} ${chartRange === "7d" ? styles.rangeTabActive : ""}`}
+                      onClick={() => setChartRange("7d")}
+                    >
+                      7 дней
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.rangeTab} ${chartRange === "30d" ? styles.rangeTabActive : ""}`}
+                      onClick={() => setChartRange("30d")}
+                    >
+                      30 дней
+                    </button>
+                  </div>
+                )}
+              />
 
               <div className={styles.sideStack}>
                 {period === "month" ? (
@@ -1020,13 +1193,12 @@ export default function Page() {
                 actionTo={buildOverviewLink("sku", { storeId: selectedOverviewStoreId, period })}
                 actionLabel="Открыть товары"
               />
-              <RankingCard
-                title="Топ категорий"
-                hint={isSingleDayPeriod ? "Категории выбранного дня по обороту." : "Категории, которые сейчас несут основной оборот."}
-                rows={topCategories}
+              <CategoryDrilldownCard
+                categories={categoryAggregates}
                 currencyCode={currencyCode}
+                selectedCategory={selectedCategoryLabel}
+                onSelectCategory={setSelectedCategoryLabel}
                 actionTo={buildOverviewLink("category", { storeId: selectedOverviewStoreId, period })}
-                actionLabel="Открыть категории"
               />
               <StoreComparisonCard rows={storeComparison.slice(0, 6)} currencyCode={currencyCode} />
             </section>
