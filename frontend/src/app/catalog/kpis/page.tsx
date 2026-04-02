@@ -1,10 +1,10 @@
-import { PageFrame } from "../../../components/page/PageKit";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageFrame } from "../../_shared/WorkspacePageFrame";
 import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
 
 export default function CatalogKpisPage() {
   return (
-    <PageFrame title="Ключевые показатели каталога" subtitle="Раздел в разработке. Здесь будут KPI по полноте и качеству каталога.">
+    <WorkspacePageFrame>
       <div className={layoutStyles.shell}>
         <WorkspacePageHero
           title="KPI каталога"
@@ -17,6 +17,6 @@ export default function CatalogKpisPage() {
           </div>
         </section>
       </div>
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }

@@ -3,6 +3,18 @@
   gap: 16px;
 }
 
+.pageFrame {
+  width: 100%;
+}
+
+.pageFrameInner {
+  max-width: 1320px;
+  width: 100%;
+  margin-inline: auto;
+  display: grid;
+  gap: 16px;
+}
+
 .heroSurface {
   padding: 20px;
   gap: 18px;
@@ -174,6 +186,10 @@
 }
 
 @media (max-width: 960px) {
+  .pageFrameInner {
+    gap: 12px;
+  }
+
   .heroSurface {
     padding: 16px;
     gap: 14px;

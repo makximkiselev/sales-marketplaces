@@ -1,7 +1,3 @@
-.sourcesHeadCard :global(.inner) {
-  padding: 16px 18px 10px;
-}
-
 .sourcesShell {
   display: grid;
   gap: 14px;

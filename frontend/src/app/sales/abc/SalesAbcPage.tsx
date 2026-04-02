@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { apiGet } from "../../../lib/api";
 import { ErrorBox } from "../../../components/ErrorBox";
-import { PageFrame } from "../../../components/page/PageKit";
 import { SectionBlock } from "../../../components/page/SectionKit";
 import { KpiCard, KpiGrid, TableCard } from "../../../components/page/DataKit";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageFrame } from "../../_shared/WorkspacePageFrame";
 import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
 import { readFreshPageSnapshot, writePageSnapshot } from "../../_shared/pageCache";
 import styles from "../_shared/SalesSimplePage.module.css";
@@ -49,10 +49,7 @@ export default function Page() {
   const totalQty = rows.reduce((sum, [, values]) => sum + Number(values.qty || 0), 0);
 
   return (
-    <PageFrame
-      title="ABC-анализ продаж"
-      subtitle={`Топ артикулов по обороту и прибыли. Показаны первые ${rows.length}.`}
-    >
+    <WorkspacePageFrame>
       <div className={styles.shell}>
         <WorkspacePageHero
           title="ABC-анализ продаж"
@@ -97,6 +94,6 @@ export default function Page() {
           </TableCard>
         </SectionBlock>
       </div>
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }

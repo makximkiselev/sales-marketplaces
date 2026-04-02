@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { ModalShell, PageFrame, PageSectionTitle } from "../../../components/page/PageKit";
+import { ModalShell, PageSectionTitle } from "../../../components/page/PageKit";
 import { SectionBlock } from "../../../components/page/SectionKit";
 import { KpiCard, KpiGrid } from "../../../components/page/DataKit";
 import { apiGetOk, apiPostOk } from "../../../lib/api";
 import styles from "./AdminPage.module.css";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
 import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
+import { WorkspacePageFrame } from "../../_shared/WorkspacePageFrame";
 import { readFreshPageSnapshot, writePageSnapshot } from "../../_shared/pageCache";
 
 type UserRole = "owner" | "manager" | "viewer";
@@ -310,11 +311,7 @@ export default function SettingsAdminPage() {
   }
 
   return (
-    <PageFrame
-      title="Администрирование"
-      subtitle="Управление доступом пользователей, ролями и паролями для панели."
-      meta={ownersCount ? `Активных владельцев: ${ownersCount}` : undefined}
-    >
+    <WorkspacePageFrame>
       <div className={layoutStyles.shell}>
         <WorkspacePageHero
           title="Пользователи"
@@ -824,6 +821,6 @@ export default function SettingsAdminPage() {
           </div>
         </ModalShell>
       ) : null}
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }

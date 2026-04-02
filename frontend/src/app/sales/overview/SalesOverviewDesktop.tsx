@@ -1,9 +1,10 @@
 import { Fragment } from "react";
-import { PageFrame, PageSectionTitle } from "../../../components/page/PageKit";
+import { PageSectionTitle } from "../../../components/page/PageKit";
 import { WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import styles from "./SalesOverviewPage.module.css";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
 import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
+import { WorkspacePageFrame } from "../../_shared/WorkspacePageFrame";
 
 type Props = {
   vm: any;
@@ -119,12 +120,7 @@ export function SalesOverviewDesktop({ vm }: Props) {
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
   return (
-    <PageFrame
-      className={s.pageFrame}
-      innerClassName={s.pageFrameInner}
-      title="Обзор продаж"
-      subtitle="Рабочее пространство по заказам, проблемам, трекингу, товарам и категориям."
-    >
+    <WorkspacePageFrame className={s.pageFrame} innerClassName={s.pageFrameInner}>
       <WorkspacePageHero
         className={s.overviewHeroSurface}
         title="Обзор продаж"
@@ -408,6 +404,6 @@ export function SalesOverviewDesktop({ vm }: Props) {
           </div>
         </section>
       ) : null}
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }

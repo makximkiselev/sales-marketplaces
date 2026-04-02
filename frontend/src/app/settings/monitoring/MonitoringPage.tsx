@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { ErrorBox } from "../../../components/ErrorBox";
-import { PageFrame } from "../../../components/page/PageKit";
 import {
   fetchPricingMonitoring,
   fetchPricingMonitoringExports,
@@ -23,6 +22,7 @@ import type {
 } from "../../pricing/settings/types";
 import { showAppToast } from "../../../components/ui/toastBus";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageFrame } from "../../_shared/WorkspacePageFrame";
 import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
 import { readPageSnapshot, writePageSnapshot } from "../../_shared/pageCache";
 
@@ -235,10 +235,7 @@ export default function MonitoringPage() {
   }
 
   return (
-    <PageFrame
-      title="Мониторинг"
-      subtitle="Единый центр управления обновлениями данных, отчетов и пересчётов ценообразования."
-    >
+    <WorkspacePageFrame>
       <div className={layoutStyles.shell}>
         <WorkspacePageHero
           title="Мониторинг"
@@ -261,35 +258,35 @@ export default function MonitoringPage() {
         />
         {tab === "import" ? <>{error ? <ErrorBox message={error} /> : null}</> : null}
         {tab === "export" ? <>{exportError ? <ErrorBox message={exportError} /> : null}</> : null}
-      {tab === "import" ? (
-        <MonitoringSection
-          loading={loading}
-          error={error}
-          rows={rows}
-          platformStores={platformStores}
-          runAllState={runAllState}
-          savingMap={savingMap}
-          runningMap={runningMap}
-          runAllLoading={runAllLoading}
-          onRunAll={onRunAll}
-          onRunJob={onRunJob}
-          onSaveJob={onSaveJob}
-        />
-      ) : (
-        <MonitoringExportSection
-          loading={exportLoading}
-          error={exportError}
-          rows={exportRows}
-          platformStores={platformStores}
-          savingMap={savingMap}
-          runningMap={exportRunningMap}
-          statusMap={exportStatusMap}
-          summary={exportLastSummary}
-          onSaveConfig={onSaveExportConfig}
-          onRunExport={onRunExport}
-        />
-      )}
+        {tab === "import" ? (
+          <MonitoringSection
+            loading={loading}
+            error={error}
+            rows={rows}
+            platformStores={platformStores}
+            runAllState={runAllState}
+            savingMap={savingMap}
+            runningMap={runningMap}
+            runAllLoading={runAllLoading}
+            onRunAll={onRunAll}
+            onRunJob={onRunJob}
+            onSaveJob={onSaveJob}
+          />
+        ) : (
+          <MonitoringExportSection
+            loading={exportLoading}
+            error={exportError}
+            rows={exportRows}
+            platformStores={platformStores}
+            savingMap={savingMap}
+            runningMap={exportRunningMap}
+            statusMap={exportStatusMap}
+            summary={exportLastSummary}
+            onSaveConfig={onSaveExportConfig}
+            onRunExport={onRunExport}
+          />
+        )}
       </div>
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }

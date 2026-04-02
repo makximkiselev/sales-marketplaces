@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { API_BASE } from "../../../lib/api";
 import { LoadingButton } from "../../../components/page/ControlKit";
-import { PageFrame } from "../../../components/page/PageKit";
 import { SectionBlock } from "../../../components/page/SectionKit";
 import { KpiCard, KpiGrid } from "../../../components/page/DataKit";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
 import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
+import { WorkspacePageFrame } from "../../_shared/WorkspacePageFrame";
 
 export default function Page() {
   const [status, setStatus] = useState<string>("");
@@ -29,7 +29,7 @@ export default function Page() {
   }
 
   return (
-    <PageFrame title="Лаборатория цен" subtitle="Ручной запуск построения решений по ставкам и цене.">
+    <WorkspacePageFrame>
       <div className={layoutStyles.shell}>
         <WorkspacePageHero
           title="Лаборатория цен"
@@ -50,6 +50,6 @@ export default function Page() {
           {status ? <div className="status">{status}</div> : <div className={layoutStyles.statusBox}>Ручной запуск пока не выполнялся.</div>}
         </SectionBlock>
       </div>
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }

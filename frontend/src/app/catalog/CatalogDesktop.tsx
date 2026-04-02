@@ -1,9 +1,9 @@
-import { PageFrame } from "../../components/page/PageKit";
 import { WorkspaceSurface } from "../../components/page/WorkspaceKit";
 import styles from "./CatalogPage.module.css";
 import type { CatalogController } from "./CatalogRendererTypes";
 import layoutStyles from "../_shared/AppPageLayout.module.css";
 import { WorkspacePageHero } from "../_shared/WorkspacePageHero";
+import { WorkspacePageFrame } from "../_shared/WorkspacePageFrame";
 
 type Props = {
   controller: CatalogController;
@@ -37,11 +37,7 @@ export function CatalogDesktop({ controller, treeSelector, table }: Props) {
   } = controller;
 
   return (
-    <PageFrame
-      title="Список товаров"
-      subtitle="Единый каталог товаров с древом категорий, размещением и будущими ценовыми метриками."
-      className={styles.catalogPageCard}
-    >
+    <WorkspacePageFrame className={styles.catalogPageCard}>
       <div className={styles.catalogShell}>
         <WorkspacePageHero
           title="Каталог"
@@ -170,6 +166,6 @@ export function CatalogDesktop({ controller, treeSelector, table }: Props) {
           </WorkspaceSurface>
         </div>
       </div>
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }

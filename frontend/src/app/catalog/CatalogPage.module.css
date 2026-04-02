@@ -8,10 +8,6 @@
   gap: 8px;
 }
 
-.catalogPageCard :global(.inner) {
-  padding: 18px;
-}
-
 .catalogShell {
   display: grid;
   gap: 16px;
@@ -368,10 +364,6 @@
   text-align: center;
   color: var(--text-soft);
   padding: 24px 10px;
-}
-
-.mobilePageCard :global(.inner) {
-  padding: 16px 16px 20px;
 }
 
 .mobileCatalogShell {

@@ -1,10 +1,10 @@
-import { PageFrame } from "../../../components/page/PageKit";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageFrame } from "../../_shared/WorkspacePageFrame";
 import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
 
 export default function CatalogContentRatingPage() {
   return (
-    <PageFrame title="Контент-рейтинг" subtitle="Раздел в разработке. Здесь будет оценка качества карточек и контента.">
+    <WorkspacePageFrame>
       <div className={layoutStyles.shell}>
         <WorkspacePageHero
           title="Контент-рейтинг"
@@ -17,6 +17,6 @@ export default function CatalogContentRatingPage() {
           </div>
         </section>
       </div>
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }

@@ -1,8 +1,8 @@
-import { PageFrame } from "../../components/page/PageKit";
 import styles from "./CatalogPage.module.css";
 import type { CatalogController } from "./CatalogRendererTypes";
 import layoutStyles from "../_shared/AppPageLayout.module.css";
 import { WorkspacePageHero } from "../_shared/WorkspacePageHero";
+import { WorkspacePageFrame } from "../_shared/WorkspacePageFrame";
 
 type Props = {
   controller: CatalogController;
@@ -29,11 +29,7 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
   } = controller;
 
   return (
-    <PageFrame
-      title="Каталог"
-      subtitle="Мобильный конструктор каталога без горизонтального скролла."
-      className={styles.mobilePageCard}
-    >
+    <WorkspacePageFrame className={styles.mobilePageCard}>
       <div className={styles.mobileCatalogShell}>
         <WorkspacePageHero
           title="Каталог"
@@ -132,6 +128,6 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
           </div>
         </div>
       </div>
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }

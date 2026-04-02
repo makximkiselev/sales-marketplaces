@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../../lib/api";
 import { LoadingButton } from "../../../components/page/ControlKit";
-import { PageFrame } from "../../../components/page/PageKit";
 import styles from "./PricingFxRatesPage.module.css";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
 import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
+import { WorkspacePageFrame } from "../../_shared/WorkspacePageFrame";
 import { readFreshPageSnapshot, writePageSnapshot } from "../../_shared/pageCache";
 
 type RateRow = { date: string; rate: number };
@@ -108,11 +108,7 @@ export default function PricingFxRatesPage() {
   ] as const;
 
   return (
-    <PageFrame
-      title="Курс валют"
-      subtitle="Курс USD к RUB: ЦБ РФ и таблицы Ozon (для продаж / для услуг)."
-      className={styles.pageCard}
-    >
+    <WorkspacePageFrame className={styles.pageCard}>
       <div className={layoutStyles.shell}>
         <WorkspacePageHero
           title="Курс валют"
@@ -217,6 +213,6 @@ export default function PricingFxRatesPage() {
         ))}
       </div>
       </div>
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }

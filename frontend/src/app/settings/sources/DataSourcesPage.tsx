@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import styles from "./DataSourcesPage.module.css";
-import { PageFrame } from "../../../components/page/PageKit";
 import { DeleteConfirmModal } from "./components/DeleteConfirmModal";
 import { GoogleSheetsWizardModal } from "./components/GoogleSheetsWizardModal";
 import { OzonWizardModal } from "./components/OzonWizardModal";
 import { YandexWizardModal } from "./components/YandexWizardModal";
 import { CogsSourceModal } from "../../pricing/settings/components/CogsSourceModal";
+import { WorkspacePageFrame } from "../../_shared/WorkspacePageFrame";
 import { useSourcesPageController } from "./useSourcesPageController";
 import { DataSourcesDesktop } from "./DataSourcesDesktop";
 import { DataSourcesMobile } from "./DataSourcesMobile";
@@ -118,17 +118,13 @@ export default function DataSourcesPage() {
 
   return (
     <>
-      <PageFrame
-        title="Источники данных"
-        subtitle="Интеграции, таблицы и внешние системы."
-        className={styles.sourcesHeadCard}
-      >
+      <WorkspacePageFrame>
         {isMobile ? (
           <DataSourcesMobile controller={controller} sectionItems={sectionItems} />
         ) : (
           <DataSourcesDesktop controller={controller} sectionItems={sectionItems} />
         )}
-      </PageFrame>
+      </WorkspacePageFrame>
 
       {deleteRequest ? (
         <DeleteConfirmModal

@@ -1,5 +1,5 @@
-import { PageFrame } from "../../../components/page/PageKit";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageFrame } from "../../_shared/WorkspacePageFrame";
 import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
 import styles from "./SalesOverviewPage.module.css";
 
@@ -80,12 +80,7 @@ export function SalesOverviewMobile({ vm }: Props) {
   const resetPage = () => setPage(1);
 
   return (
-    <PageFrame
-      className={styles.pageFrame}
-      innerClassName={styles.pageFrameInner}
-      title="Обзор продаж"
-      subtitle="Мобильный слой продаж без широких таблиц."
-    >
+    <WorkspacePageFrame className={styles.pageFrame} innerClassName={styles.pageFrameInner}>
       <div className={styles.mobileOverviewShell}>
         <WorkspacePageHero
           className={styles.overviewHeroSurface}
@@ -244,6 +239,6 @@ export function SalesOverviewMobile({ vm }: Props) {
           </div>
         ) : null}
       </div>
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }
