@@ -21,11 +21,14 @@ from backend.services.pricing_runtime_bridge import (
 from backend.services.store_data_model import (
     _connect,
     create_refresh_job_run,
+    delete_dashboard_snapshots,
+    get_monitoring_export_snapshot,
     get_pricing_cogs_snapshot_map,
     finish_refresh_job_run,
     get_pricing_store_settings,
     get_refresh_job_runs_latest,
     get_refresh_jobs,
+    upsert_dashboard_snapshot,
     replace_pricing_cogs_snapshot_rows,
     update_refresh_job_run,
     upsert_refresh_job,
@@ -44,6 +47,8 @@ _RUN_STATE_LOCK = threading.Lock()
 _ACTIVE_RUN_IDS: set[int] = set()
 _QUEUED_RUN_IDS: set[int] = set()
 MSK = ZoneInfo("Europe/Moscow")
+_PRICING_MONITORING_SNAPSHOT_NAME = "page_pricing_monitoring"
+_PRICING_MONITORING_EXPORTS_SNAPSHOT_NAME = "page_pricing_monitoring_exports"
 
 
 def refresh_pricing_catalog_trees_from_sources(*args, **kwargs):
@@ -265,6 +270,23 @@ def _ensure_manual_queue_worker() -> None:
         _QUEUE_WORKER_STARTED = True
 
 
+def _refresh_monitoring_page_snapshots() -> None:
+    delete_dashboard_snapshots(snapshot_name=_PRICING_MONITORING_SNAPSHOT_NAME)
+    delete_dashboard_snapshots(snapshot_name=_PRICING_MONITORING_EXPORTS_SNAPSHOT_NAME)
+    monitoring_response = get_refresh_monitoring_snapshot()
+    exports_response = get_monitoring_export_snapshot()
+    upsert_dashboard_snapshot(
+        snapshot_name=_PRICING_MONITORING_SNAPSHOT_NAME,
+        cache_key=_PRICING_MONITORING_SNAPSHOT_NAME,
+        response=monitoring_response,
+    )
+    upsert_dashboard_snapshot(
+        snapshot_name=_PRICING_MONITORING_EXPORTS_SNAPSHOT_NAME,
+        cache_key=_PRICING_MONITORING_EXPORTS_SNAPSHOT_NAME,
+        response=exports_response,
+    )
+
+
 def _register_queued_run(run_id: int) -> None:
     rid = int(run_id or 0)
     if rid <= 0:
@@ -350,6 +372,7 @@ def _manual_queue_worker() -> None:
             logger.warning("[refresh_orchestrator] queued run failed mode=%s job_code=%s error=%s", mode, code, exc)
             if run_id > 0:
                 finish_refresh_job_run(run_id=run_id, status="error", message=str(exc), meta={"error": str(exc)})
+                _refresh_monitoring_page_snapshots()
         finally:
             _clear_tracked_run(run_id)
 
@@ -1568,9 +1591,11 @@ async def run_refresh_job(job_code: str, *, trigger_source: str = "manual", run_
     try:
         result = await _run_job_body(code, run_id=local_run_id)
         finish_refresh_job_run(run_id=local_run_id, status="success", message="ok", meta=result if isinstance(result, dict) else {"result": result})
+        _refresh_monitoring_page_snapshots()
         return {"ok": True, "job_code": code, "run_id": local_run_id, "result": result}
     except Exception as exc:
         finish_refresh_job_run(run_id=local_run_id, status="error", message=str(exc), meta={"error": str(exc)})
+        _refresh_monitoring_page_snapshots()
         raise
     finally:
         _clear_tracked_run(local_run_id)
@@ -1681,6 +1706,7 @@ async def run_refresh_all(
 
         final = {"ok": len(errors) == 0, "steps": steps, "errors": errors, "progress_percent": 100}
         finish_refresh_job_run(run_id=run_id, status="success" if not errors else "error", message="ok" if not errors else "Завершено с ошибками", meta=final)
+        _refresh_monitoring_page_snapshots()
         return {"ok": len(errors) == 0, "run_id": run_id, "steps": steps, "errors": errors}
     finally:
         _clear_tracked_run(run_id)
@@ -1719,8 +1745,10 @@ def start_refresh_job(job_code: str, *, trigger_source: str = "manual") -> dict[
         with _QUEUE_LOCK:
             _MANUAL_QUEUE.append({"mode": "job", "job_code": code, "run_id": run_id, "trigger_source": trigger_source})
             _QUEUE_EVENT.set()
+        _refresh_monitoring_page_snapshots()
         return {"ok": True, "job_code": code, "started": True, "queued": True, "run_id": run_id}
     _spawn_async_job(lambda: run_refresh_job(code, trigger_source=trigger_source))
+    _refresh_monitoring_page_snapshots()
     return {"ok": True, "job_code": code, "started": True}
 
 
@@ -1755,6 +1783,7 @@ def start_refresh_all(*, trigger_source: str = "manual") -> dict[str, Any]:
             }
         )
         _QUEUE_EVENT.set()
+    _refresh_monitoring_page_snapshots()
     return {"ok": True, "started": True, "queued": True, "run_id": run_id, "child_run_ids": child_run_ids}
 
 
