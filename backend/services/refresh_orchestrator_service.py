@@ -404,9 +404,9 @@ def _manual_queue_worker() -> None:
             logger.warning("[refresh_orchestrator] queued run failed mode=%s job_code=%s error=%s", mode, code, exc)
             if run_id > 0:
                 finish_refresh_job_run(run_id=run_id, status="error", message=str(exc), meta={"error": str(exc)})
-                _refresh_monitoring_page_snapshots()
         finally:
             _clear_tracked_run(run_id)
+            _refresh_monitoring_page_snapshots()
 
 
 def bind_refresh_scheduler(scheduler: BackgroundScheduler) -> None:
@@ -1623,14 +1623,13 @@ async def run_refresh_job(job_code: str, *, trigger_source: str = "manual", run_
     try:
         result = await _run_job_body(code, run_id=local_run_id)
         finish_refresh_job_run(run_id=local_run_id, status="success", message="ok", meta=result if isinstance(result, dict) else {"result": result})
-        _refresh_monitoring_page_snapshots()
         return {"ok": True, "job_code": code, "run_id": local_run_id, "result": result}
     except Exception as exc:
         finish_refresh_job_run(run_id=local_run_id, status="error", message=str(exc), meta={"error": str(exc)})
-        _refresh_monitoring_page_snapshots()
         raise
     finally:
         _clear_tracked_run(local_run_id)
+        _refresh_monitoring_page_snapshots()
         lock.release()
 
 
@@ -1738,10 +1737,10 @@ async def run_refresh_all(
 
         final = {"ok": len(errors) == 0, "steps": steps, "errors": errors, "progress_percent": 100}
         finish_refresh_job_run(run_id=run_id, status="success" if not errors else "error", message="ok" if not errors else "Завершено с ошибками", meta=final)
-        _refresh_monitoring_page_snapshots()
         return {"ok": len(errors) == 0, "run_id": run_id, "steps": steps, "errors": errors}
     finally:
         _clear_tracked_run(run_id)
+        _refresh_monitoring_page_snapshots()
 
 
 def _spawn_async_job(coro: Callable[[], Any]) -> None:
