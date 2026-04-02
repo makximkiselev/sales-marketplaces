@@ -122,15 +122,6 @@
   margin-bottom: 4px;
 }
 
-.pricingHeroSurface {
-  padding: 20px;
-  gap: 18px;
-}
-
-.pricingHeroSurfaceMobile {
-  padding: 16px;
-}
-
 .pricingModeStrip,
 .pricingStoreStrip,
 .pricingHeroPanel {
@@ -148,26 +139,6 @@
 .pricingStoreStrip {
   display: grid;
   gap: 10px;
-}
-
-.pricingHeroMeta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.pricingMetaChip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(132, 161, 214, 0.18);
-  background: rgba(7, 14, 27, 0.28);
-  color: #cfe0f8;
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .pricingHeroPanel {

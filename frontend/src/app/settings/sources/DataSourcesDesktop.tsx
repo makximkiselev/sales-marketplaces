@@ -9,6 +9,7 @@ import { YandexMarketPanel } from "./components/YandexMarketPanel";
 import { YandexTablesPanel } from "./components/YandexTablesPanel";
 import { platformMeta } from "./types";
 import type { SourcesController, SourcesSectionItem } from "./DataSourcesRendererTypes";
+import layoutStyles from "../../_shared/AppPageLayout.module.css";
 
 type Props = {
   controller: SourcesController;
@@ -65,7 +66,7 @@ export function DataSourcesDesktop({ controller, sectionItems }: Props) {
 
   return (
     <div className={styles.sourcesShell}>
-      <WorkspaceSurface className={styles.sourcesHeroSurface}>
+      <WorkspaceSurface className={layoutStyles.heroSurface}>
         <WorkspaceTabs
           className={styles.sourcesTabs}
           items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
@@ -76,17 +77,17 @@ export function DataSourcesDesktop({ controller, sectionItems }: Props) {
           title="Источники данных"
           subtitle="Единое рабочее пространство для маркетплейсов, таблиц и внешних систем с общим управлением обменом."
           meta={(
-            <div className={styles.sourcesHeroMeta}>
-              <span className={styles.sourcesMetaChip}>
+            <div className={layoutStyles.heroMeta}>
+              <span className={layoutStyles.metaChip}>
                 {sectionTab === "all" ? "Все источники" : sectionItems.find((item) => item.id === sectionTab)?.label ?? "Источники"}
               </span>
-              <span className={styles.sourcesMetaChip}>
+              <span className={layoutStyles.metaChip}>
                 {refreshAllLoading ? "Проверка статусов..." : `Обновлено: ${controller.formatRefreshLabel(lastRefreshAt)}`}
               </span>
             </div>
           )}
         />
-        <WorkspaceToolbar className={styles.sourcesToolbar}>
+        <WorkspaceToolbar className={layoutStyles.toolbar}>
           <div className={styles.flowInline}>
             <span className={styles.flowInlineTitle}>Режим обмена</span>
             <div className={styles.flowInlineItem}>

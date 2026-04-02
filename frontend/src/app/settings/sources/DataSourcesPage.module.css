@@ -16,42 +16,6 @@
   gap: 12px;
 }
 
-.sourcesHeroSurface {
-  padding: 20px;
-  gap: 18px;
-}
-
-.sourcesHeroSurfaceMobile {
-  padding: 16px;
-}
-
-.sourcesHeroMeta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.sourcesMetaChip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(132, 161, 214, 0.18);
-  background: rgba(7, 14, 27, 0.28);
-  color: #cfe0f8;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.sourcesToolbar {
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
 .sourcesToolbarMobile {
   display: grid;
   gap: 10px;
@@ -167,11 +131,6 @@
 }
 
 @media (max-width: 960px) {
-  .sourcesHeroSurface {
-    padding: 16px;
-    gap: 14px;
-  }
-
   .sourcesTabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -191,14 +150,6 @@
   .refreshButton {
     width: 100%;
     min-width: 0;
-  }
-
-  .sourcesToolbar {
-    align-items: stretch;
-  }
-
-  .sourcesHeroMeta {
-    gap: 8px;
   }
 
   .sourcesToolbarMobile > * {
