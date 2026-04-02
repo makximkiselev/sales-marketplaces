@@ -75,6 +75,7 @@ type TrackingDay = {
   profit_amount?: number | null;
   profit_plan_amount?: number | null;
   profit_pct?: number | null;
+  coinvest_pct?: number | null;
   returns_pct?: number | null;
   ads_amount?: number | null;
   operational_errors?: number | null;
@@ -200,6 +201,16 @@ function moneySign(currencyCode: string | undefined | null) {
 function formatMoney(value: number | null | undefined, currencyCode?: string | null) {
   if (value == null || Number.isNaN(Number(value))) return "—";
   return `${Math.round(Number(value)).toLocaleString("ru-RU")} ${moneySign(currencyCode)}`;
+}
+
+function formatCompactMoney(value: number | null | undefined, currencyCode?: string | null) {
+  if (value == null || Number.isNaN(Number(value))) return "—";
+  const numeric = Number(value);
+  const abs = Math.abs(numeric);
+  const symbol = moneySign(currencyCode);
+  if (abs >= 1_000_000) return `${(numeric / 1_000_000).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} млн ${symbol}`;
+  if (abs >= 1_000) return `${(numeric / 1_000).toLocaleString("ru-RU", { maximumFractionDigits: 0 })}k ${symbol}`;
+  return `${Math.round(numeric).toLocaleString("ru-RU")} ${symbol}`;
 }
 
 function formatNumber(value: number | null | undefined) {
@@ -387,13 +398,24 @@ function TrendChart({
   const innerHeight = chartHeight - pad.top - pad.bottom;
   const revenueValues = days.map((day) => Number(day.revenue || 0));
   const profitValues = days.map((day) => Number(day.profit_amount || 0));
+  const coinvestValues = days.map((day) => Number(day.coinvest_pct || 0));
   const maxValue = Math.max(1, ...revenueValues, ...profitValues);
+  const maxCoinvest = Math.max(1, ...coinvestValues, 20);
   const bandWidth = innerWidth / Math.max(days.length, 1);
   const barGap = Math.max(4, bandWidth * 0.08);
   const groupWidth = Math.max(14, bandWidth - barGap);
   const singleBarWidth = Math.max(6, (groupWidth - barGap) / 2);
   const barHeight = (value: number) => Math.max(0, (value / maxValue) * innerHeight);
+  const coinvestY = (value: number) => pad.top + innerHeight - (Math.max(0, value) / maxCoinvest) * innerHeight;
   const gridValues = [0, 0.25, 0.5, 0.75, 1];
+  const coinvestPath = days
+    .map((day, index) => {
+      const x = pad.left + index * bandWidth + bandWidth / 2;
+      const y = coinvestY(Number(day.coinvest_pct || 0));
+      return `${index === 0 ? "M" : "L"} ${x} ${y}`;
+    })
+    .join(" ");
+  const showBarValues = bandWidth >= 22;
 
   return (
     <div className={styles.chartCard}>
@@ -406,6 +428,7 @@ function TrendChart({
           <div className={styles.chartLegend}>
             <span><i className={styles.legendRevenue} /> Оборот</span>
             <span><i className={styles.legendProfit} /> Прибыль</span>
+            <span><i className={styles.legendCoinvest} /> Соинвест</span>
           </div>
           {controls}
         </div>
@@ -425,11 +448,13 @@ function TrendChart({
           const y = pad.top + innerHeight - tick * innerHeight;
           return <line key={tick} x1={pad.left} y1={y} x2={chartWidth - pad.right} y2={y} className={styles.chartGrid} />;
         })}
+        <path d={coinvestPath} className={styles.chartCoinvestLine} />
         {days.map((day, index) => (
           <g key={`${day.date}-${index}`}>
             {(() => {
               const revenue = Number(day.revenue || 0);
               const profit = Number(day.profit_amount || 0);
+              const coinvest = Number(day.coinvest_pct || 0);
               const groupX = pad.left + index * bandWidth + (bandWidth - groupWidth) / 2;
               const revenueH = barHeight(revenue);
               const profitH = barHeight(profit);
@@ -443,6 +468,16 @@ function TrendChart({
                     rx="5"
                     className={styles.chartBarRevenue}
                   />
+                  {showBarValues && revenueH > 16 ? (
+                    <text
+                      x={groupX + singleBarWidth / 2}
+                      y={pad.top + innerHeight - revenueH - 6}
+                      textAnchor="middle"
+                      className={styles.chartValueLabel}
+                    >
+                      {formatCompactMoney(revenue, currencyCode)}
+                    </text>
+                  ) : null}
                   <rect
                     x={groupX + singleBarWidth + barGap}
                     y={pad.top + innerHeight - profitH}
@@ -451,6 +486,17 @@ function TrendChart({
                     rx="5"
                     className={styles.chartBarProfit}
                   />
+                  {showBarValues && profitH > 16 ? (
+                    <text
+                      x={groupX + singleBarWidth + barGap + singleBarWidth / 2}
+                      y={pad.top + innerHeight - profitH - 6}
+                      textAnchor="middle"
+                      className={styles.chartValueLabelAlt}
+                    >
+                      {formatCompactMoney(profit, currencyCode)}
+                    </text>
+                  ) : null}
+                  <circle cx={pad.left + index * bandWidth + bandWidth / 2} cy={coinvestY(coinvest)} r="3.2" className={styles.chartCoinvestPoint} />
                 </>
               );
             })()}
@@ -463,6 +509,7 @@ function TrendChart({
         ))}
         <text x={pad.left} y={14} className={styles.chartScaleLabel}>{formatMoney(maxValue, currencyCode)}</text>
         <text x={pad.left} y={chartHeight - 10} className={styles.chartScaleLabel}>{formatMoney(0, currencyCode)}</text>
+        <text x={chartWidth - pad.right} y={14} textAnchor="end" className={styles.chartScaleLabel}>{formatPercent(maxCoinvest)}</text>
       </svg>
     </div>
   );

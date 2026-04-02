@@ -1677,9 +1677,25 @@ def _tracking_anchor_day(row: dict[str, Any], *, mode: str) -> date | None:
     return created_day
 
 
-def _tracking_include_financials(row: dict[str, Any], *, month_key: tuple[int, int], active_pair: tuple[int, int]) -> bool:
+def _tracking_include_financials(
+    row: dict[str, Any],
+    *,
+    month_key: tuple[int, int],
+    active_pair: tuple[int, int],
+    anchor: date | None = None,
+) -> bool:
     status_kind = _status_kind(str(row.get("item_status") or ""))
-    return status_kind == "delivered" or (month_key == active_pair and status_kind == "open")
+    if status_kind == "delivered":
+        return True
+    if status_kind != "open":
+        return False
+    if month_key == active_pair:
+        return True
+    anchor_day = anchor or _tracking_anchor_day(row, mode="created")
+    if not anchor_day:
+        return False
+    # Keep recent cross-month days visible in operational trends.
+    return anchor_day >= (datetime.now(MSK).date() - timedelta(days=31))
 
 
 def _tracking_period_key(anchor: date, *, grain: str) -> tuple[str, str]:
@@ -2600,7 +2616,7 @@ async def get_sales_overview_tracking(
         bucket["order_count_total"] += 1
         day_bucket["order_count_total"] += 1
 
-        include_financials = _tracking_include_financials(row, month_key=month_key, active_pair=active_pair)
+        include_financials = _tracking_include_financials(row, month_key=month_key, active_pair=active_pair, anchor=anchor)
         if include_financials:
             revenue = float(_num0(row.get("sale_price")))
             buyer_price = float(_num0(row.get("sale_price_with_coinvest")))
@@ -2722,6 +2738,7 @@ async def get_sales_overview_tracking(
                 "profit_plan_amount": round(float(daily_profit_plan), 2) if daily_profit_plan is not None else None,
                 "profit_pct": day_item["profit_pct"],
                 "coinvest_amount": round(float(day_item["coinvest_amount"]), 2),
+                "coinvest_pct": round((float(day_item["coinvest_amount"]) / day_revenue * 100.0), 2) if day_revenue > 0 else 0.0,
                 "returns_pct": day_item["returns_pct"],
                 "ads_amount": round(float(day_item["ads_amount"]), 2),
                 "operational_errors": round(float(day_item["operational_errors"]), 2),
@@ -2880,7 +2897,7 @@ async def get_sales_overview_retrospective(
         if "возврат" in str(row.get("item_status") or "").lower():
             period_bucket["return_count"] += 1
 
-        if _tracking_include_financials(row, month_key=month_key, active_pair=active_pair):
+        if _tracking_include_financials(row, month_key=month_key, active_pair=active_pair, anchor=anchor):
             revenue = float(_num0(row.get("sale_price")))
             buyer_price = float(_num0(row.get("sale_price_with_coinvest")))
             profit = float(_num0(row.get("profit")))

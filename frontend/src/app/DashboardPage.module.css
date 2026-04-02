@@ -318,7 +318,8 @@
 }
 
 .legendRevenue,
-.legendProfit {
+.legendProfit,
+.legendCoinvest {
   width: 10px;
   height: 10px;
   border-radius: 999px;
@@ -330,6 +331,10 @@
 
 .legendProfit {
   background: #58d59f;
+}
+
+.legendCoinvest {
+  background: #ffcc66;
 }
 
 .chartSvg {
@@ -348,6 +353,29 @@
 
 .chartBarProfit {
   fill: url(#chartProfitGradient);
+}
+
+.chartCoinvestLine {
+  fill: none;
+  stroke: #ffcc66;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chartCoinvestPoint {
+  fill: #ffcc66;
+}
+
+.chartValueLabel,
+.chartValueLabelAlt {
+  fill: #d9e7ff;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.chartValueLabelAlt {
+  fill: #bff5d7;
 }
 
 .chartLabel,
