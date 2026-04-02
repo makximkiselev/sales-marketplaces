@@ -181,11 +181,11 @@ export function SalesOverviewMobile({ vm }: Props) {
             )}
           </div>
           <div className={styles.mobileFilterChips}>
-            {currentStoreLabel ? <span className={styles.overviewMetaChip}>{currentStoreLabel}</span> : null}
-            {tab === "orders" || tab === "problems" ? <span className={styles.overviewMetaChip}>{periodLabel}</span> : null}
-            {tab === "tracking" || tab === "sku" || tab === "category" ? <span className={styles.overviewMetaChip}>{modeLabel}</span> : null}
-            {tab === "sku" || tab === "category" ? <span className={styles.overviewMetaChip}>{grainLabel}</span> : null}
-            {tab === "orders" && itemStatus ? <span className={styles.overviewMetaChip}>{itemStatus}</span> : null}
+            {currentStoreLabel ? <span className={layoutStyles.metaChip}>{currentStoreLabel}</span> : null}
+            {tab === "orders" || tab === "problems" ? <span className={layoutStyles.metaChip}>{periodLabel}</span> : null}
+            {tab === "tracking" || tab === "sku" || tab === "category" ? <span className={layoutStyles.metaChip}>{modeLabel}</span> : null}
+            {tab === "sku" || tab === "category" ? <span className={layoutStyles.metaChip}>{grainLabel}</span> : null}
+            {tab === "orders" && itemStatus ? <span className={layoutStyles.metaChip}>{itemStatus}</span> : null}
           </div>
         </WorkspacePageHero>
 

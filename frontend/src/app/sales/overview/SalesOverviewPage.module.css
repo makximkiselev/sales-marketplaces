@@ -11,41 +11,7 @@
 }
 
 .overviewHeroSurface {
-  padding: 20px;
-  gap: 18px;
   margin-bottom: 16px;
-}
-
-.overviewHeroTop {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.overviewTabs {
-  gap: 10px;
-}
-
-.overviewHeroMeta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.overviewMetaChip {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(132, 161, 214, 0.18);
-  background: rgba(7, 14, 27, 0.28);
-  color: #cfe0f8;
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .overviewHeroBody {
