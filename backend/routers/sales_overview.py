@@ -37,7 +37,7 @@ logger = logging.getLogger("uvicorn.error")
 
 _DASHBOARD_CACHE: dict[str, dict] = {}
 _DASHBOARD_CACHE_GEN = 1
-_DASHBOARD_SNAPSHOT_GEN = 2
+_DASHBOARD_SNAPSHOT_GEN = 3
 _DASHBOARD_CACHE_MAX = 128
 _DASHBOARD_CACHE_TTL_SECONDS = 180
 _DASHBOARD_RECENT_PAYLOADS: dict[str, dict] = {}
