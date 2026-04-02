@@ -1,6 +1,9 @@
 import { ReactNode, useEffect, useState } from "react";
 import styles from "./PricingCatalogFrame.module.css";
-import { PageFrame, PageSectionTitle } from "../../../components/page/PageKit";
+import { PageSectionTitle } from "../../../components/page/PageKit";
+import { WorkspaceHeader, WorkspaceSurface, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
+import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageFrame } from "../../_shared/WorkspacePageFrame";
 
 export type PricingTreeNodeFlat = {
   path: string;
@@ -100,30 +103,36 @@ export default function PricingCatalogFrame(props: Props) {
   }
 
   return (
-    <PageFrame
-      title={title}
-      subtitle={subtitle}
-      className={styles.pageCard}
-    >
-      {summaryPanel ? <div className={styles.summaryPanel}>{summaryPanel}</div> : null}
-
-      {!hideSearchPanel ? (
-        <div className={styles.controlPanel}>
-          <div className={styles.searchRow}>
-            <div className={styles.searchBlock}>
-              <label className={styles.fieldLabel} htmlFor="pricing-frame-search">Поиск</label>
-              <input
-                id="pricing-frame-search"
-                className="input input-size-xl"
-                value={searchValue}
-                onChange={(e) => onSearchChange(e.target.value)}
-                placeholder={searchPlaceholder}
-              />
-            </div>
+    <WorkspacePageFrame className={styles.pageCard}>
+      <WorkspaceSurface className={layoutStyles.heroSurface}>
+        <div className={layoutStyles.heroRail}>
+          <div className={styles.heroRailRow}>
+            <div className={styles.tabsRow}>{tabs}</div>
+            {tabsRight ? <div className={styles.tabsRight}>{tabsRight}</div> : null}
           </div>
         </div>
-      ) : null}
 
+        <WorkspaceHeader title={title} subtitle={subtitle} />
+
+        {!hideSearchPanel ? (
+          <WorkspaceToolbar className={layoutStyles.toolbar}>
+            <div className={layoutStyles.toolbarGroup}>
+              <div className={styles.searchBlock}>
+                <label className={styles.fieldLabel} htmlFor="pricing-frame-search">Поиск</label>
+                <input
+                  id="pricing-frame-search"
+                  className="input input-size-xl"
+                  value={searchValue}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  placeholder={searchPlaceholder}
+                />
+              </div>
+            </div>
+          </WorkspaceToolbar>
+        ) : null}
+      </WorkspaceSurface>
+
+      {summaryPanel ? <div className={styles.summaryPanel}>{summaryPanel}</div> : null}
       {error ? <div className={styles.errorBox}>{error}</div> : null}
 
       <div className={styles.layout}>
@@ -156,11 +165,6 @@ export default function PricingCatalogFrame(props: Props) {
         </aside>
 
         <div className={styles.contentColumn}>
-          <div className={styles.tabsBar}>
-            <div className={styles.tabsRow}>{tabs}</div>
-            {tabsRight ? <div className={styles.tabsRight}>{tabsRight}</div> : null}
-          </div>
-
           <section className={styles.tablePanel}>
           {(tableTitle || tableMeta || tableTitleControls) ? (
             <div className={styles.tableHeaderRow}>
@@ -210,6 +214,6 @@ export default function PricingCatalogFrame(props: Props) {
           </section>
         </div>
       </div>
-    </PageFrame>
+    </WorkspacePageFrame>
   );
 }

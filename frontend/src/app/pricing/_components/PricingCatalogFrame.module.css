@@ -1,17 +1,5 @@
-.pageCard :global(.inner) {
-  padding: 16px 18px 16px;
-}
-
-.controlPanel {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(132, 161, 214, 0.18);
-  display: grid;
-  gap: 12px;
-}
-
 .summaryPanel {
-  margin-top: 14px;
+  margin-top: 0;
 }
 
 .fieldLabel {
@@ -32,17 +20,19 @@
   gap: 8px;
 }
 
-.searchRow {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-}
-
 .tabsRow {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.heroRailRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .tabsHeaderRow {
@@ -68,19 +58,7 @@
   gap: 12px;
 }
 
-.tabsBar {
-  border: 1px solid rgba(132, 161, 214, 0.2);
-  border-radius: 14px;
-  background: rgba(10, 18, 33, 0.46);
-  padding: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
 .errorBox {
-  margin-top: 12px;
   border: 1px solid rgba(255, 112, 112, 0.38);
   color: #ffd1d1;
   background: rgba(70, 18, 24, 0.35);
@@ -89,7 +67,6 @@
 }
 
 .layout {
-  margin-top: 12px;
   display: grid;
   grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
   gap: 12px;
@@ -363,13 +340,7 @@
   }
 
   .contentColumn {
-    grid-template-rows: auto auto;
-  }
-
-  .tabsBar {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 10px;
+    grid-template-rows: auto;
   }
 
   .tabsRow,
@@ -403,14 +374,13 @@
 }
 
 @media (max-width: 960px) {
-  .pageCard :global(.inner) {
-    padding: 14px 12px 16px;
+  .heroRailRow {
+    align-items: stretch;
   }
 
-  .summaryPanel,
-  .controlPanel,
-  .layout {
-    margin-top: 12px;
+  .tabsRight {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .treePanel,
@@ -463,10 +433,6 @@
 }
 
 @media (max-width: 640px) {
-  .tabsBar {
-    padding: 8px;
-  }
-
   .tableTitleControls,
   .pageLeft,
   .pageRightStack,
