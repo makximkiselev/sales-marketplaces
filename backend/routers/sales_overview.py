@@ -38,6 +38,7 @@ logger = logging.getLogger("uvicorn.error")
 
 _DASHBOARD_CACHE: dict[str, dict] = {}
 _DASHBOARD_CACHE_GEN = 1
+_DASHBOARD_SNAPSHOT_GEN = 2
 _DASHBOARD_CACHE_MAX = 128
 _DASHBOARD_CACHE_TTL_SECONDS = 180
 _DASHBOARD_RECENT_PAYLOADS: dict[str, dict] = {}
@@ -362,7 +363,7 @@ def _dashboard_cache_key(payload: dict[str, str]) -> str:
 
 
 def _dashboard_snapshot_key(payload: dict[str, str]) -> str:
-    return make_cache_key(_DASHBOARD_SNAPSHOT_NAME, payload, 1)
+    return make_cache_key(_DASHBOARD_SNAPSHOT_NAME, payload, _DASHBOARD_SNAPSHOT_GEN)
 
 
 def _dashboard_cache_get(payload: dict[str, str]) -> dict | None:
