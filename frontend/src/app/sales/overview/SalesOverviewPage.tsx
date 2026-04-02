@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../../lib/api";
+import { readFreshPageSnapshot, writePageSnapshot } from "../../_shared/pageCache";
 import styles from "./SalesOverviewPage.module.css";
 import { SalesOverviewDesktop } from "./SalesOverviewDesktop";
 import { SalesOverviewMobile } from "./SalesOverviewMobile";
@@ -208,6 +209,8 @@ const ORDERS_PERIOD_OPTIONS: Array<{ value: OrdersPeriod; label: string }> = [
 ];
 
 const OVERVIEW_CLIENT_CACHE = new Map<string, OverviewCacheEntry>();
+const OVERVIEW_CONTEXT_CACHE_KEY = "page_sales_overview_context_v1";
+const OVERVIEW_SNAPSHOT_PREFIX = "page_sales_overview_snapshot_v1:";
 
 function getInitialSearchParams() {
   if (typeof window === "undefined") return new URLSearchParams();
@@ -491,6 +494,7 @@ export default function SalesOverviewPage() {
         const data = await fetchJson<ContextResp>("/api/sales/overview/context");
         if (cancelled) return;
         setContext(data);
+        writePageSnapshot(OVERVIEW_CONTEXT_CACHE_KEY, data);
         const firstStore = String(data.marketplace_stores?.[0]?.store_id || "").trim();
         setStoreId((prev) => prev || firstStore);
       } catch (err) {
@@ -499,6 +503,13 @@ export default function SalesOverviewPage() {
       } finally {
         if (!cancelled) setLoading(false);
       }
+    }
+    const cachedContext = readFreshPageSnapshot<ContextResp>(OVERVIEW_CONTEXT_CACHE_KEY, 10 * 60 * 1000);
+    if (cachedContext?.ok) {
+      setContext(cachedContext);
+      const firstStore = String(cachedContext.marketplace_stores?.[0]?.store_id || "").trim();
+      setStoreId((prev) => prev || firstStore);
+      setLoading(false);
     }
     void loadContext();
     return () => {
@@ -522,9 +533,11 @@ export default function SalesOverviewPage() {
       customDateFrom,
       customDateTo,
     });
-    const cached = OVERVIEW_CLIENT_CACHE.get(cacheKey);
+    const cached = OVERVIEW_CLIENT_CACHE.get(cacheKey)
+      || readFreshPageSnapshot<OverviewCacheEntry>(`${OVERVIEW_SNAPSHOT_PREFIX}${cacheKey}`, 10 * 60 * 1000);
 
     if (cached) {
+      OVERVIEW_CLIENT_CACHE.set(cacheKey, cached);
       setTracking(cached.tracking ?? null);
       setOrders(cached.orders ?? null);
       setProblemOrders(cached.problemOrders ?? null);
@@ -609,6 +622,7 @@ export default function SalesOverviewPage() {
 
         if (cancelled) return;
         OVERVIEW_CLIENT_CACHE.set(cacheKey, nextState);
+        writePageSnapshot(`${OVERVIEW_SNAPSHOT_PREFIX}${cacheKey}`, nextState);
         setTracking(nextState.tracking ?? null);
         setOrders(nextState.orders ?? null);
         setProblemOrders(nextState.problemOrders ?? null);

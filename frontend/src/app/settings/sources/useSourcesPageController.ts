@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchPricingCategoryTree, savePricingStoreSettings } from "../../pricing/settings/api";
+import { readFreshPageSnapshot, writePageSnapshot } from "../../_shared/pageCache";
 import { useDeleteConfirmController } from "./useDeleteConfirmController";
 import { useGsheetsSourcesController } from "./useGsheetsSourcesController";
 import { useOzonSourcesController } from "./useOzonSourcesController";
@@ -42,6 +43,8 @@ type SourceBindingModalState = {
   storeId: string;
   storeName: string;
 };
+
+const SOURCES_PAGE_CACHE_KEY = "page_sources_context_v1";
 
 function buildStoreSourceBinding(data?: {
   cogs_source_type?: "table" | "system" | null;
@@ -222,8 +225,15 @@ export function useSourcesPageController() {
           }
         }),
       );
-      setStoreSourceBindings(Object.fromEntries(sourceBindings));
+      const nextBindings = Object.fromEntries(sourceBindings);
+      setStoreSourceBindings(nextBindings);
       if (data.lastRefreshAt) setLastRefreshAt(data.lastRefreshAt);
+      writePageSnapshot(SOURCES_PAGE_CACHE_KEY, {
+        sources: data.sources,
+        integrations: data.integrations,
+        storeSourceBindings: nextBindings,
+        lastRefreshAt: data.lastRefreshAt,
+      });
     } finally {
       setLoading(false);
     }
@@ -238,6 +248,19 @@ export function useSourcesPageController() {
   }
 
   useEffect(() => {
+    const cached = readFreshPageSnapshot<{
+      sources?: SourceItem[];
+      integrations?: IntegrationsPayload;
+      storeSourceBindings?: Record<string, StoreSourceBinding>;
+      lastRefreshAt?: string | null;
+    }>(SOURCES_PAGE_CACHE_KEY, 10 * 60 * 1000);
+    if (cached) {
+      setSources(Array.isArray(cached.sources) ? cached.sources : []);
+      setIntegrations(cached.integrations && typeof cached.integrations === "object" ? cached.integrations : {});
+      setStoreSourceBindings(cached.storeSourceBindings && typeof cached.storeSourceBindings === "object" ? cached.storeSourceBindings : {});
+      setLastRefreshAt(cached.lastRefreshAt ?? null);
+      setLoading(false);
+    }
     void loadData();
   }, []);
 

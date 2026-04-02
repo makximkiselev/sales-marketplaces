@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { ModalShell, PageFrame, PageSectionTitle } from "../../../components/page/PageKit";
 import { SectionBlock } from "../../../components/page/SectionKit";
 import { KpiCard, KpiGrid } from "../../../components/page/DataKit";
-import { WorkspaceHeader, WorkspaceSurface } from "../../../components/page/WorkspaceKit";
 import { apiGetOk, apiPostOk } from "../../../lib/api";
 import styles from "./AdminPage.module.css";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
+import { readFreshPageSnapshot, writePageSnapshot } from "../../_shared/pageCache";
 
 type UserRole = "owner" | "manager" | "viewer";
 
@@ -46,6 +47,7 @@ const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
   { value: "manager", label: "Менеджеры" },
   { value: "viewer", label: "Наблюдатели" },
 ];
+const ADMIN_USERS_CACHE_KEY = "page_admin_users_v1";
 
 function generatePassword(length = 14) {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
@@ -100,7 +102,9 @@ export default function SettingsAdminPage() {
     setError("");
     try {
       const data = await apiGetOk<{ ok: boolean; rows: AdminUser[] }>("/api/admin/users");
-      setUsers(Array.isArray(data.rows) ? data.rows : []);
+      const nextRows = Array.isArray(data.rows) ? data.rows : [];
+      setUsers(nextRows);
+      writePageSnapshot(ADMIN_USERS_CACHE_KEY, nextRows);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -109,6 +113,11 @@ export default function SettingsAdminPage() {
   }
 
   useEffect(() => {
+    const cachedUsers = readFreshPageSnapshot<AdminUser[]>(ADMIN_USERS_CACHE_KEY, 10 * 60 * 1000);
+    if (cachedUsers) {
+      setUsers(Array.isArray(cachedUsers) ? cachedUsers : []);
+      setLoading(false);
+    }
     void loadUsers();
   }, []);
 
@@ -307,23 +316,22 @@ export default function SettingsAdminPage() {
       meta={ownersCount ? `Активных владельцев: ${ownersCount}` : undefined}
     >
       <div className={layoutStyles.shell}>
-        <WorkspaceSurface className={layoutStyles.heroSurface}>
-          <WorkspaceHeader
-            title="Access control"
-            subtitle="Центр управления пользователями панели, ролями доступа и ручной выдачей паролей."
-            meta={(
-              <div className={layoutStyles.heroMeta}>
-                <span className={layoutStyles.metaChip}>Активных: {activeUsersCount}</span>
-                <span className={layoutStyles.metaChip}>Owners: {ownersCount}</span>
-              </div>
-            )}
-          />
+        <WorkspacePageHero
+          title="Пользователи"
+          subtitle="Центр управления пользователями панели, ролями доступа и ручной выдачей паролей."
+          meta={(
+            <div className={layoutStyles.heroMeta}>
+              <span className={layoutStyles.metaChip}>Активных: {activeUsersCount}</span>
+              <span className={layoutStyles.metaChip}>Owners: {ownersCount}</span>
+            </div>
+          )}
+        >
           <KpiGrid>
             <KpiCard label="Пользователи" value={users.length.toLocaleString("ru-RU")} />
             <KpiCard label="Активные" value={activeUsersCount.toLocaleString("ru-RU")} />
             <KpiCard label="По фильтру" value={filteredUsers.length.toLocaleString("ru-RU")} />
           </KpiGrid>
-        </WorkspaceSurface>
+        </WorkspacePageHero>
 
         <SectionBlock>
           <div className={styles.layout}>

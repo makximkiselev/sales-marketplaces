@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { ErrorBox } from "../../../components/ErrorBox";
 import { PageFrame } from "../../../components/page/PageKit";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import {
   fetchPricingMonitoring,
   fetchPricingMonitoringExports,
@@ -24,7 +23,11 @@ import type {
 } from "../../pricing/settings/types";
 import { showAppToast } from "../../../components/ui/toastBus";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
-import { WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
+import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
+import { readPageSnapshot, writePageSnapshot } from "../../_shared/pageCache";
+
+const MONITORING_IMPORT_CACHE_KEY = "page_monitoring_import_v1";
+const MONITORING_EXPORT_CACHE_KEY = "page_monitoring_export_v1";
 
 export default function MonitoringPage() {
   const [tab, setTab] = useState<"import" | "export">("import");
@@ -51,6 +54,7 @@ export default function MonitoringPage() {
       setRows(Array.isArray(data.rows) ? data.rows : []);
       setPlatformStores(data.platform_stores && typeof data.platform_stores === "object" ? data.platform_stores : {});
       setRunAllState(data.run_all && typeof data.run_all === "object" ? data.run_all : {});
+      writePageSnapshot(MONITORING_IMPORT_CACHE_KEY, data);
     } catch (e) {
       setRows([]);
       setPlatformStores({});
@@ -67,6 +71,7 @@ export default function MonitoringPage() {
     try {
       const data = await fetchPricingMonitoringExports();
       setExportRows(Array.isArray(data.rows) ? data.rows : []);
+      writePageSnapshot(MONITORING_EXPORT_CACHE_KEY, data);
     } catch (e) {
       setExportRows([]);
       if (!silent) setExportError(e instanceof Error ? e.message : String(e));
@@ -76,6 +81,22 @@ export default function MonitoringPage() {
   }
 
   useEffect(() => {
+    const cachedImport = readPageSnapshot<{
+      rows?: RefreshMonitoringRowApi[];
+      platform_stores?: Record<string, RefreshMonitoringStoreApi[]>;
+      run_all?: RefreshMonitoringRunAllApi;
+    }>(MONITORING_IMPORT_CACHE_KEY);
+    const cachedExport = readPageSnapshot<{ rows?: MonitoringExportStoreApi[] }>(MONITORING_EXPORT_CACHE_KEY);
+    if (cachedImport) {
+      setRows(Array.isArray(cachedImport.rows) ? cachedImport.rows : []);
+      setPlatformStores(cachedImport.platform_stores && typeof cachedImport.platform_stores === "object" ? cachedImport.platform_stores : {});
+      setRunAllState(cachedImport.run_all && typeof cachedImport.run_all === "object" ? cachedImport.run_all : {});
+      setLoading(false);
+    }
+    if (cachedExport) {
+      setExportRows(Array.isArray(cachedExport.rows) ? cachedExport.rows : []);
+      setExportLoading(false);
+    }
     void loadData();
     void loadExportData();
   }, []);
@@ -219,31 +240,25 @@ export default function MonitoringPage() {
       subtitle="Единый центр управления обновлениями данных, отчетов и пересчётов ценообразования."
     >
       <div className={layoutStyles.shell}>
-        <WorkspaceSurface className={layoutStyles.heroSurface}>
-          <WorkspaceTabs
-            items={[
+        <WorkspacePageHero
+          title="Мониторинг"
+          subtitle="Операционный центр для расписаний обновления, ручных запусков и контроля экспортных задач."
+          tabs={{
+            items: [
               { id: "import", label: "Импорт данных" },
               { id: "export", label: "Экспорт данных" },
-            ]}
-            activeId={tab}
-            onChange={setTab}
-          />
-          <WorkspaceHeader
-            title="Monitoring workspace"
-            subtitle="Операционный центр для расписаний обновления, ручных запусков и контроля экспортных задач."
-            meta={(
-              <div className={layoutStyles.heroMeta}>
-                <span className={layoutStyles.metaChip}>{tab === "import" ? "Импорт" : "Экспорт"}</span>
-                <span className={layoutStyles.metaChip}>{tab === "import" ? `${rows.length} задач` : `${exportRows.length} экспортов`}</span>
-              </div>
-            )}
-          />
-          <WorkspaceToolbar className={layoutStyles.toolbar}>
-            <div className={layoutStyles.toolbarGroup}>
-              <span className={layoutStyles.metaChip}>{tab === "import" ? "Расписания и ручные прогоны" : "Статусы экспортов и конфигурации"}</span>
+            ],
+            activeId: tab,
+            onChange: setTab,
+          }}
+          meta={(
+            <div className={layoutStyles.heroMeta}>
+              <span className={layoutStyles.metaChip}>{tab === "import" ? "Импорт" : "Экспорт"}</span>
+              <span className={layoutStyles.metaChip}>{tab === "import" ? `${rows.length} задач` : `${exportRows.length} экспортов`}</span>
             </div>
-          </WorkspaceToolbar>
-        </WorkspaceSurface>
+          )}
+          toolbar={<div className={layoutStyles.toolbarGroup}><span className={layoutStyles.metaChip}>{tab === "import" ? "Расписания и ручные прогоны" : "Статусы экспортов и конфигурации"}</span></div>}
+        />
         {tab === "import" ? <>{error ? <ErrorBox message={error} /> : null}</> : null}
         {tab === "export" ? <>{exportError ? <ErrorBox message={exportError} /> : null}</> : null}
       {tab === "import" ? (

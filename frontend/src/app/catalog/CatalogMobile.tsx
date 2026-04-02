@@ -1,7 +1,8 @@
 import { PageFrame } from "../../components/page/PageKit";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs } from "../../components/page/WorkspaceKit";
 import styles from "./CatalogPage.module.css";
 import type { CatalogController } from "./CatalogRendererTypes";
+import layoutStyles from "../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../_shared/WorkspacePageHero";
 
 type Props = {
   controller: CatalogController;
@@ -34,18 +35,16 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
       className={styles.mobilePageCard}
     >
       <div className={styles.mobileCatalogShell}>
-        <WorkspaceSurface className={styles.mobileCatalogHero}>
-          <WorkspaceTabs
-            className={styles.mobileCatalogTabs}
-            items={tabItems.map((item) => ({ id: item.id, label: item.label, meta: "badge" in item ? item.badge : undefined }))}
-            activeId={tab}
-            onChange={setTab}
-          />
-          <WorkspaceHeader
-            title="Каталог"
-            subtitle="Все фильтры и карточки товаров собраны в один мобильный workspace."
-            meta={<span className={styles.catalogMetaChip}>{tableLoading ? "Обновление..." : `Всего: ${totalCount}`}</span>}
-          />
+        <WorkspacePageHero
+          title="Каталог"
+          subtitle="Все фильтры и карточки товаров собраны в один мобильный workspace."
+          tabs={{
+            items: tabItems.map((item) => ({ id: item.id, label: item.label, meta: "badge" in item ? item.badge : undefined })),
+            activeId: tab,
+            onChange: setTab,
+          }}
+          meta={<span className={layoutStyles.metaChip}>{tableLoading ? "Обновление..." : `Всего: ${totalCount}`}</span>}
+        >
           <div className={styles.mobileCatalogControls}>
             <div className={styles.treeSourcePanel}>{treeSelector}</div>
             <div className={styles.mobileSearchBlock}>
@@ -59,7 +58,7 @@ export function CatalogMobile({ controller, treeSelector }: Props) {
               />
             </div>
           </div>
-        </WorkspaceSurface>
+        </WorkspacePageHero>
 
         {error ? <div className="status error">{error}</div> : null}
 

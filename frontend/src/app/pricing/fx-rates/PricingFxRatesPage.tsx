@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../../lib/api";
 import { LoadingButton } from "../../../components/page/ControlKit";
 import { PageFrame } from "../../../components/page/PageKit";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
 import styles from "./PricingFxRatesPage.module.css";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
+import { readFreshPageSnapshot, writePageSnapshot } from "../../_shared/pageCache";
 
 type RateRow = { date: string; rate: number };
 type FxResp = {
@@ -21,6 +22,7 @@ type FxResp = {
 };
 
 type PeriodMode = "7d" | "14d" | "30d" | "custom";
+const FX_RATES_CACHE_PREFIX = "page_fx_rates_v1:";
 
 function toInputDate(d: Date): string {
   const y = d.getFullYear();
@@ -70,6 +72,10 @@ export default function PricingFxRatesPage() {
       if (!res.ok || !json.ok) throw new Error(json.message || "Не удалось загрузить курсы валют");
       setData(json.tables || {});
       setUpdatedAt(new Date().toLocaleString("ru-RU"));
+      writePageSnapshot(`${FX_RATES_CACHE_PREFIX}${params.toString()}`, {
+        tables: json.tables || {},
+        updatedAt: new Date().toLocaleString("ru-RU"),
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -78,8 +84,22 @@ export default function PricingFxRatesPage() {
   }
 
   useEffect(() => {
+    const params = new URLSearchParams({ period });
+    if (period === "custom") {
+      params.set("date_from", dateFrom);
+      params.set("date_to", dateTo);
+    }
+    const cached = readFreshPageSnapshot<{ tables?: FxResp["tables"]; updatedAt?: string }>(
+      `${FX_RATES_CACHE_PREFIX}${params.toString()}`,
+      10 * 60 * 1000,
+    );
+    if (cached) {
+      setData(cached.tables || {});
+      setUpdatedAt(String(cached.updatedAt || ""));
+      setLoading(false);
+    }
     void loadRates();
-  }, [period]);
+  }, [period, dateFrom, dateTo]);
 
   const tableList = [
     { key: "cbr", label: data?.cbr?.label || "Курс ЦБ РФ", rows: data?.cbr?.rows || [] },
@@ -94,59 +114,59 @@ export default function PricingFxRatesPage() {
       className={styles.pageCard}
     >
       <div className={layoutStyles.shell}>
-        <WorkspaceSurface className={layoutStyles.heroSurface}>
-          <WorkspaceTabs
-            items={[
+        <WorkspacePageHero
+          title="Курс валют"
+          subtitle="Сводная зона для сравнения курса ЦБ и таблиц Ozon по выбранному временному диапазону."
+          tabs={{
+            items: [
               { id: "7d", label: "7 дней" },
               { id: "14d", label: "14 дней" },
               { id: "30d", label: "30 дней" },
               { id: "custom", label: "Период" },
-            ]}
-            activeId={period}
-            onChange={setPeriod}
-          />
-          <WorkspaceHeader
-            title="FX workspace"
-            subtitle="Сводная зона для сравнения курса ЦБ и таблиц Ozon по выбранному временному диапазону."
-            meta={(
-              <div className={layoutStyles.heroMeta}>
-                <span className={layoutStyles.metaChip}>{titleLabel}</span>
-                <span className={layoutStyles.metaChip}>{updatedAt ? `Обновлено: ${updatedAt}` : "Еще не загружено"}</span>
+            ],
+            activeId: period,
+            onChange: setPeriod,
+          }}
+          meta={(
+            <div className={layoutStyles.heroMeta}>
+              <span className={layoutStyles.metaChip}>{titleLabel}</span>
+              <span className={layoutStyles.metaChip}>{updatedAt ? `Обновлено: ${updatedAt}` : "Еще не загружено"}</span>
+            </div>
+          )}
+          toolbar={(
+            <>
+              <div className={layoutStyles.toolbarGroup}>
+                {period === "custom" ? (
+                  <>
+                    <label className={styles.dateField}>
+                      <span className={styles.fieldLabel}>Дата с</span>
+                      <input
+                        type="date"
+                        className={`input input-size-md ${styles.dateInput}`}
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                      />
+                    </label>
+                    <label className={styles.dateField}>
+                      <span className={styles.fieldLabel}>Дата по</span>
+                      <input
+                        type="date"
+                        className={`input input-size-md ${styles.dateInput}`}
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                      />
+                    </label>
+                  </>
+                ) : (
+                  <div className={styles.toolbarHint}>{loading ? "Обновление..." : "Данные по выбранному периоду"}</div>
+                )}
               </div>
-            )}
-          />
-          <WorkspaceToolbar className={layoutStyles.toolbar}>
-            <div className={layoutStyles.toolbarGroup}>
-              {period === "custom" ? (
-                <>
-                  <label className={styles.dateField}>
-                    <span className={styles.fieldLabel}>Дата с</span>
-                    <input
-                      type="date"
-                      className={`input input-size-md ${styles.dateInput}`}
-                      value={dateFrom}
-                      onChange={(e) => setDateFrom(e.target.value)}
-                    />
-                  </label>
-                  <label className={styles.dateField}>
-                    <span className={styles.fieldLabel}>Дата по</span>
-                    <input
-                      type="date"
-                      className={`input input-size-md ${styles.dateInput}`}
-                      value={dateTo}
-                      onChange={(e) => setDateTo(e.target.value)}
-                    />
-                  </label>
-                </>
-              ) : (
-                <div className={styles.toolbarHint}>{loading ? "Обновление..." : "Данные по выбранному периоду"}</div>
-              )}
-            </div>
-            <div className={layoutStyles.toolbarGroup}>
-              <LoadingButton loading={loading} idleLabel="Обновить данные" loadingLabel="Обновление..." onClick={() => void loadRates()} />
-            </div>
-          </WorkspaceToolbar>
-        </WorkspaceSurface>
+              <div className={layoutStyles.toolbarGroup}>
+                <LoadingButton loading={loading} idleLabel="Обновить данные" loadingLabel="Обновление..." onClick={() => void loadRates()} />
+              </div>
+            </>
+          )}
+        />
       {error ? <div className={`status error ${styles.statusBox}`}>{error}</div> : null}
       <div className={styles.tablesGrid}>
         {tableList.map((tbl) => (

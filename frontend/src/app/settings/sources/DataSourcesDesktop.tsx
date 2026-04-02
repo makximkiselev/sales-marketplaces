@@ -1,6 +1,5 @@
 import styles from "./DataSourcesPage.module.css";
 import { PanelGrid, SectionBlock } from "../../../components/page/SectionKit";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
 import { ExternalSystemsPanel } from "./components/ExternalSystemsPanel";
 import { GoogleTablesPanel } from "./components/GoogleTablesPanel";
 import { OzonPanel } from "./components/OzonPanel";
@@ -10,6 +9,7 @@ import { YandexTablesPanel } from "./components/YandexTablesPanel";
 import { platformMeta } from "./types";
 import type { SourcesController, SourcesSectionItem } from "./DataSourcesRendererTypes";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
 
 type Props = {
   controller: SourcesController;
@@ -66,28 +66,26 @@ export function DataSourcesDesktop({ controller, sectionItems }: Props) {
 
   return (
     <div className={styles.sourcesShell}>
-      <WorkspaceSurface className={layoutStyles.heroSurface}>
-        <WorkspaceTabs
-          className={styles.sourcesTabs}
-          items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
-          activeId={sectionTab}
-          onChange={setSectionTab}
-        />
-        <WorkspaceHeader
-          title="Источники данных"
-          subtitle="Единое рабочее пространство для маркетплейсов, таблиц и внешних систем с общим управлением обменом."
-          meta={(
-            <div className={layoutStyles.heroMeta}>
-              <span className={layoutStyles.metaChip}>
-                {sectionTab === "all" ? "Все источники" : sectionItems.find((item) => item.id === sectionTab)?.label ?? "Источники"}
-              </span>
-              <span className={layoutStyles.metaChip}>
-                {refreshAllLoading ? "Проверка статусов..." : `Обновлено: ${controller.formatRefreshLabel(lastRefreshAt)}`}
-              </span>
-            </div>
-          )}
-        />
-        <WorkspaceToolbar className={layoutStyles.toolbar}>
+      <WorkspacePageHero
+        title="Источники данных"
+        subtitle="Единое рабочее пространство для маркетплейсов, таблиц и внешних систем с общим управлением обменом."
+        tabs={{
+          items: sectionItems.map((item) => ({ id: item.id, label: item.label })),
+          activeId: sectionTab,
+          onChange: setSectionTab,
+        }}
+        meta={(
+          <div className={layoutStyles.heroMeta}>
+            <span className={layoutStyles.metaChip}>
+              {sectionTab === "all" ? "Все источники" : sectionItems.find((item) => item.id === sectionTab)?.label ?? "Источники"}
+            </span>
+            <span className={layoutStyles.metaChip}>
+              {refreshAllLoading ? "Проверка статусов..." : `Обновлено: ${controller.formatRefreshLabel(lastRefreshAt)}`}
+            </span>
+          </div>
+        )}
+        toolbar={(
+          <>
           <div className={styles.flowInline}>
             <span className={styles.flowInlineTitle}>Режим обмена</span>
             <div className={styles.flowInlineItem}>
@@ -129,8 +127,9 @@ export function DataSourcesDesktop({ controller, sectionItems }: Props) {
             </button>
             <div className={styles.refreshMeta}>Последнее обновление: {controller.formatRefreshLabel(lastRefreshAt)}</div>
           </div>
-        </WorkspaceToolbar>
-      </WorkspaceSurface>
+          </>
+        )}
+      />
 
       {flowError ? <div className={`status error ${styles.flowErrorInline}`}>{flowError}</div> : null}
 

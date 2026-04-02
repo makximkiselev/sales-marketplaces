@@ -1,7 +1,9 @@
 import { PageFrame } from "../../components/page/PageKit";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs } from "../../components/page/WorkspaceKit";
+import { WorkspaceSurface } from "../../components/page/WorkspaceKit";
 import styles from "./CatalogPage.module.css";
 import type { CatalogController } from "./CatalogRendererTypes";
+import layoutStyles from "../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../_shared/WorkspacePageHero";
 
 type Props = {
   controller: CatalogController;
@@ -41,28 +43,25 @@ export function CatalogDesktop({ controller, treeSelector, table }: Props) {
       className={styles.catalogPageCard}
     >
       <div className={styles.catalogShell}>
-        <WorkspaceSurface className={styles.catalogHeroSurface}>
-          <WorkspaceTabs
-            className={styles.catalogTabs}
-            items={tabItems.map((item) => ({
+        <WorkspacePageHero
+          title="Каталог"
+          subtitle="Чистый product-workspace для фильтрации, навигации по древу и работы с таблицей товаров."
+          tabs={{
+            items: tabItems.map((item) => ({
               id: item.id,
               label: item.label,
               meta: "badge" in item ? item.badge : undefined,
-            }))}
-            activeId={tab}
-            onChange={setTab}
-          />
-          <WorkspaceHeader
-            title="Каталог"
-            subtitle="Чистый product-workspace для фильтрации, навигации по древу и работы с таблицей товаров."
-            meta={
-              <div className={styles.catalogHeaderMeta}>
-                <span className={styles.catalogMetaChip}>{tab === "all" ? "Все магазины" : activeStoreLabel}</span>
-                <span className={styles.catalogMetaChip}>{tableLoading ? "Обновление..." : `Всего: ${totalCount}`}</span>
-              </div>
-            }
-          />
-        </WorkspaceSurface>
+            })),
+            activeId: tab,
+            onChange: setTab,
+          }}
+          meta={
+            <div className={layoutStyles.heroMeta}>
+              <span className={layoutStyles.metaChip}>{tab === "all" ? "Все магазины" : activeStoreLabel}</span>
+              <span className={layoutStyles.metaChip}>{tableLoading ? "Обновление..." : `Всего: ${totalCount}`}</span>
+            </div>
+          }
+        />
 
         {error ? <div className="status error">{error}</div> : null}
 

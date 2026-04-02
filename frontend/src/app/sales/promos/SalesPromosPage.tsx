@@ -4,7 +4,9 @@ import { ErrorBox } from "../../../components/ErrorBox";
 import { PageFrame } from "../../../components/page/PageKit";
 import { SectionBlock } from "../../../components/page/SectionKit";
 import { KpiCard, KpiGrid, TableCard } from "../../../components/page/DataKit";
-import { WorkspaceHeader, WorkspaceSurface } from "../../../components/page/WorkspaceKit";
+import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
+import { readFreshPageSnapshot, writePageSnapshot } from "../../_shared/pageCache";
 import styles from "../_shared/SalesSimplePage.module.css";
 
 type SalesPromosResponse = {
@@ -18,15 +20,20 @@ type SalesPromosResponse = {
 };
 
 export default function Page() {
+  const CACHE_KEY = "page_sales_promos_v1";
   const [items, setItems] = useState<NonNullable<SalesPromosResponse["items"]>>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
+    const cached = readFreshPageSnapshot<NonNullable<SalesPromosResponse["items"]>>(CACHE_KEY, 10 * 60 * 1000);
+    if (cached && active) setItems(cached);
     apiGet<SalesPromosResponse>("/api/sales/promos?mode=overview&group_by=category&page=1&page_size=200")
       .then((data) => {
         if (!active) return;
-        setItems(data.items || []);
+        const nextItems = data.items || [];
+        setItems(nextItems);
+        writePageSnapshot(CACHE_KEY, nextItems);
       })
       .catch((e) => {
         if (!active) return;
@@ -50,23 +57,22 @@ export default function Page() {
   return (
     <PageFrame title="Продажи по акциям" subtitle="Результаты продаж с разбивкой по промо-активности.">
       <div className={styles.shell}>
-        <WorkspaceSurface className={styles.heroSurface}>
-          <WorkspaceHeader
-            title="Promo analytics"
-            subtitle="Сводный экран по категориям с фокусом на долю промо-заказов и фактический операционный результат."
-            meta={(
-              <div className={styles.heroMeta}>
-                <span className={styles.metaChip}>Категории: {items.length}</span>
-                <span className={styles.metaChip}>Промо-срез</span>
-              </div>
-            )}
-          />
+        <WorkspacePageHero
+          title="Продажи в промо"
+          subtitle="Сводный экран по категориям с фокусом на долю промо-заказов и фактический операционный результат."
+          meta={(
+            <div className={layoutStyles.heroMeta}>
+              <span className={layoutStyles.metaChip}>Категории: {items.length}</span>
+              <span className={layoutStyles.metaChip}>Промо-срез</span>
+            </div>
+          )}
+        >
           <KpiGrid>
             <KpiCard label="Заказы всего" value={Math.round(ordersTotal).toLocaleString("ru-RU")} />
             <KpiCard label="Заказы промо" value={Math.round(promoOrdersTotal).toLocaleString("ru-RU")} />
             <KpiCard label="Средняя доля промо" value={`${(Math.round(avgPromoShare * 100) / 100).toLocaleString("ru-RU")}%`} />
           </KpiGrid>
-        </WorkspaceSurface>
+        </WorkspacePageHero>
 
         <SectionBlock title="Результаты" className={styles.section}>
           <div className={styles.sectionNote}>Показаны категории из обзорного отчета по промо-активности.</div>

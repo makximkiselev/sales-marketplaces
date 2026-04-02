@@ -2,6 +2,8 @@ import { Fragment } from "react";
 import { PageFrame, PageSectionTitle } from "../../../components/page/PageKit";
 import { WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import styles from "./SalesOverviewPage.module.css";
+import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
 
 type Props = {
   vm: any;
@@ -123,20 +125,22 @@ export function SalesOverviewDesktop({ vm }: Props) {
       title="Обзор продаж"
       subtitle="Рабочее пространство по заказам, проблемам, трекингу, товарам и категориям."
     >
-      <WorkspaceSurface className={s.overviewHeroSurface}>
-        <div className={s.overviewHeroTop}>
-          <WorkspaceTabs
-            className={s.overviewTabs}
-            items={overviewTabs.map((item) => ({ id: item.id, label: item.label }))}
-            activeId={tab}
-            onChange={setTab}
-          />
-          <div className={s.overviewHeroMeta}>
-            {currentStoreLabel ? <span className={s.overviewMetaChip}>{currentStoreLabel}</span> : null}
-            <span className={s.overviewMetaChip}>{currentCurrencySymbol}</span>
+      <WorkspacePageHero
+        className={s.overviewHeroSurface}
+        title="Обзор продаж"
+        subtitle="Рабочее пространство по заказам, проблемам, трекингу, товарам и категориям."
+        tabs={{
+          items: overviewTabs.map((item) => ({ id: item.id, label: item.label })),
+          activeId: tab,
+          onChange: setTab,
+        }}
+        meta={(
+          <div className={layoutStyles.heroMeta}>
+            {currentStoreLabel ? <span className={layoutStyles.metaChip}>{currentStoreLabel}</span> : null}
+            <span className={layoutStyles.metaChip}>{currentCurrencySymbol}</span>
           </div>
-        </div>
-
+        )}
+      >
         <div className={s.overviewHeroBody}>
           <div className={s.overviewHeroIntro}>
             <div className={s.overviewEyebrow}>{activeTabCopy.eyebrow}</div>
@@ -216,7 +220,7 @@ export function SalesOverviewDesktop({ vm }: Props) {
             </div>
           </div>
         </div>
-      </WorkspaceSurface>
+      </WorkspacePageHero>
 
       <div className={s.summaryGrid}>
         {summaryCards.map((card: any) => (

@@ -1,6 +1,5 @@
 import styles from "./DataSourcesPage.module.css";
 import { PanelGrid, SectionBlock } from "../../../components/page/SectionKit";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
 import { ExternalSystemsPanel } from "./components/ExternalSystemsPanel";
 import { GoogleTablesPanel } from "./components/GoogleTablesPanel";
 import { OzonPanel } from "./components/OzonPanel";
@@ -10,6 +9,7 @@ import { YandexTablesPanel } from "./components/YandexTablesPanel";
 import { platformMeta } from "./types";
 import type { SourcesController, SourcesSectionItem } from "./DataSourcesRendererTypes";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
 
 type Props = {
   controller: SourcesController;
@@ -66,25 +66,24 @@ export function DataSourcesMobile({ controller, sectionItems }: Props) {
 
   return (
     <div className={`${styles.sourcesShell} ${styles.sourcesLayoutMobile}`}>
-      <WorkspaceSurface className={layoutStyles.heroSurface}>
-        <WorkspaceTabs
-          className={styles.sourcesTabs}
-          items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
-          activeId={sectionTab}
-          onChange={setSectionTab}
-        />
-        <WorkspaceHeader
-          title="Источники данных"
-          subtitle="Мобильная рабочая зона для статусов интеграций, таблиц и внешних систем."
-          meta={(
-            <div className={layoutStyles.heroMeta}>
-              <span className={layoutStyles.metaChip}>
-                {sectionTab === "all" ? "Все источники" : sectionItems.find((item) => item.id === sectionTab)?.label ?? "Источники"}
-              </span>
-            </div>
-          )}
-        />
-        <WorkspaceToolbar className={styles.sourcesToolbarMobile}>
+      <WorkspacePageHero
+        title="Источники данных"
+        subtitle="Мобильная рабочая зона для статусов интеграций, таблиц и внешних систем."
+        tabs={{
+          items: sectionItems.map((item) => ({ id: item.id, label: item.label })),
+          activeId: sectionTab,
+          onChange: setSectionTab,
+        }}
+        meta={(
+          <div className={layoutStyles.heroMeta}>
+            <span className={layoutStyles.metaChip}>
+              {sectionTab === "all" ? "Все источники" : sectionItems.find((item) => item.id === sectionTab)?.label ?? "Источники"}
+            </span>
+          </div>
+        )}
+        toolbarClassName={styles.sourcesToolbarMobile}
+        toolbar={(
+          <>
           <div className={styles.flowInline}>
             <span className={styles.flowInlineTitle}>Режим обмена</span>
             <div className={styles.flowInlineItem}>
@@ -124,8 +123,9 @@ export function DataSourcesMobile({ controller, sectionItems }: Props) {
             {refreshAllLoading ? "Обновление..." : "Обновить источники"}
           </button>
           <div className={styles.refreshMeta}>Последнее обновление: {controller.formatRefreshLabel(lastRefreshAt)}</div>
-        </WorkspaceToolbar>
-      </WorkspaceSurface>
+          </>
+        )}
+      />
 
       {flowError ? <div className={`status error ${styles.flowErrorInline}`}>{flowError}</div> : null}
 

@@ -1,12 +1,13 @@
 import styles from "./PricingSettingsPage.module.css";
 import { MobileDockLayout } from "../../../components/page/PageKit";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
+import { WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
 import { SalesPlanSection } from "./components/SalesPlanSection";
 import type { PricingSettingsRendererProps } from "./PricingSettingsRendererTypes";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
 
 export function PricingSettingsMobile({
   controller,
@@ -115,54 +116,31 @@ export function PricingSettingsMobile({
     <div className={`${styles.settingsShell} ${styles.mobileSettingsShell}`}>
       <div className={`${styles.settingsMain} ${styles.mobileSettingsMain}`}>
         <MobileDockLayout dock={mobileDock} dockVisible={mobileDockVisible} dockHeight={232} dockOffset={82}>
-        <WorkspaceSurface className={layoutStyles.heroSurface}>
-          <div className={styles.mobileNavStack}>
-            <WorkspaceTabs
-              className={styles.pricingPrimaryTabs}
-              items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
-              activeId={settingsTab}
-              onChange={(id) => setSettingsTab(id)}
-            />
-            {!isSalesPlanSection ? (
-              <div className={styles.mobileStoreStrip}>
-                <div className={styles.pricingStripLabel}>Магазин</div>
-                <WorkspaceTabs
-                  className={styles.pricingStoreTabs}
-                  items={storeTabs.map((store) => ({
-                    id: store.key,
-                    label: store.storeName,
-                    meta: store.platformLabel,
-                  }))}
-                  activeId={activeStoreTabKey}
+        <WorkspacePageHero
+          title="Настройки ценообразования"
+          subtitle="Единая рабочая зона для целей продаж, категорийных правил и логистики магазинов."
+          tabs={{
+            items: sectionItems.map((item) => ({ id: item.id, label: item.label })),
+            activeId: settingsTab,
+            onChange: (id) => setSettingsTab(id),
+          }}
+          toolbar={!isSalesPlanSection ? (
+            <div className={layoutStyles.contextBlock}>
+              <div className={layoutStyles.contextLabel}>Магазин</div>
+              <WorkspaceTabs
+                className={layoutStyles.contextTabs}
+                items={storeTabs.map((store) => ({
+                  id: store.key,
+                  label: store.storeName,
+                  meta: store.platformLabel,
+                }))}
+                activeId={activeStoreTabKey}
                 onChange={setActiveStoreTabKey}
-                />
-              </div>
-            ) : null}
-          </div>
-
-          <WorkspaceHeader
-            title="Настройки ценообразования"
-            subtitle="Единая рабочая зона для целей продаж, категорийных правил и логистики магазинов."
-          />
-
-          {!isSalesPlanSection ? (
-            <WorkspaceToolbar className={styles.pricingToolbarMobile}>
-              <div className={styles.pricingToolbarBlock}>
-                <div className={styles.pricingStripLabel}>Магазин</div>
-                <WorkspaceTabs
-                  className={styles.pricingStoreTabs}
-                  items={storeTabs.map((store) => ({
-                    id: store.key,
-                    label: store.storeName,
-                    meta: store.platformLabel,
-                  }))}
-                  activeId={activeStoreTabKey}
-                  onChange={setActiveStoreTabKey}
-                />
-              </div>
-            </WorkspaceToolbar>
-          ) : null}
-        </WorkspaceSurface>
+              />
+            </div>
+          ) : undefined}
+          toolbarClassName={styles.pricingToolbarMobile}
+        />
 
         {settingsTab === "sales_plan" ? (
           <SalesPlanSection

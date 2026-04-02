@@ -4,7 +4,9 @@ import { ErrorBox } from "../../../components/ErrorBox";
 import { PageFrame } from "../../../components/page/PageKit";
 import { SectionBlock } from "../../../components/page/SectionKit";
 import { KpiCard, KpiGrid, TableCard } from "../../../components/page/DataKit";
-import { WorkspaceHeader, WorkspaceSurface } from "../../../components/page/WorkspaceKit";
+import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
+import { readFreshPageSnapshot, writePageSnapshot } from "../../_shared/pageCache";
 import styles from "../_shared/SalesSimplePage.module.css";
 
 type SalesDashboardResponse = {
@@ -12,15 +14,22 @@ type SalesDashboardResponse = {
 };
 
 export default function Page() {
+  const CACHE_KEY = "page_sales_abc_v1";
   const [rows, setRows] = useState<Array<[string, { turnover?: number; op_profit?: number; qty?: number }]>>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
+    const cached = readFreshPageSnapshot<Array<[string, { turnover?: number; op_profit?: number; qty?: number }]>>(CACHE_KEY, 10 * 60 * 1000);
+    if (cached && active) {
+      setRows(cached);
+    }
     apiGet<SalesDashboardResponse>("/api/sales/dashboard?group_by=article")
       .then((data) => {
         if (!active) return;
-        setRows(Object.entries(data.current || {}).slice(0, 200));
+        const nextRows = Object.entries(data.current || {}).slice(0, 200);
+        setRows(nextRows);
+        writePageSnapshot(CACHE_KEY, nextRows);
       })
       .catch((e) => {
         if (!active) return;
@@ -45,23 +54,22 @@ export default function Page() {
       subtitle={`Топ артикулов по обороту и прибыли. Показаны первые ${rows.length}.`}
     >
       <div className={styles.shell}>
-        <WorkspaceSurface className={styles.heroSurface}>
-          <WorkspaceHeader
-            title="ABC workspace"
-            subtitle="Быстрый обзор топовых артикулов по обороту, операционной прибыли и количеству без локального page-specific layout."
-            meta={(
-              <div className={styles.heroMeta}>
-                <span className={styles.metaChip}>Топ: {rows.length}</span>
-                <span className={styles.metaChip}>Артикулы</span>
-              </div>
-            )}
-          />
+        <WorkspacePageHero
+          title="ABC-анализ продаж"
+          subtitle="Быстрый обзор топовых артикулов по обороту, операционной прибыли и количеству."
+          meta={(
+            <div className={layoutStyles.heroMeta}>
+              <span className={layoutStyles.metaChip}>Топ: {rows.length}</span>
+              <span className={layoutStyles.metaChip}>Артикулы</span>
+            </div>
+          )}
+        >
           <KpiGrid>
             <KpiCard label="Оборот" value={Math.round(totalTurnover).toLocaleString("ru-RU")} />
             <KpiCard label="OP" value={Math.round(totalProfit).toLocaleString("ru-RU")} />
             <KpiCard label="Количество" value={Math.round(totalQty).toLocaleString("ru-RU")} />
           </KpiGrid>
-        </WorkspaceSurface>
+        </WorkspacePageHero>
 
         <SectionBlock title="Таблица" className={styles.section}>
           <div className={styles.sectionNote}>Список показывает первые 200 артикулов из текущего среза.</div>

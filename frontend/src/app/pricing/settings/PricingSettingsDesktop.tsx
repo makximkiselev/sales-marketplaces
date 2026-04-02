@@ -1,11 +1,12 @@
 import styles from "./PricingSettingsPage.module.css";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
 import { SalesPlanSection } from "./components/SalesPlanSection";
 import type { PricingSettingsRendererProps } from "./PricingSettingsRendererTypes";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
+import { WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 
 export function PricingSettingsDesktop({
   controller,
@@ -86,39 +87,30 @@ export function PricingSettingsDesktop({
     <div className={styles.settingsShell}>
       <div className={styles.settingsMain}>
         <div className={styles.pricingWorkbenchShell}>
-          <WorkspaceSurface className={layoutStyles.heroSurface}>
-            <div className={styles.pricingModeStrip}>
-              <WorkspaceTabs
-                className={styles.pricingPrimaryTabs}
-                items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
-                activeId={settingsTab}
-                onChange={(id) => setSettingsTab(id)}
-              />
-            </div>
-
-            <WorkspaceHeader
-              title="Настройки ценообразования"
-              subtitle="Единое рабочее пространство для целей продаж, категорийных правил и логистики магазинов."
-            />
-
-            {!isSalesPlanSection ? (
-              <WorkspaceToolbar className={layoutStyles.toolbar}>
-                <div className={styles.pricingToolbarBlock}>
-                  <div className={styles.pricingStripLabel}>Магазин</div>
-                  <WorkspaceTabs
-                    className={styles.pricingStoreTabs}
-                    items={storeTabs.map((store) => ({
-                      id: store.key,
-                      label: store.storeName,
-                      meta: store.platformLabel,
-                    }))}
-                    activeId={activeStoreTabKey}
-                    onChange={setActiveStoreTabKey}
-                  />
-                </div>
-              </WorkspaceToolbar>
-            ) : null}
-          </WorkspaceSurface>
+          <WorkspacePageHero
+            title="Настройки ценообразования"
+            subtitle="Единое рабочее пространство для целей продаж, категорийных правил и логистики магазинов."
+            tabs={{
+              items: sectionItems.map((item) => ({ id: item.id, label: item.label })),
+              activeId: settingsTab,
+              onChange: (id) => setSettingsTab(id),
+            }}
+            toolbar={!isSalesPlanSection ? (
+              <div className={layoutStyles.contextBlock}>
+                <div className={layoutStyles.contextLabel}>Магазин</div>
+                <WorkspaceTabs
+                  className={layoutStyles.contextTabs}
+                  items={storeTabs.map((store) => ({
+                    id: store.key,
+                    label: store.storeName,
+                    meta: store.platformLabel,
+                  }))}
+                  activeId={activeStoreTabKey}
+                  onChange={setActiveStoreTabKey}
+                />
+              </div>
+            ) : undefined}
+          />
 
           {settingsTab === "logistics" ? (
             <div className={styles.controlsRow}>

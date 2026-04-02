@@ -1,5 +1,6 @@
 import { PageFrame } from "../../../components/page/PageKit";
-import { WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
+import layoutStyles from "../../_shared/AppPageLayout.module.css";
+import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
 import styles from "./SalesOverviewPage.module.css";
 
 type Props = {
@@ -86,24 +87,23 @@ export function SalesOverviewMobile({ vm }: Props) {
       subtitle="Мобильный слой продаж без широких таблиц."
     >
       <div className={styles.mobileOverviewShell}>
-        <WorkspaceSurface className={styles.overviewHeroSurface}>
-          <div className={styles.overviewHeroTop}>
-            <WorkspaceTabs
-              className={styles.overviewTabs}
-              items={[
-                { id: "orders", label: "Заказы" },
-                { id: "problems", label: "Проблемные" },
-                { id: "tracking", label: "Трекинг" },
-                { id: "sku", label: "Товары" },
-                { id: "category", label: "Категории" },
-              ]}
-              activeId={tab}
-              onChange={setTab}
-            />
-            <div className={styles.overviewHeroMeta}>
-              {currentStoreLabel ? <span className={styles.overviewMetaChip}>{currentStoreLabel}</span> : null}
-            </div>
-          </div>
+        <WorkspacePageHero
+          className={styles.overviewHeroSurface}
+          title="Обзор продаж"
+          subtitle="Мобильный слой продаж без широких таблиц."
+          tabs={{
+            items: [
+              { id: "orders", label: "Заказы" },
+              { id: "problems", label: "Проблемные" },
+              { id: "tracking", label: "Трекинг" },
+              { id: "sku", label: "Товары" },
+              { id: "category", label: "Категории" },
+            ],
+            activeId: tab,
+            onChange: setTab,
+          }}
+          meta={currentStoreLabel ? <span className={layoutStyles.metaChip}>{currentStoreLabel}</span> : undefined}
+        >
           <div className={styles.overviewHeroIntro}>
             <div className={styles.overviewEyebrow}>{activeTabCopy.eyebrow}</div>
             <h2 className={styles.overviewHeroTitle}>{activeTabCopy.title}</h2>
@@ -187,7 +187,7 @@ export function SalesOverviewMobile({ vm }: Props) {
             {tab === "sku" || tab === "category" ? <span className={styles.overviewMetaChip}>{grainLabel}</span> : null}
             {tab === "orders" && itemStatus ? <span className={styles.overviewMetaChip}>{itemStatus}</span> : null}
           </div>
-        </WorkspaceSurface>
+        </WorkspacePageHero>
 
         <div className={styles.summaryGrid}>
           {summaryCards.map((card: any) => (
