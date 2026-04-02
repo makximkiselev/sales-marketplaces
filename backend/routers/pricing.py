@@ -118,6 +118,25 @@ def _build_pricing_monitoring_exports_response() -> dict:
     return response
 
 
+def _monitoring_snapshot_has_active_status(response: dict[str, object] | None) -> bool:
+    payload = response if isinstance(response, dict) else {}
+    run_all = payload.get("run_all")
+    if isinstance(run_all, dict):
+        status = str(run_all.get("last_status") or "").strip().lower()
+        if status in {"running", "queued"}:
+            return True
+    rows = payload.get("rows")
+    if not isinstance(rows, list):
+        return False
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        status = str(row.get("last_status") or "").strip().lower()
+        if status in {"running", "queued"}:
+            return True
+    return False
+
+
 def _invalidate_pricing_read_caches() -> None:
     from backend.routers.catalog import invalidate_catalog_cache
     from backend.services.pricing_attractiveness_service import invalidate_attractiveness_cache
@@ -153,7 +172,9 @@ async def pricing_settings_monitoring():
             cache_key=_pricing_monitoring_snapshot_key(),
         )
         if isinstance(snapshot, dict) and isinstance(snapshot.get("response"), dict):
-            return snapshot["response"]
+            response = snapshot["response"]
+            if not _monitoring_snapshot_has_active_status(response):
+                return response
         return _build_pricing_monitoring_response()
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось получить мониторинг обновлений: {exc}"}, status_code=500)
