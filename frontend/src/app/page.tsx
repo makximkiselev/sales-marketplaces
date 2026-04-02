@@ -137,6 +137,7 @@ type RetrospectiveResp = {
   ok: boolean;
   rows?: RetrospectiveRow[];
   total_count?: number;
+  category_groups?: CategoryAggregate[];
 };
 
 type ChartRange = "7d" | "30d";
@@ -837,7 +838,10 @@ export default function Page() {
     value: Number(row.revenue || 0),
     detail: `Прибыль: ${formatMoney(row.profit_amount, currencyCode)} · Маржа: ${formatPercent(row.profit_pct)}`,
   }));
-  const categoryAggregates = useMemo(() => buildCategoryAggregates(bundle?.category?.rows || []), [bundle?.category?.rows]);
+  const categoryAggregates = useMemo(() => {
+    const backendGroups = bundle?.category?.category_groups || [];
+    return backendGroups.length ? backendGroups : buildCategoryAggregates(bundle?.category?.rows || []);
+  }, [bundle?.category?.category_groups, bundle?.category?.rows]);
   const problematicStatuses = useMemo(() => {
     const map = new Map<string, number>();
     for (const row of bundle?.problems?.rows || []) {

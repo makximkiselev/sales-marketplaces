@@ -252,6 +252,62 @@ def _merge_retrospective_responses(responses: list[dict]) -> dict:
     return {"ok": True, "rows": rows, "total_count": len(rows)}
 
 
+def _split_category_path(value: str) -> list[str]:
+    return [part.strip() for part in str(value or "").split("/") if part.strip()]
+
+
+def _build_category_groups(rows: list[dict]) -> list[dict]:
+    categories: dict[str, dict] = {}
+    for row in rows:
+        parts = _split_category_path(str(row.get("category_path") or row.get("label") or ""))
+        category = parts[0] if parts else "Не определено"
+        brand = (parts[-2] if len(parts) >= 3 else (parts[1] if len(parts) >= 2 else "Без бренда")) or "Без бренда"
+        revenue = float(row.get("revenue") or 0.0)
+        profit = float(row.get("profit_amount") or 0.0)
+        bucket = categories.setdefault(category, {"label": category, "value": 0.0, "profit": 0.0, "brands": {}})
+        bucket["value"] = float(bucket["value"]) + revenue
+        bucket["profit"] = float(bucket["profit"]) + profit
+        brand_bucket = bucket["brands"].setdefault(brand, {"label": brand, "value": 0.0, "profit": 0.0})
+        brand_bucket["value"] = float(brand_bucket["value"]) + revenue
+        brand_bucket["profit"] = float(brand_bucket["profit"]) + profit
+    out: list[dict] = []
+    for bucket in categories.values():
+        value = float(bucket["value"] or 0.0)
+        profit = float(bucket["profit"] or 0.0)
+        brands = []
+        for brand_bucket in bucket["brands"].values():
+            brand_value = float(brand_bucket["value"] or 0.0)
+            brand_profit = float(brand_bucket["profit"] or 0.0)
+            brands.append(
+                {
+                    "label": str(brand_bucket["label"] or "Без бренда").strip() or "Без бренда",
+                    "value": round(brand_value, 2),
+                    "profit": round(brand_profit, 2),
+                    "marginPct": round((brand_profit / brand_value) * 100.0, 2) if brand_value > 0 else None,
+                }
+            )
+        brands.sort(key=lambda item: float(item.get("value") or 0.0), reverse=True)
+        out.append(
+            {
+                "label": str(bucket["label"] or "Не определено").strip() or "Не определено",
+                "value": round(value, 2),
+                "profit": round(profit, 2),
+                "marginPct": round((profit / value) * 100.0, 2) if value > 0 else None,
+                "brandCount": len(brands),
+                "brands": brands,
+            }
+        )
+    out.sort(key=lambda item: float(item.get("value") or 0.0), reverse=True)
+    return out
+
+
+def _attach_category_groups(response: dict) -> dict:
+    payload = dict(response or {})
+    rows = list(payload.get("rows") or [])
+    payload["category_groups"] = _build_category_groups(rows)
+    return payload
+
+
 def _merge_data_flow_responses(responses: list[dict]) -> dict:
     flows = [flow for response in responses for flow in list(response.get("flows") or [])]
     return {"ok": True, "flows": flows}
@@ -604,7 +660,7 @@ async def _build_dashboard_summary_response(*, store_id: str, period: str) -> di
         )
         bundle["dataFlow"] = _merge_data_flow_responses([item["dataFlow"] for item in secondary_scoped])
         bundle["sku"] = _merge_retrospective_responses([item["sku"] for item in secondary_scoped])
-        bundle["category"] = _merge_retrospective_responses([item["category"] for item in secondary_scoped])
+        bundle["category"] = _attach_category_groups(_merge_retrospective_responses([item["category"] for item in secondary_scoped]))
         return {"ok": True, "context": context, "bundle": bundle, "storeComparison": comparison}
 
     primary = await _fetch_primary_store_dashboard(
@@ -643,7 +699,7 @@ async def _build_dashboard_summary_response(*, store_id: str, period: str) -> di
     )
     bundle["dataFlow"] = secondary["dataFlow"]
     bundle["sku"] = secondary["sku"]
-    bundle["category"] = secondary["category"]
+    bundle["category"] = _attach_category_groups(secondary["category"])
     comparison = _build_store_comparison(
         selected_stores,
         [
