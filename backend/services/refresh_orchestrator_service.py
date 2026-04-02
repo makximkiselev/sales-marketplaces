@@ -20,6 +20,7 @@ from backend.services.pricing_runtime_bridge import (
 )
 from backend.services.store_data_model import (
     _connect,
+    _connect_system,
     create_refresh_job_run,
     delete_dashboard_snapshots,
     get_monitoring_export_snapshot,
@@ -154,7 +155,6 @@ async def refresh_yandex_united_orders_history_for_store(*args, **kwargs):
 
 FULL_CYCLE_JOB_CODES: list[str] = [
     "cogs_hourly_snapshot",
-    "prices_refresh",
     "today_orders_30m_refresh",
     "sales_reports_hourly_refresh",
     "shelfs_statistics_refresh",
@@ -192,7 +192,6 @@ REPORT_WINDOW_AUTORESET_JOBS: set[str] = {
 
 JOB_DEFAULTS: list[dict[str, Any]] = [
     {"job_code": "cogs_hourly_snapshot", "title": "Себестоимость из Google", "enabled": True, "schedule_kind": "interval", "interval_minutes": 60, "time_of_day": None},
-    {"job_code": "prices_refresh", "title": "Цены", "enabled": True, "schedule_kind": "interval", "interval_minutes": 30, "time_of_day": None},
     {"job_code": "today_orders_30m_refresh", "title": "Заказы сегодня", "enabled": True, "schedule_kind": "interval", "interval_minutes": 30, "time_of_day": None},
     {"job_code": "sales_reports_hourly_refresh", "title": "Отчеты продаж", "enabled": True, "schedule_kind": "interval", "interval_minutes": 60, "time_of_day": None},
     {"job_code": "shelfs_statistics_refresh", "title": "Полки", "enabled": True, "schedule_kind": "interval", "interval_minutes": 60, "time_of_day": None},
@@ -205,7 +204,6 @@ JOB_DEFAULTS: list[dict[str, Any]] = [
 
 JOB_INTERVAL_OFFSETS_MINUTES: dict[str, int] = {
     "cogs_hourly_snapshot": 0,
-    "prices_refresh": 5,
     "today_orders_30m_refresh": 1,
     "sales_reports_hourly_refresh": 2,
     "shelfs_statistics_refresh": 3,
@@ -229,7 +227,6 @@ def _aligned_interval_start(minutes: int, *, offset_minutes: int = 0) -> datetim
 
 JOB_META: dict[str, dict[str, Any]] = {
     "cogs_hourly_snapshot": {"kind": "google", "platform": "google_sheets", "supports_store_selection": False},
-    "prices_refresh": {"kind": "api", "platform": "yandex_market", "supports_store_selection": False},
     "today_orders_30m_refresh": {"kind": "api", "platform": "yandex_market", "supports_store_selection": False},
     "sales_reports_hourly_refresh": {"kind": "api", "platform": "yandex_market", "supports_store_selection": False},
     "shelfs_statistics_refresh": {"kind": "api", "platform": "yandex_market", "supports_store_selection": False},
@@ -244,7 +241,6 @@ JOB_META: dict[str, dict[str, Any]] = {
 
 JOB_STALE_TIMEOUT_MINUTES: dict[str, int] = {
     "cogs_hourly_snapshot": 15,
-    "prices_refresh": 30,
     "today_orders_30m_refresh": 15,
     "sales_reports_hourly_refresh": 60,
     "shelfs_statistics_refresh": 60,
@@ -257,6 +253,29 @@ JOB_STALE_TIMEOUT_MINUTES: dict[str, int] = {
     "catalog_daily_refresh": 60,
     "run_all": 120,
 }
+
+OBSOLETE_JOB_CODES: set[str] = {
+    "prices_refresh",
+}
+
+
+def _delete_refresh_job_everywhere(job_code: str) -> None:
+    code = str(job_code or "").strip()
+    if not code:
+        return
+    for connector in (_connect, _connect_system):
+        with connector() as conn:
+            conn.execute(f"DELETE FROM refresh_job_runs WHERE job_code = {_placeholders(1)}", (code,))
+            conn.execute(f"DELETE FROM refresh_jobs WHERE job_code = {_placeholders(1)}", (code,))
+            conn.commit()
+
+
+def _prune_obsolete_refresh_jobs() -> None:
+    for code in OBSOLETE_JOB_CODES:
+        try:
+            _delete_refresh_job_everywhere(code)
+        except Exception as exc:
+            logger.warning("[refresh_orchestrator] failed to prune obsolete job_code=%s error=%s", code, exc)
 
 
 def _ensure_manual_queue_worker() -> None:
@@ -416,6 +435,7 @@ def bind_refresh_scheduler(scheduler: BackgroundScheduler) -> None:
 
 
 def ensure_refresh_jobs_defaults() -> list[dict[str, Any]]:
+    _prune_obsolete_refresh_jobs()
     existing = {str(row.get("job_code") or "").strip() for row in get_refresh_jobs()}
     for item in JOB_DEFAULTS:
         if str(item["job_code"]) in existing:
@@ -1690,7 +1710,7 @@ async def run_refresh_all(
     _mark_run_running(run_id)
     steps: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
-    total_phases = 6
+    total_phases = 5
     child_run_ids = {
         str(code).strip(): int(child_id or 0)
         for code, child_id in (precreated_run_ids or {}).items()
@@ -1723,18 +1743,7 @@ async def run_refresh_all(
             errors.append({"job_code": "cogs_hourly_snapshot", "error": str(exc)})
 
         try:
-            _set_phase_progress(2, "prices_refresh", "Этап: prices_refresh")
-            result = await run_refresh_job(
-                "prices_refresh",
-                trigger_source=trigger_source,
-                run_id=child_run_ids.get("prices_refresh") or None,
-            )
-            steps.append({"job_code": "prices_refresh", "result": result.get("result")})
-        except Exception as exc:
-            errors.append({"job_code": "prices_refresh", "error": str(exc)})
-
-        try:
-            _set_phase_progress(3, "today_orders_30m_refresh", "Этап: today_orders_30m_refresh")
+            _set_phase_progress(2, "today_orders_30m_refresh", "Этап: today_orders_30m_refresh")
             result = await run_refresh_job(
                 "today_orders_30m_refresh",
                 trigger_source=trigger_source,
@@ -1744,7 +1753,7 @@ async def run_refresh_all(
         except Exception as exc:
             errors.append({"job_code": "today_orders_30m_refresh", "error": str(exc)})
 
-        _set_phase_progress(4, "reports_bundle", "Этап: отчеты продаж / полки / буст показов")
+        _set_phase_progress(3, "reports_bundle", "Этап: отчеты продаж / полки / буст показов")
         report_codes = [
             "sales_reports_hourly_refresh",
             "shelfs_statistics_refresh",
@@ -1769,7 +1778,7 @@ async def run_refresh_all(
 
         for phase_index, code in enumerate(
             ["strategy_refresh", "catalog_daily_refresh"],
-            start=5,
+            start=4,
         ):
             _set_phase_progress(phase_index, code, f"Этап: {code}")
             try:
