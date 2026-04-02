@@ -342,8 +342,11 @@ def _parse_iso_datetime(value: Any) -> tuple[str, str]:
     except Exception:
         return raw, raw[:10]
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.isoformat(), dt.date().isoformat()
+        dt = dt.replace(tzinfo=MSK)
+    source_date_match = re.match(r"^(\d{4}-\d{2}-\d{2})", raw)
+    source_date = source_date_match.group(1) if source_date_match else dt.astimezone(MSK).date().isoformat()
+    dt_utc = dt.astimezone(timezone.utc)
+    return dt_utc.replace(microsecond=0).isoformat().replace("+00:00", "Z"), source_date
 
 
 def _norm_key(value: Any) -> str:
@@ -449,8 +452,9 @@ def _parse_business_order_created_date(value: Any) -> tuple[str, str] | None:
         normalized = raw.replace("Z", "+00:00")
         dt = datetime.fromisoformat(normalized)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        source_date = dt.date().isoformat()
+            dt = dt.replace(tzinfo=MSK)
+        source_date_match = re.match(r"^(\d{4}-\d{2}-\d{2})", raw)
+        source_date = source_date_match.group(1) if source_date_match else dt.astimezone(MSK).date().isoformat()
         dt_utc = dt.astimezone(timezone.utc)
         return (
             dt_utc.replace(microsecond=0).isoformat().replace("+00:00", "Z"),

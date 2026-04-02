@@ -22,6 +22,7 @@ from backend.services.yandex_united_orders_report_service import (
     refresh_sales_overview_order_rows_today_for_store,
 )
 from backend.services.yandex_united_netting_report_service import refresh_sales_united_netting_history
+from backend.services.refresh_orchestrator_service import start_refresh_job
 from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 from backend.services.store_data_model import (
     delete_dashboard_snapshots,
@@ -44,6 +45,7 @@ _DASHBOARD_DEFAULT_PERIODS = ("today", "yesterday", "week", "month", "quarter")
 _DASHBOARD_WARM_TASK: asyncio.Task | None = None
 _DASHBOARD_IN_FLIGHT: dict[str, asyncio.Task] = {}
 _DASHBOARD_SNAPSHOT_NAME = "sales_overview_dashboard_summary"
+_TODAY_AUTO_REFRESH_STALE_MINUTES = 20
 
 
 def _local_date_only() -> date:
@@ -57,6 +59,30 @@ def _to_iso_date(value: date) -> str:
 
 def _shift_date(value: date, days: int) -> date:
     return value + timedelta(days=days)
+
+
+def _is_loaded_at_stale(raw: str, *, minutes: int = _TODAY_AUTO_REFRESH_STALE_MINUTES) -> bool:
+    value = str(raw or "").strip()
+    if not value:
+        return True
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.now().astimezone().tzinfo)
+        return datetime.now(dt.tzinfo) - dt > timedelta(minutes=minutes)
+    except Exception:
+        return True
+
+
+def _maybe_queue_today_orders_refresh(*, period: str, loaded_at: str) -> None:
+    if str(period or "").strip().lower() != "today":
+        return
+    if not _is_loaded_at_stale(loaded_at):
+        return
+    try:
+        start_refresh_job("today_orders_30m_refresh", trigger_source="auto")
+    except Exception:
+        pass
 
 
 def _period_span_days(period: str) -> int:
@@ -590,7 +616,7 @@ async def sales_overview_united_orders(
     date_to: str = "",
 ):
     try:
-        return await get_sales_overview_history(
+        result = await get_sales_overview_history(
             page=page,
             page_size=page_size,
             store_id=store_id,
@@ -599,6 +625,8 @@ async def sales_overview_united_orders(
             date_from=date_from,
             date_to=date_to,
         )
+        _maybe_queue_today_orders_refresh(period=period, loaded_at=str(result.get("loaded_at") or ""))
+        return result
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось получить united orders history: {exc}"}, status_code=500)
 
@@ -613,7 +641,7 @@ async def sales_overview_problem_orders(
     date_to: str = "",
 ):
     try:
-        return await get_sales_overview_problem_orders(
+        result = await get_sales_overview_problem_orders(
             page=page,
             page_size=page_size,
             store_id=store_id,
@@ -621,6 +649,8 @@ async def sales_overview_problem_orders(
             date_from=date_from,
             date_to=date_to,
         )
+        _maybe_queue_today_orders_refresh(period=period, loaded_at=str(result.get("loaded_at") or ""))
+        return result
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось получить проблемные заказы: {exc}"}, status_code=500)
 
@@ -670,11 +700,17 @@ async def sales_overview_dashboard_summary(
         cached = _dashboard_cache_get(payload)
         if cached:
             logger.warning("[sales_overview] dashboard cache hit store_id=%s period=%s", payload["store_id"], payload["period"])
+            bundle = cached.get("bundle") if isinstance(cached, dict) else {}
+            today_loaded_at = str(((bundle or {}).get("today") or {}).get("loaded_at") or "")
+            _maybe_queue_today_orders_refresh(period=payload["period"], loaded_at=today_loaded_at)
             return cached
         snapshot_cached = _dashboard_snapshot_get(payload)
         if snapshot_cached:
             logger.warning("[sales_overview] dashboard snapshot hit store_id=%s period=%s", payload["store_id"], payload["period"])
             _dashboard_cache_set(payload, snapshot_cached)
+            bundle = snapshot_cached.get("bundle") if isinstance(snapshot_cached, dict) else {}
+            today_loaded_at = str(((bundle or {}).get("today") or {}).get("loaded_at") or "")
+            _maybe_queue_today_orders_refresh(period=payload["period"], loaded_at=today_loaded_at)
             return snapshot_cached
         logger.warning("[sales_overview] dashboard cache miss store_id=%s period=%s", payload["store_id"], payload["period"])
         key = _dashboard_cache_key(payload)
@@ -689,6 +725,9 @@ async def sales_overview_dashboard_summary(
             finally:
                 _DASHBOARD_IN_FLIGHT.pop(key, None)
         _dashboard_cache_set(payload, built)
+        bundle = built.get("bundle") if isinstance(built, dict) else {}
+        today_loaded_at = str(((bundle or {}).get("today") or {}).get("loaded_at") or "")
+        _maybe_queue_today_orders_refresh(period=payload["period"], loaded_at=today_loaded_at)
         return built
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось собрать сводку dashboard: {exc}"}, status_code=500)
