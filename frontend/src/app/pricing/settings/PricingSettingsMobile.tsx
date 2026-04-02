@@ -117,7 +117,7 @@ export function PricingSettingsMobile({
         <div className={styles.mobileCommandDeck}>
           <div className={styles.mobileNavStack}>
             <WorkspaceTabs
-              className={styles.mobileWorkspaceTabs}
+              className={styles.pricingPrimaryTabs}
               items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
               activeId={settingsTab}
               onChange={(id) => setSettingsTab(id)}
@@ -126,7 +126,7 @@ export function PricingSettingsMobile({
               <div className={styles.mobileStoreStrip}>
                 <div className={styles.pricingStripLabel}>Магазин</div>
                 <WorkspaceTabs
-                  className={styles.mobileWorkspaceTabs}
+                  className={styles.pricingStoreTabs}
                   items={storeTabs.map((store) => ({
                     id: store.key,
                     label: store.storeName,

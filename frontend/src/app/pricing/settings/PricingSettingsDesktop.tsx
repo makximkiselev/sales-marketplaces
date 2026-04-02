@@ -1,5 +1,5 @@
 import styles from "./PricingSettingsPage.module.css";
-import { WorkspaceTabs } from "../../../components/page/WorkspaceKit";
+import { WorkspaceHeader, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
@@ -85,17 +85,21 @@ export function PricingSettingsDesktop({
     <div className={styles.settingsShell}>
       <div className={styles.settingsMain}>
         <div className={styles.pricingWorkbenchShell}>
-          <div className={styles.pricingWorkbenchHead}>
-            <div className={styles.pricingWorkbenchTabs}>
+          <div className={styles.pricingCommandDeck}>
+            <div className={styles.pricingModeStrip}>
               <WorkspaceTabs
-                className={styles.pricingWorkbenchSectionTabs}
+                className={styles.pricingPrimaryTabs}
                 items={sectionItems.map((item) => ({ id: item.id, label: item.label }))}
                 activeId={settingsTab}
                 onChange={(id) => setSettingsTab(id)}
               />
-              {!isSalesPlanSection ? (
+            </div>
+
+            {!isSalesPlanSection ? (
+              <div className={styles.pricingStoreStrip}>
+                <div className={styles.pricingStripLabel}>Магазин</div>
                 <WorkspaceTabs
-                  className={styles.pricingWorkbenchStoreTabs}
+                  className={styles.pricingStoreTabs}
                   items={storeTabs.map((store) => ({
                     id: store.key,
                     label: store.storeName,
@@ -104,29 +108,28 @@ export function PricingSettingsDesktop({
                   activeId={activeStoreTabKey}
                   onChange={setActiveStoreTabKey}
                 />
-              ) : null}
-            </div>
+              </div>
+            ) : null}
 
-            <div className={styles.pricingWorkbenchContext}>
-              <div className={styles.pricingWorkbenchTitleBlock}>
-                <h1 className={styles.pricingWorkbenchTitle}>{activeSection.title}</h1>
-                <p className={styles.pricingWorkbenchSubtitle}>
-                  {isSalesPlanSection
+            <div className={styles.pricingHeroPanel}>
+              <WorkspaceHeader
+                className={styles.pricingHeroHeader}
+                title={activeSection.title}
+                subtitle={
+                  isSalesPlanSection
                     ? "Цели продаж и стратегия по всем магазинам."
-                    : activeSection.description}
-                </p>
-              </div>
-              <div className={styles.pricingWorkbenchMeta}>
-                {!isSalesPlanSection && activeStore ? (
-                  <>
-                    <span className={styles.pricingWorkbenchMetaChip}>{activeStore.platformLabel}</span>
-                    <span className={styles.pricingWorkbenchMetaChip}>{activeStore.storeName}</span>
-                    <span className={styles.pricingWorkbenchMetaChip}>Валюта {moneySign}</span>
-                  </>
-                ) : (
-                  <span className={styles.pricingWorkbenchMetaChip}>Все магазины</span>
-                )}
-              </div>
+                    : activeSection.description
+                }
+                meta={
+                  !isSalesPlanSection && activeStore ? (
+                    <div className={styles.workspaceHeroChips}>
+                      <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
+                      <span className={styles.workspaceHeroChip}>{activeStore.storeName}</span>
+                      <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
+                    </div>
+                  ) : isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : undefined
+                }
+              />
             </div>
           </div>
 
