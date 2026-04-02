@@ -185,6 +185,22 @@ type DashboardSummaryResp = {
   context: ContextResp;
   bundle: DashboardBundle;
   storeComparison: StoreComparison[];
+  freshness?: {
+    today?: {
+      period?: string;
+      loaded_at?: string;
+      is_stale?: boolean;
+      status?: string;
+      message?: string;
+    };
+    yesterday?: {
+      period?: string;
+      loaded_at?: string;
+      is_stale?: boolean;
+      status?: string;
+      message?: string;
+    };
+  };
 };
 
 type DashboardPeriod = "today" | "yesterday";
@@ -731,6 +747,7 @@ function buildOverviewLink(
 export default function Page() {
   const [context, setContext] = useState<ContextResp | null>(null);
   const [bundle, setBundle] = useState<DashboardBundle | null>(null);
+  const [freshness, setFreshness] = useState<DashboardSummaryResp["freshness"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [period, setPeriod] = useState<DashboardPeriod>("today");
@@ -751,6 +768,7 @@ export default function Page() {
         if (!active) return;
         setContext(summary.context);
         setBundle(summary.bundle);
+        setFreshness(summary.freshness || null);
       } catch (e) {
         if (!active) return;
         setError(e instanceof Error ? e.message : String(e));
@@ -838,6 +856,7 @@ export default function Page() {
   const selectedDayOrdersCount = period === "yesterday" ? yesterdayOrdersCount : todayOrdersCount;
   const selectedDayProblemsCount = period === "yesterday" ? yesterdayProblemsCount : todayProblemsCount;
   const selectedDayOrdersLoadedAt = period === "yesterday" ? bundle?.yesterday?.loaded_at : bundle?.today?.loaded_at;
+  const selectedDayFreshness = period === "yesterday" ? freshness?.yesterday : freshness?.today;
   const selectedDayMarginPct = selectedDayRevenue > 0 ? (selectedDayProfit / selectedDayRevenue) * 100 : null;
   const selectedRevenueDeltaPct = period === "yesterday" ? compareDelta(yesterdayRevenue, todayRevenue) : compareDelta(todayRevenue, yesterdayRevenue);
   const selectedProfitDeltaPct = period === "yesterday" ? compareDelta(yesterdayProfit, todayProfit) : compareDelta(todayProfit, yesterdayProfit);
@@ -883,6 +902,14 @@ export default function Page() {
               <Link className={`btn ghost ${styles.monitoringLink}`} to="/settings/monitoring">Мониторинг</Link>
             </div>
           </WorkspaceToolbar>
+          <div className={styles.heroStatusRow}>
+            <span className={selectedDayFreshness?.is_stale ? styles.heroStatusWarn : styles.heroStatusOk}>
+              {selectedDayFreshness?.is_stale ? "Данные обновляются" : "Слой актуален"}
+            </span>
+            <span className={styles.heroStatusText}>
+              {selectedDayOrdersLoadedAt ? `Обновлено: ${formatDateTime(selectedDayOrdersLoadedAt)}` : "Ожидаем первый срез"}
+            </span>
+          </div>
         </WorkspaceSurface>
 
         {error ? <div className="status error">{error}</div> : null}

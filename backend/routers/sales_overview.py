@@ -23,7 +23,6 @@ from backend.services.yandex_united_orders_report_service import (
     refresh_sales_overview_order_rows_today_for_store,
 )
 from backend.services.yandex_united_netting_report_service import refresh_sales_united_netting_history
-from backend.services.refresh_orchestrator_service import start_refresh_job
 from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 from backend.services.store_data_model import (
     delete_dashboard_snapshots,
@@ -76,17 +75,6 @@ def _is_loaded_at_stale(raw: str, *, minutes: int = _TODAY_AUTO_REFRESH_STALE_MI
         return True
 
 
-def _maybe_queue_today_orders_refresh(*, period: str, loaded_at: str) -> None:
-    if str(period or "").strip().lower() != "today":
-        return
-    if not _is_loaded_at_stale(loaded_at):
-        return
-    try:
-        start_refresh_job("today_orders_30m_refresh", trigger_source="auto")
-    except Exception:
-        pass
-
-
 def _loaded_at_is_before_today(raw: str) -> bool:
     value = str(raw or "").strip()
     if not value:
@@ -107,6 +95,22 @@ def _today_response_needs_refresh(response: dict | None) -> bool:
     if rows:
         return False
     return _loaded_at_is_before_today(loaded_at) or _is_loaded_at_stale(loaded_at)
+
+
+def _build_layer_freshness(*, period: str, response: dict | None) -> dict:
+    payload = response if isinstance(response, dict) else {}
+    loaded_at = str(payload.get("loaded_at") or "").strip()
+    if str(period or "").strip().lower() == "today":
+        is_stale = _today_response_needs_refresh(payload)
+    else:
+        is_stale = _is_loaded_at_stale(loaded_at)
+    return {
+        "period": str(period or "").strip().lower(),
+        "loaded_at": loaded_at,
+        "is_stale": is_stale,
+        "status": "stale" if is_stale else "fresh",
+        "message": "Данные обновляются" if is_stale else "",
+    }
 
 
 def _period_span_days(period: str) -> int:
@@ -509,12 +513,6 @@ async def _fetch_primary_store_dashboard(*, store_id: str, period: str, previous
             today_problems_task,
             yesterday_problems_task,
         )
-        if store_query and _today_response_needs_refresh(today):
-            await refresh_sales_overview_order_rows_today_for_store(store_uid=f"yandex_market:{store_query}")
-            today, today_problems = await asyncio.gather(
-                get_sales_overview_history(page=1, page_size=1000, store_id=store_query, period="today"),
-                get_sales_overview_problem_orders(page=1, page_size=500, store_id=store_query, period="today"),
-            )
         today = _filter_dashboard_orders_response(today)
         yesterday = _filter_dashboard_orders_response(yesterday)
         return {
@@ -556,12 +554,6 @@ async def _fetch_primary_store_dashboard(*, store_id: str, period: str, previous
         previous_orders_task,
         previous_problems_task,
     )
-    if store_query and _today_response_needs_refresh(today):
-        await refresh_sales_overview_order_rows_today_for_store(store_uid=f"yandex_market:{store_query}")
-        today, today_problems = await asyncio.gather(
-            get_sales_overview_history(page=1, page_size=1000, store_id=store_query, period="today"),
-            get_sales_overview_problem_orders(page=1, page_size=500, store_id=store_query, period="today"),
-        )
     current = _filter_dashboard_orders_response(current)
     today = _filter_dashboard_orders_response(today)
     yesterday = _filter_dashboard_orders_response(yesterday)
@@ -662,7 +654,16 @@ async def _build_dashboard_summary_response(*, store_id: str, period: str) -> di
         bundle["dataFlow"] = _merge_data_flow_responses([item["dataFlow"] for item in secondary_scoped])
         bundle["sku"] = _merge_retrospective_responses([item["sku"] for item in secondary_scoped])
         bundle["category"] = _attach_category_groups(_merge_retrospective_responses([item["category"] for item in secondary_scoped]))
-        return {"ok": True, "context": context, "bundle": bundle, "storeComparison": comparison}
+        return {
+            "ok": True,
+            "context": context,
+            "bundle": bundle,
+            "storeComparison": comparison,
+            "freshness": {
+                "today": _build_layer_freshness(period="today", response=bundle.get("today")),
+                "yesterday": _build_layer_freshness(period="yesterday", response=bundle.get("yesterday")),
+            },
+        }
 
     primary = await _fetch_primary_store_dashboard(
         store_id=selected_store_id,
@@ -712,7 +713,16 @@ async def _build_dashboard_summary_response(*, store_id: str, period: str) -> di
             for store, item in zip(selected_stores, comparison_scoped)
         ],
     )
-    return {"ok": True, "context": context, "bundle": bundle, "storeComparison": comparison}
+    return {
+        "ok": True,
+        "context": context,
+        "bundle": bundle,
+        "storeComparison": comparison,
+        "freshness": {
+            "today": _build_layer_freshness(period="today", response=bundle.get("today")),
+            "yesterday": _build_layer_freshness(period="yesterday", response=bundle.get("yesterday")),
+        },
+    }
 
 
 @router.get("/api/sales/overview/context")
@@ -751,7 +761,6 @@ async def sales_overview_united_orders(
             date_from=date_from,
             date_to=date_to,
         )
-        _maybe_queue_today_orders_refresh(period=period, loaded_at=str(result.get("loaded_at") or ""))
         return result
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось получить united orders history: {exc}"}, status_code=500)
@@ -775,7 +784,6 @@ async def sales_overview_problem_orders(
             date_from=date_from,
             date_to=date_to,
         )
-        _maybe_queue_today_orders_refresh(period=period, loaded_at=str(result.get("loaded_at") or ""))
         return result
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось получить проблемные заказы: {exc}"}, status_code=500)
@@ -826,17 +834,11 @@ async def sales_overview_dashboard_summary(
         cached = _dashboard_cache_get(payload)
         if cached:
             logger.warning("[sales_overview] dashboard cache hit store_id=%s period=%s", payload["store_id"], payload["period"])
-            bundle = cached.get("bundle") if isinstance(cached, dict) else {}
-            today_loaded_at = str(((bundle or {}).get("today") or {}).get("loaded_at") or "")
-            _maybe_queue_today_orders_refresh(period=payload["period"], loaded_at=today_loaded_at)
             return cached
         snapshot_cached = _dashboard_snapshot_get(payload)
         if snapshot_cached:
             logger.warning("[sales_overview] dashboard snapshot hit store_id=%s period=%s", payload["store_id"], payload["period"])
             _dashboard_cache_set(payload, snapshot_cached)
-            bundle = snapshot_cached.get("bundle") if isinstance(snapshot_cached, dict) else {}
-            today_loaded_at = str(((bundle or {}).get("today") or {}).get("loaded_at") or "")
-            _maybe_queue_today_orders_refresh(period=payload["period"], loaded_at=today_loaded_at)
             return snapshot_cached
         logger.warning("[sales_overview] dashboard cache miss store_id=%s period=%s", payload["store_id"], payload["period"])
         key = _dashboard_cache_key(payload)
@@ -851,9 +853,6 @@ async def sales_overview_dashboard_summary(
             finally:
                 _DASHBOARD_IN_FLIGHT.pop(key, None)
         _dashboard_cache_set(payload, built)
-        bundle = built.get("bundle") if isinstance(built, dict) else {}
-        today_loaded_at = str(((bundle or {}).get("today") or {}).get("loaded_at") or "")
-        _maybe_queue_today_orders_refresh(period=payload["period"], loaded_at=today_loaded_at)
         return built
     except Exception as exc:
         return JSONResponse({"ok": False, "message": f"Не удалось собрать сводку dashboard: {exc}"}, status_code=500)

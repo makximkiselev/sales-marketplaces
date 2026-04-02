@@ -7,6 +7,45 @@
   gap: 10px;
 }
 
+.heroStatusRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  color: #8ea5c8;
+  font-size: 12px;
+}
+
+.heroStatusOk,
+.heroStatusWarn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.heroStatusOk {
+  border: 1px solid rgba(91, 224, 161, 0.24);
+  background: rgba(14, 57, 41, 0.5);
+  color: #9cf0c4;
+}
+
+.heroStatusWarn {
+  border: 1px solid rgba(255, 179, 71, 0.24);
+  background: rgba(74, 46, 17, 0.5);
+  color: #ffd8a8;
+}
+
+.heroStatusText {
+  color: #8ea5c8;
+  font-size: 12px;
+}
+
 .toolbarFilters,
 .toolbarActions {
   align-items: stretch;
