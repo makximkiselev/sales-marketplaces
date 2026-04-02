@@ -338,6 +338,38 @@ def _job_has_active_or_queued_run(job_code: str) -> bool:
     return _is_run_tracked(run_id, status)
 
 
+def _recover_stale_job_run(job_code: str) -> dict[str, Any] | None:
+    code = str(job_code or "").strip()
+    if not code:
+        return None
+    latest = get_refresh_job_runs_latest().get(code) or {}
+    run_id = int(latest.get("run_id") or 0)
+    raw_status = str(latest.get("status") or "").strip().lower()
+    started_at = str(latest.get("started_at") or "").strip()
+    if run_id <= 0 or raw_status not in {"queued", "running"}:
+        return None
+    if not _is_stale_running(job_code=code, started_at=started_at):
+        return None
+    _clear_tracked_run(run_id)
+    finish_refresh_job_run(
+        run_id=run_id,
+        status="error",
+        message="Зависшее выполнение",
+        meta={
+            "error": "stale_run",
+            "recovered_by": "manual_restart",
+            "job_code": code,
+        },
+    )
+    _refresh_monitoring_page_snapshots()
+    return {
+        "job_code": code,
+        "run_id": run_id,
+        "status": raw_status,
+        "recovered": True,
+    }
+
+
 def _manual_queue_worker() -> None:
     while True:
         _QUEUE_EVENT.wait()
@@ -1723,6 +1755,7 @@ def start_refresh_job(job_code: str, *, trigger_source: str = "manual") -> dict[
     code = str(job_code or "").strip()
     _ensure_manual_queue_worker()
     if trigger_source == "manual":
+        _recover_stale_job_run(code)
         if _job_has_active_or_queued_run(code):
             latest = get_refresh_job_runs_latest().get(code) or {}
             return {
