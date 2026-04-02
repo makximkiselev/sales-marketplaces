@@ -2,7 +2,6 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGetOk } from "../lib/api";
 import { PageFrame } from "../components/page/PageKit";
-import { SectionBlock } from "../components/page/SectionKit";
 import { WorkspaceHeader, WorkspaceSurface, WorkspaceToolbar } from "../components/page/WorkspaceKit";
 import layoutStyles from "./_shared/AppPageLayout.module.css";
 import styles from "./DashboardPage.module.css";
@@ -557,42 +556,6 @@ function RankingCard({
   );
 }
 
-function StoreComparisonCard({ rows, currencyCode }: { rows: StoreComparison[]; currencyCode?: string | null }) {
-  const maxRevenue = Math.max(1, ...rows.map((row) => row.revenue));
-  return (
-    <div className={styles.rankingCard}>
-      <div className={styles.panelTitle}>Сравнение магазинов</div>
-      <div className={styles.panelHint}>Сводка по обороту, прибыли и марже за выбранный период с дельтой к прошлому такому же периоду.</div>
-      <div className={styles.storeList}>
-        {rows.map((row) => (
-          <div key={row.storeId} className={styles.storeRow}>
-            <div className={styles.storeRowHead}>
-              <div>
-                <div className={styles.storeLabel}>{row.label}</div>
-                <div className={styles.storeMeta}>{row.platformLabel} · {formatNumber(row.orders)} заказов</div>
-              </div>
-              <div className={styles.storeRevenue}>{formatMoney(row.revenue, currencyCode)}</div>
-            </div>
-            <div className={styles.rankingBarTrack}>
-              <div className={styles.storeBarFill} style={{ width: `${(row.revenue / maxRevenue) * 100}%` }} />
-            </div>
-            <div className={styles.storeStats}>
-              <span>Прибыль: {formatMoney(row.profit, currencyCode)}</span>
-              <span>Маржа: {formatPercent(row.marginPct)}</span>
-              <span className={row.revenueDeltaPct != null && row.revenueDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                Оборот: {row.revenueDeltaPct == null ? "—" : `${row.revenueDeltaPct >= 0 ? "+" : ""}${formatPercent(row.revenueDeltaPct)}`}
-              </span>
-              <span className={row.profitDeltaPct != null && row.profitDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                Прибыль: {row.profitDeltaPct == null ? "—" : `${row.profitDeltaPct >= 0 ? "+" : ""}${formatPercent(row.profitDeltaPct)}`}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function StatusBreakdownCard({
   rows,
   total,
@@ -620,69 +583,6 @@ function StatusBreakdownCard({
             </div>
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function WatchlistCard({
-  title,
-  hint,
-  rows,
-  currencyCode,
-}: {
-  title: string;
-  hint: string;
-  rows: Array<{ label: string; revenue: number; profit: number; marginPct: number | null }>;
-  currencyCode?: string | null;
-}) {
-  return (
-    <div className={styles.rankingCard}>
-      <div className={styles.panelTitle}>{title}</div>
-      <div className={styles.panelHint}>{hint}</div>
-      <div className={styles.watchList}>
-        {rows.map((row) => (
-          <div key={row.label} className={styles.watchRow}>
-            <div className={styles.watchRowHead}>
-              <div className={styles.rankingLabel}>{row.label}</div>
-              <div className={styles.watchMargin}>{formatPercent(row.marginPct)}</div>
-            </div>
-            <div className={styles.storeStats}>
-              <span>Оборот: {formatMoney(row.revenue, currencyCode)}</span>
-              <span>Прибыль: {formatMoney(row.profit, currencyCode)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DataFlowCard({ flows }: { flows: DataFlowItem[] }) {
-  return (
-    <div className={styles.rankingCard}>
-      <div className={styles.panelTitle}>Слой данных</div>
-      <div className={styles.panelHint}>Какие потоки сейчас питают продажи и насколько они свежие.</div>
-      <div className={styles.flowList}>
-        {flows.length === 0 ? (
-          <div className={styles.placeholderCard}>Нет активных потоков данных</div>
-        ) : (
-          flows.map((flow) => (
-            <div key={flow.code} className={styles.flowRow}>
-              <div className={styles.flowRowHead}>
-                <div>
-                  <div className={styles.flowLabel}>{flow.label}</div>
-                  {flow.description ? <div className={styles.flowHint}>{flow.description}</div> : null}
-                </div>
-                <span className={styles.flowCode}>{flow.code}</span>
-              </div>
-              <div className={styles.flowMeta}>
-                <span>Период: {flow.date_from ? formatShortDate(flow.date_from) : "—"} - {flow.date_to ? formatShortDate(flow.date_to) : "—"}</span>
-                <span>Загрузка: {formatDateTime(flow.loaded_at)}</span>
-              </div>
-            </div>
-          ))
-        )}
       </div>
     </div>
   );
@@ -756,7 +656,6 @@ function buildOverviewLink(
 export default function Page() {
   const [context, setContext] = useState<ContextResp | null>(null);
   const [bundle, setBundle] = useState<DashboardBundle | null>(null);
-  const [storeComparison, setStoreComparison] = useState<StoreComparison[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [period, setPeriod] = useState<DashboardPeriod>("today");
@@ -776,7 +675,6 @@ export default function Page() {
         if (!active) return;
         setContext(summary.context);
         setBundle(summary.bundle);
-        setStoreComparison(summary.storeComparison || []);
       } catch (e) {
         if (!active) return;
         setError(e instanceof Error ? e.message : String(e));
@@ -837,31 +735,6 @@ export default function Page() {
   const yesterdayProblemsCount = Number(bundle?.yesterdayProblems?.total_count || 0);
   const previousProblemsCount = Number(bundle?.previousProblems?.total_count || 0);
   const todayOrdersDeltaPct = compareDelta(todayOrdersCount, yesterdayOrdersCount);
-  const weakestSku = (bundle?.sku?.rows || [])
-    .filter((row) => Number(row.revenue || 0) > 0)
-    .sort((a, b) => Number(a.profit_pct ?? 999999) - Number(b.profit_pct ?? 999999))
-    .slice(0, 4)
-    .map((row) => ({
-      label: row.label || row.item_name || row.sku || "SKU",
-      revenue: Number(row.revenue || 0),
-      profit: Number(row.profit_amount || 0),
-      marginPct: row.profit_pct ?? null,
-    }));
-  const weakestCategories = (bundle?.category?.rows || [])
-    .length
-    ? categoryAggregates
-        .filter((row) => Number(row.value || 0) > 0)
-        .sort((a, b) => Number(a.marginPct ?? 999999) - Number(b.marginPct ?? 999999))
-        .slice(0, 4)
-        .map((row) => ({
-          label: row.label,
-          revenue: Number(row.value || 0),
-          profit: Number(row.profit || 0),
-          marginPct: row.marginPct ?? null,
-        }))
-    : []
-  ;
-  const flowRows = bundle?.dataFlow?.flows || [];
   const chartSpan = chartRange === "30d" ? 30 : 7;
   const chartRangeWindow = useMemo(() => {
     const end = localDateOnly();
@@ -1108,49 +981,8 @@ export default function Page() {
                 onSelectCategory={setSelectedCategoryLabel}
                 actionTo={buildOverviewLink("category", { storeId: selectedOverviewStoreId, period })}
               />
-              <StoreComparisonCard rows={storeComparison.slice(0, 6)} currencyCode={currencyCode} />
-            </section>
-
-            <section className={styles.analysisGrid}>
               <StatusBreakdownCard rows={problemStatusRows} total={Number(bundle?.problems?.total_count || 0)} />
-              <WatchlistCard
-                title="SKU под давлением"
-                hint="Позиции с оборотом, но слабой маржей. Это первые кандидаты на пересмотр цены или экономики."
-                rows={weakestSku}
-                currencyCode={currencyCode}
-              />
-              <WatchlistCard
-                title="Категории риска"
-                hint="Категории с самым слабым процентом прибыли внутри текущего среза."
-                rows={weakestCategories}
-                currencyCode={currencyCode}
-              />
             </section>
-
-            <section className={styles.analysisGridSingle}>
-              <DataFlowCard flows={flowRows} />
-            </section>
-
-            <SectionBlock title="Куда идти дальше">
-              <div className={styles.actionGrid}>
-                <Link className={styles.actionCard} to={buildOverviewLink("orders", { storeId: selectedOverviewStoreId, period })}>
-                  <div className={styles.actionTitle}>Обзор продаж</div>
-                  <div className={styles.actionText}>Провалиться в заказы, проблемные позиции, SKU и категории.</div>
-                </Link>
-                <Link className={styles.actionCard} to="/pricing/decision">
-                  <div className={styles.actionTitle}>Ценовая стратегия</div>
-                  <div className={styles.actionText}>Проверить, где просадка по марже требует смены тактики.</div>
-                </Link>
-                <Link className={styles.actionCard} to="/settings/monitoring">
-                  <div className={styles.actionTitle}>Мониторинг</div>
-                  <div className={styles.actionText}>Убедиться, что экспорт и обновления не ломают слой продаж.</div>
-                </Link>
-                <Link className={styles.actionCard} to="/catalog">
-                  <div className={styles.actionTitle}>Каталог</div>
-                  <div className={styles.actionText}>Проверить SKU и категории, которые тянут результат вверх или вниз.</div>
-                </Link>
-              </div>
-            </SectionBlock>
           </>
         ) : null}
       </div>
