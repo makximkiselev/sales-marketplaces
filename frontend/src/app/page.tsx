@@ -326,18 +326,6 @@ function getPreviousPeriodRange(period: DashboardPeriod) {
   return { start: toIsoDate(previousStart), end: toIsoDate(previousEnd), span: current.span };
 }
 
-function buildPolyline(values: number[], width: number, height: number) {
-  if (!values.length) return "";
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = max - min || 1;
-  return values.map((value, index) => {
-    const x = values.length === 1 ? width / 2 : (index / (values.length - 1)) * width;
-    const y = height - ((value - min) / range) * height;
-    return `${x},${y}`;
-  }).join(" ");
-}
-
 function Sparkline({
   values,
   tone = "cyan",
@@ -345,7 +333,16 @@ function Sparkline({
   values: number[];
   tone?: "cyan" | "green" | "amber";
 }) {
-  const points = buildPolyline(values, 120, 32);
+  const points = values.length
+    ? values.map((value, index) => {
+        const max = Math.max(...values);
+        const min = Math.min(...values);
+        const range = max - min || 1;
+        const x = values.length === 1 ? 60 : (index / (values.length - 1)) * 120;
+        const y = 32 - ((value - min) / range) * 32;
+        return `${x},${y}`;
+      }).join(" ")
+    : "";
   if (!points) return <div className={styles.sparklineEmpty}>Нет данных</div>;
   return (
     <svg viewBox="0 0 120 32" className={`${styles.sparkline} ${styles[`sparkline${tone[0].toUpperCase()}${tone.slice(1)}`]}`}>
@@ -384,21 +381,18 @@ function TrendChart({
     );
   }
   const chartWidth = 760;
-  const chartHeight = 280;
-  const pad = { top: 24, right: 20, bottom: 34, left: 52 };
+  const chartHeight = 264;
+  const pad = { top: 22, right: 20, bottom: 34, left: 52 };
   const innerWidth = chartWidth - pad.left - pad.right;
   const innerHeight = chartHeight - pad.top - pad.bottom;
   const revenueValues = days.map((day) => Number(day.revenue || 0));
   const profitValues = days.map((day) => Number(day.profit_amount || 0));
   const maxValue = Math.max(1, ...revenueValues, ...profitValues);
-  const minProfit = Math.min(0, ...profitValues);
-  const range = maxValue - minProfit || 1;
-
-  const pointX = (index: number) => (days.length <= 1 ? pad.left : pad.left + (index / (days.length - 1)) * innerWidth);
-  const pointY = (value: number) => pad.top + innerHeight - ((value - minProfit) / range) * innerHeight;
-
-  const revenuePath = days.map((day, index) => `${index === 0 ? "M" : "L"} ${pointX(index)} ${pointY(Number(day.revenue || 0))}`).join(" ");
-  const profitPath = days.map((day, index) => `${index === 0 ? "M" : "L"} ${pointX(index)} ${pointY(Number(day.profit_amount || 0))}`).join(" ");
+  const bandWidth = innerWidth / Math.max(days.length, 1);
+  const barGap = Math.max(4, bandWidth * 0.08);
+  const groupWidth = Math.max(14, bandWidth - barGap);
+  const singleBarWidth = Math.max(6, (groupWidth - barGap) / 2);
+  const barHeight = (value: number) => Math.max(0, (value / maxValue) * innerHeight);
   const gridValues = [0, 0.25, 0.5, 0.75, 1];
 
   return (
@@ -417,25 +411,58 @@ function TrendChart({
         </div>
       </div>
       <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className={styles.chartSvg} role="img" aria-label="Динамика оборота и прибыли по дням">
+        <defs>
+          <linearGradient id="chartRevenueGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#64d6ff" />
+            <stop offset="100%" stopColor="#2f79d6" />
+          </linearGradient>
+          <linearGradient id="chartProfitGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#63e3a8" />
+            <stop offset="100%" stopColor="#1f8d63" />
+          </linearGradient>
+        </defs>
         {gridValues.map((tick) => {
           const y = pad.top + innerHeight - tick * innerHeight;
           return <line key={tick} x1={pad.left} y1={y} x2={chartWidth - pad.right} y2={y} className={styles.chartGrid} />;
         })}
-        <path d={revenuePath} className={styles.chartRevenue} />
-        <path d={profitPath} className={styles.chartProfit} />
         {days.map((day, index) => (
           <g key={`${day.date}-${index}`}>
-            <circle cx={pointX(index)} cy={pointY(Number(day.revenue || 0))} r="3.2" className={styles.chartPointRevenue} />
-            <circle cx={pointX(index)} cy={pointY(Number(day.profit_amount || 0))} r="3.2" className={styles.chartPointProfit} />
+            {(() => {
+              const revenue = Number(day.revenue || 0);
+              const profit = Number(day.profit_amount || 0);
+              const groupX = pad.left + index * bandWidth + (bandWidth - groupWidth) / 2;
+              const revenueH = barHeight(revenue);
+              const profitH = barHeight(profit);
+              return (
+                <>
+                  <rect
+                    x={groupX}
+                    y={pad.top + innerHeight - revenueH}
+                    width={singleBarWidth}
+                    height={revenueH}
+                    rx="5"
+                    className={styles.chartBarRevenue}
+                  />
+                  <rect
+                    x={groupX + singleBarWidth + barGap}
+                    y={pad.top + innerHeight - profitH}
+                    width={singleBarWidth}
+                    height={profitH}
+                    rx="5"
+                    className={styles.chartBarProfit}
+                  />
+                </>
+              );
+            })()}
             {index % Math.max(1, Math.ceil(days.length / 6)) === 0 ? (
-              <text x={pointX(index)} y={chartHeight - 10} textAnchor="middle" className={styles.chartLabel}>
+              <text x={pad.left + index * bandWidth + bandWidth / 2} y={chartHeight - 10} textAnchor="middle" className={styles.chartLabel}>
                 {formatShortDate(day.date)}
               </text>
             ) : null}
           </g>
         ))}
         <text x={pad.left} y={14} className={styles.chartScaleLabel}>{formatMoney(maxValue, currencyCode)}</text>
-        <text x={pad.left} y={chartHeight - 10} className={styles.chartScaleLabel}>{formatMoney(minProfit, currencyCode)}</text>
+        <text x={pad.left} y={chartHeight - 10} className={styles.chartScaleLabel}>{formatMoney(0, currencyCode)}</text>
       </svg>
     </div>
   );

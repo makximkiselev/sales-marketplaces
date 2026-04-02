@@ -14,7 +14,7 @@
 
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -342,28 +342,12 @@
   stroke-width: 1;
 }
 
-.chartRevenue,
-.chartProfit {
-  fill: none;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.chartBarRevenue {
+  fill: url(#chartRevenueGradient);
 }
 
-.chartRevenue {
-  stroke: #64d6ff;
-}
-
-.chartProfit {
-  stroke: #58d59f;
-}
-
-.chartPointRevenue {
-  fill: #64d6ff;
-}
-
-.chartPointProfit {
-  fill: #58d59f;
+.chartBarProfit {
+  fill: url(#chartProfitGradient);
 }
 
 .chartLabel,
@@ -737,10 +721,6 @@
 }
 
 @media (max-width: 1280px) {
-  .kpiGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .dashboardGrid,
   .dailyGrid,
   .tempoGrid {
