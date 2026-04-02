@@ -33,6 +33,16 @@ _ELASTICITY_CACHE_MAX = 200
 logger = logging.getLogger("uvicorn.error")
 
 YANDEX_ELASTICITY_STATUSES = {"PROCESSING", "DELIVERY", "PICKUP", "DELIVERED"}
+YANDEX_BUSINESS_ORDER_STATUSES = {
+    "PENDING",
+    "PROCESSING",
+    "UNPAID",
+    "PICKUP",
+    "DELIVERY",
+    "DELIVERED",
+    "CANCELLED",
+    "CANCELED",
+}
 ELASTICITY_FULL_START = datetime.date(2025, 1, 1)
 ELASTICITY_SYNC_STATE_KEY = "sales.elasticity.sync_state"
 _FX_USD_RUB_MEM: dict[str, float] = {}
@@ -234,11 +244,12 @@ def _extract_subsidy_amount(item: dict[str, Any]) -> float | None:
     return _to_num(subsidy.get("value"))
 
 
-def _extract_order_items(order: dict[str, Any]) -> list[dict[str, Any]]:
+def _extract_order_items(order: dict[str, Any], *, allowed_statuses: set[str] | None = None) -> list[dict[str, Any]]:
     order_id = str(order.get("id") or order.get("orderId") or "").strip()
     status = str(order.get("status") or "").strip().upper()
     created = _parse_order_created_date(order.get("creationDate") or order.get("createdAt") or order.get("created"))
-    if not order_id or not created or status not in YANDEX_ELASTICITY_STATUSES:
+    statuses = {str(item or "").strip().upper() for item in (allowed_statuses or set()) if str(item or "").strip()}
+    if not order_id or not created or (statuses and status not in statuses):
         return []
     created_at, created_date = created
     items = order.get("items") if isinstance(order.get("items"), list) else []
@@ -295,6 +306,7 @@ async def _fetch_yandex_business_orders_for_range(
     api_key: str,
     date_from: datetime.date,
     date_to: datetime.date,
+    allowed_statuses: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     bid = str(business_id or "").strip()
     cid = str(campaign_id or "").strip()
@@ -312,14 +324,16 @@ async def _fetch_yandex_business_orders_for_range(
     seen_order_item_ids: set[str] = set()
     async with httpx.AsyncClient(timeout=90) as client:
         for _ in range(500):
+            statuses = sorted({str(item or "").strip().upper() for item in (allowed_statuses or set()) if str(item or "").strip()})
             body: dict[str, Any] = {
-                "statuses": sorted(YANDEX_ELASTICITY_STATUSES),
                 "campaignIds": [int(cid)] if cid.isdigit() else [cid],
                 "dates": {
                     "creationDateFrom": date_from.isoformat(),
                     "creationDateTo": request_to.isoformat(),
                 },
             }
+            if statuses:
+                body["statuses"] = statuses
             params: dict[str, str] = {}
             if page_token:
                 params["pageToken"] = page_token
@@ -371,7 +385,7 @@ async def _fetch_yandex_business_orders_for_range(
             if page_signature:
                 seen_page_signatures.add(page_signature)
             for order in orders:
-                for item in _extract_order_items(order):
+                for item in _extract_order_items(order, allowed_statuses=allowed_statuses):
                     item_key = str(item.get("order_item_id") or "").strip()
                     if not item_key or item_key in seen_order_item_ids:
                         continue
@@ -1184,6 +1198,7 @@ async def refresh_sales_elasticity_data(*, mode: str = "recent", manual: bool = 
                     api_key=api_key,
                     date_from=chunk_from,
                     date_to=chunk_to,
+                    allowed_statuses=YANDEX_ELASTICITY_STATUSES,
                 )
                 replace_sales_market_order_items_for_period(
                     store_uid=store_uid,

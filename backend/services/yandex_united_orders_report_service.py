@@ -50,7 +50,10 @@ from backend.services.store_data_model import (
     replace_sales_market_order_items_for_period,
     replace_sales_united_order_transactions_for_period,
 )
-from backend.services.sales_elasticity_service import _fetch_yandex_business_orders_for_range
+from backend.services.sales_elasticity_service import (
+    YANDEX_BUSINESS_ORDER_STATUSES,
+    _fetch_yandex_business_orders_for_range,
+)
 
 logger = logging.getLogger("uvicorn.error")
 MSK = ZoneInfo("Europe/Moscow")
@@ -817,6 +820,7 @@ async def _refresh_yandex_live_orders_for_store(
         api_key=api_key,
         date_from=from_day,
         date_to=to_day,
+        allowed_statuses=YANDEX_BUSINESS_ORDER_STATUSES,
     )
     loaded = replace_sales_market_order_items_for_period(
         store_uid=store_uid,
