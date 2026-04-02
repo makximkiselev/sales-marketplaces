@@ -816,15 +816,13 @@
 @media (max-width: 640px) {
   .dailyGrid,
   .tempoGrid,
-  .actionGrid,
-  .tempoMiniGrid,
-  .insightGrid {
+  .actionGrid {
     grid-template-columns: 1fr;
   }
 
   .heroSurface {
     padding: 12px;
-    gap: 10px;
+    gap: 8px;
   }
 
   .toolbarFilters {
@@ -849,6 +847,10 @@
   .actionCard {
     padding: 12px;
     border-radius: 18px;
+  }
+
+  .kpiCard {
+    gap: 10px;
   }
 
   .kpiValue {
@@ -887,12 +889,25 @@
   }
 
   .sparkline {
-    width: 92px;
-    height: 24px;
+    display: none;
   }
 
   .chartSvg {
     min-height: 180px;
+  }
+
+  .chartLegend,
+  .sideStack > .panelCard,
+  .panelAction {
+    display: none;
+  }
+
+  .insightGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .insightGrid .insightCard:nth-child(n + 3) {
+    display: none;
   }
 
   .analysisTabs {
@@ -907,6 +922,10 @@
 
 @media (max-width: 420px) {
   .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .insightGrid {
     grid-template-columns: 1fr;
   }
 }

@@ -454,7 +454,7 @@ function CategoryDrilldownCard({
   onSelectCategory: (value: string) => void;
   actionTo?: string;
 }) {
-  const rows = categories.slice(0, 5);
+  const rows = categories.slice(0, 4);
   const selected = rows.find((row) => row.label === selectedCategory) || rows[0] || null;
   const maxValue = Math.max(1, ...rows.map((row) => row.value));
   return (
@@ -493,7 +493,7 @@ function CategoryDrilldownCard({
           <div className={styles.brandPaneHint}>{selected ? "Внутренний срез выбранной категории по обороту." : "Категория не выбрана."}</div>
           {selected?.brands?.length ? (
             <div className={styles.rankingList}>
-              {selected.brands.slice(0, 5).map((brand) => (
+              {selected.brands.slice(0, 4).map((brand) => (
                 <div key={`${selected.label}-${brand.label}`} className={styles.rankingRow}>
                   <div className={styles.rankingRowHead}>
                     <div className={styles.rankingLabel}>{brand.label}</div>
@@ -706,7 +706,7 @@ export default function Page() {
     [bundle?.tracking?.years],
   );
 
-  const topSku = (bundle?.sku?.rows || []).slice(0, 5).map((row) => ({
+  const topSku = (bundle?.sku?.rows || []).slice(0, 4).map((row) => ({
     label: row.label || row.item_name || row.sku || "SKU",
     value: Number(row.revenue || 0),
     detail: `Прибыль: ${formatMoney(row.profit_amount, currencyCode)} · Маржа: ${formatPercent(row.profit_pct)}`,
@@ -721,7 +721,7 @@ export default function Page() {
       const key = String(row.item_status || "Не определено").trim() || "Не определено";
       map.set(key, (map.get(key) || 0) + 1);
     }
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4);
   }, [bundle?.problems?.rows]);
   const problemStatusRows = problematicStatuses.map(([label, count]) => ({ label, count }));
   const todayRevenue = sumBy(bundle?.today?.rows || [], (row) => row.sale_price);
