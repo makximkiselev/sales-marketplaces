@@ -1,6 +1,6 @@
 import styles from "./PricingSettingsPage.module.css";
 import { MobileDockLayout } from "../../../components/page/PageKit";
-import { WorkspaceHeader, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
+import { WorkspaceHeader, WorkspaceSurface, WorkspaceTabs, WorkspaceToolbar } from "../../../components/page/WorkspaceKit";
 import { GeneralSettingsSection } from "./components/GeneralSettingsSection";
 import { LogisticsSettingsPanel } from "./components/LogisticsSettingsPanel";
 import { LogisticsSettingsSection } from "./components/LogisticsSettingsSection";
@@ -114,7 +114,7 @@ export function PricingSettingsMobile({
     <div className={`${styles.settingsShell} ${styles.mobileSettingsShell}`}>
       <div className={`${styles.settingsMain} ${styles.mobileSettingsMain}`}>
         <MobileDockLayout dock={mobileDock} dockVisible={mobileDockVisible} dockHeight={232} dockOffset={82}>
-        <div className={styles.mobileCommandDeck}>
+        <WorkspaceSurface className={`${styles.pricingHeroSurface} ${styles.pricingHeroSurfaceMobile}`}>
           <div className={styles.mobileNavStack}>
             <WorkspaceTabs
               className={styles.pricingPrimaryTabs}
@@ -133,33 +133,37 @@ export function PricingSettingsMobile({
                     meta: store.platformLabel,
                   }))}
                   activeId={activeStoreTabKey}
-                  onChange={setActiveStoreTabKey}
+                onChange={setActiveStoreTabKey}
                 />
               </div>
             ) : null}
           </div>
 
-          <div className={styles.pricingHeroPanel}>
-            <WorkspaceHeader
-              className={styles.pricingHeroHeader}
-              title={activeSection.title}
-              subtitle={
-                isSalesPlanSection
-                  ? "Store-level цели, режимы прибыли и стратегия для всех магазинов."
-                  : activeSection.description
-              }
-              meta={
-                !isSalesPlanSection && activeStore ? (
-                  <div className={styles.workspaceHeroChips}>
-                    <span className={styles.workspaceHeroChip}>{activeStore.platformLabel}</span>
-                    <span className={styles.workspaceHeroChip}>{activeStore.storeName}</span>
-                    <span className={styles.workspaceHeroChip}>Валюта {moneySign}</span>
-                  </div>
-                ) : isSalesPlanSection ? <span className={styles.workspaceHeroChip}>Все магазины</span> : undefined
-              }
-            />
-          </div>
-        </div>
+          <WorkspaceHeader
+            className={styles.pricingHeroHeader}
+            title="Настройки ценообразования"
+            subtitle="Единая рабочая зона для целей продаж, категорийных правил и логистики магазинов."
+            meta={(
+              <div className={styles.pricingHeroMeta}>
+                <span className={styles.pricingMetaChip}>{activeSection.title}</span>
+              </div>
+            )}
+          />
+
+          <WorkspaceToolbar className={styles.pricingToolbarMobile}>
+            {!isSalesPlanSection && activeStore ? (
+              <div className={styles.pricingToolbarMeta}>
+                <span className={styles.pricingMetaChip}>{activeStore.platformLabel}</span>
+                <span className={styles.pricingMetaChip}>{activeStore.storeName}</span>
+                <span className={styles.pricingMetaChip}>Валюта {moneySign}</span>
+              </div>
+            ) : (
+              <div className={styles.pricingToolbarMeta}>
+                <span className={styles.pricingMetaChip}>Все магазины</span>
+              </div>
+            )}
+          </WorkspaceToolbar>
+        </WorkspaceSurface>
 
         {settingsTab === "sales_plan" ? (
           <SalesPlanSection
