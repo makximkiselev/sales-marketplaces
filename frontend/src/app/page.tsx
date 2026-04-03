@@ -70,6 +70,7 @@ type ProblemOrdersResp = {
 
 type TrackingDay = {
   date: string;
+  order_count_total?: number | null;
   revenue?: number | null;
   revenue_plan_amount?: number | null;
   profit_amount?: number | null;
@@ -286,6 +287,10 @@ function toIsoDate(base: Date) {
   const month = String(base.getMonth() + 1).padStart(2, "0");
   const day = String(base.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function findTrackingDay(days: TrackingDay[], dayKey: string) {
+  return days.find((day) => String(day.date) === String(dayKey)) || null;
 }
 
 function getPeriodSpanDays(period: DashboardPeriod) {
@@ -837,19 +842,9 @@ export default function Page() {
     return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4);
   }, [bundle?.problems?.rows]);
   const problemStatusRows = problematicStatuses.map(([label, count]) => ({ label, count }));
-  const todayRevenue = sumBy(bundle?.today?.rows || [], (row) => row.sale_price);
-  const yesterdayRevenue = sumBy(bundle?.yesterday?.rows || [], (row) => row.sale_price);
-  const todayProfit = sumBy(bundle?.today?.rows || [], (row) => row.profit);
-  const yesterdayProfit = sumBy(bundle?.yesterday?.rows || [], (row) => row.profit);
-  const previousRevenue = sumBy(bundle?.previousOrders?.rows || [], (row) => row.sale_price);
-  const previousProfit = sumBy(bundle?.previousOrders?.rows || [], (row) => row.profit);
-  const todayOrdersCount = Number(bundle?.today?.kpis?.orders_count || (bundle?.today?.rows || []).length);
-  const yesterdayOrdersCount = Number(bundle?.yesterday?.kpis?.orders_count || (bundle?.yesterday?.rows || []).length);
-  const previousOrdersCount = Number(bundle?.previousOrders?.kpis?.orders_count || (bundle?.previousOrders?.rows || []).length);
   const todayProblemsCount = Number(bundle?.todayProblems?.total_count || 0);
   const yesterdayProblemsCount = Number(bundle?.yesterdayProblems?.total_count || 0);
   const previousProblemsCount = Number(bundle?.previousProblems?.total_count || 0);
-  const todayOrdersDeltaPct = compareDelta(todayOrdersCount, yesterdayOrdersCount);
   const chartSpan = chartRange === "30d" ? 30 : 7;
   const chartRangeWindow = useMemo(() => {
     const end = localDateOnly();
@@ -872,16 +867,42 @@ export default function Page() {
   const profitSpark = trendDays.map((day) => Number(day.profit_amount || 0));
   const marginSpark = trendDays.map((day) => Number(day.profit_pct || 0));
   const chartRangeLabel = `${formatLongDate(chartRangeWindow.start)} - ${formatLongDate(chartRangeWindow.end)}`;
-  const selectedDayRevenue = period === "yesterday" ? yesterdayRevenue : todayRevenue;
-  const selectedDayProfit = period === "yesterday" ? yesterdayProfit : todayProfit;
-  const selectedDayOrdersCount = period === "yesterday" ? yesterdayOrdersCount : todayOrdersCount;
+  const todayKey = toIsoDate(localDateOnly());
+  const yesterdayKey = toIsoDate(shiftDate(localDateOnly(), -1));
+  const dayBeforeYesterdayKey = toIsoDate(shiftDate(localDateOnly(), -2));
+  const todayTracking = findTrackingDay(allTrendDays, todayKey);
+  const yesterdayTracking = findTrackingDay(allTrendDays, yesterdayKey);
+  const dayBeforeYesterdayTracking = findTrackingDay(allTrendDays, dayBeforeYesterdayKey);
+  const todayRevenue = Number(todayTracking?.revenue || 0);
+  const yesterdayRevenue = Number(yesterdayTracking?.revenue || 0);
+  const todayProfit = Number(todayTracking?.profit_amount || 0);
+  const yesterdayProfit = Number(yesterdayTracking?.profit_amount || 0);
+  const previousRevenue = Number(dayBeforeYesterdayTracking?.revenue || 0);
+  const previousProfit = Number(dayBeforeYesterdayTracking?.profit_amount || 0);
+  const todayOrdersCount = Number(todayTracking?.order_count_total || bundle?.today?.kpis?.orders_count || (bundle?.today?.rows || []).length);
+  const yesterdayOrdersCount = Number(yesterdayTracking?.order_count_total || bundle?.yesterday?.kpis?.orders_count || (bundle?.yesterday?.rows || []).length);
+  const previousOrdersCount = Number(dayBeforeYesterdayTracking?.order_count_total || bundle?.previousOrders?.kpis?.orders_count || (bundle?.previousOrders?.rows || []).length);
+  const selectedTrackingDay = period === "yesterday" ? yesterdayTracking : todayTracking;
+  const previousTrackingDay = period === "yesterday" ? dayBeforeYesterdayTracking : yesterdayTracking;
+  const selectedDayRevenue = Number(selectedTrackingDay?.revenue || (period === "yesterday" ? yesterdayRevenue : todayRevenue));
+  const selectedDayProfit = Number(selectedTrackingDay?.profit_amount || (period === "yesterday" ? yesterdayProfit : todayProfit));
+  const selectedDayOrdersCount = Number(selectedTrackingDay?.order_count_total || (period === "yesterday" ? yesterdayOrdersCount : todayOrdersCount));
   const selectedDayProblemsCount = period === "yesterday" ? yesterdayProblemsCount : todayProblemsCount;
   const selectedDayOrdersLoadedAt = period === "yesterday" ? bundle?.yesterday?.loaded_at : bundle?.today?.loaded_at;
   const selectedDayFreshness = period === "yesterday" ? freshness?.yesterday : freshness?.today;
   const selectedDayMarginPct = selectedDayRevenue > 0 ? (selectedDayProfit / selectedDayRevenue) * 100 : null;
-  const selectedRevenueDeltaPct = period === "yesterday" ? compareDelta(yesterdayRevenue, todayRevenue) : compareDelta(todayRevenue, yesterdayRevenue);
-  const selectedProfitDeltaPct = period === "yesterday" ? compareDelta(yesterdayProfit, todayProfit) : compareDelta(todayProfit, yesterdayProfit);
-  const selectedOrdersDeltaPct = period === "yesterday" ? compareDelta(yesterdayOrdersCount, todayOrdersCount) : todayOrdersDeltaPct;
+  const selectedRevenueDeltaPct = compareDelta(
+    selectedDayRevenue,
+    Number(previousTrackingDay?.revenue || (period === "yesterday" ? previousRevenue : yesterdayRevenue)),
+  );
+  const selectedProfitDeltaPct = compareDelta(
+    selectedDayProfit,
+    Number(previousTrackingDay?.profit_amount || (period === "yesterday" ? previousProfit : yesterdayProfit)),
+  );
+  const selectedOrdersDeltaPct = compareDelta(
+    selectedDayOrdersCount,
+    Number(previousTrackingDay?.order_count_total || (period === "yesterday" ? previousOrdersCount : yesterdayOrdersCount)),
+  );
   const selectedProblemsDeltaPct = period === "yesterday" ? compareDelta(yesterdayProblemsCount, todayProblemsCount) : compareDelta(todayProblemsCount, yesterdayProblemsCount);
   const averageDayRevenue = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.revenue || 0), 0) / trendDays.length : null;
   const averageDayProfit = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.profit_amount || 0), 0) / trendDays.length : null;
@@ -980,7 +1001,7 @@ export default function Page() {
                   <Sparkline values={marginSpark} tone="amber" />
                 </div>
                 <div className={styles.kpiMeta}>
-                  <span>Средний соинвест: {formatPercent(period === "yesterday" ? bundle?.yesterday?.kpis?.avg_coinvest_pct : bundle?.today?.kpis?.avg_coinvest_pct)}</span>
+                  <span>Средний соинвест: {formatPercent(selectedTrackingDay?.coinvest_pct ?? (period === "yesterday" ? bundle?.yesterday?.kpis?.avg_coinvest_pct : bundle?.today?.kpis?.avg_coinvest_pct))}</span>
                   <span className={selectedOrdersDeltaPct != null && selectedOrdersDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
                     vs день {formatPercent(selectedOrdersDeltaPct)}
                   </span>
