@@ -27,6 +27,7 @@ from backend.services.service_cache_helpers import cache_get_copy, cache_set_cop
 from backend.services.store_data_model import (
     delete_dashboard_snapshots,
     get_dashboard_snapshot,
+    get_pricing_catalog_sku_path_map,
     get_pricing_store_settings,
     upsert_dashboard_snapshot,
     upsert_pricing_store_settings,
@@ -209,6 +210,95 @@ def _build_orders_kpis(rows: list[dict], fallback: dict | None = None) -> dict:
         "additional_ads": float((fallback or {}).get("additional_ads") or 0.0),
         "operational_errors": float((fallback or {}).get("operational_errors") or 0.0),
     }
+
+
+def _path_parts(path: str) -> list[str]:
+    return [part.strip() for part in str(path or "").split("/") if part.strip()]
+
+
+def _dashboard_brand_from_path(path: str) -> str:
+    parts = _path_parts(path)
+    if len(parts) >= 3:
+        return parts[-2] or "Без бренда"
+    if len(parts) >= 2:
+        return parts[1] or "Без бренда"
+    return "Без бренда"
+
+
+def _build_dashboard_sku_rows(rows: list[dict]) -> dict:
+    grouped: dict[str, dict] = {}
+    for row in rows:
+        sku = str(row.get("sku") or "").strip()
+        label = str(row.get("item_name") or sku or "SKU").strip() or "SKU"
+        key = sku or label
+        bucket = grouped.setdefault(
+            key,
+            {
+                "key": key,
+                "label": label,
+                "sku": sku,
+                "item_name": str(row.get("item_name") or "").strip(),
+                "revenue": 0.0,
+                "profit_amount": 0.0,
+            },
+        )
+        bucket["revenue"] += float(row.get("sale_price") or 0.0)
+        bucket["profit_amount"] += float(row.get("profit") or 0.0)
+    items = list(grouped.values())
+    for item in items:
+        revenue = float(item.get("revenue") or 0.0)
+        profit = float(item.get("profit_amount") or 0.0)
+        item["profit_pct"] = (profit / revenue * 100.0) if revenue > 0 else None
+    items.sort(key=lambda item: float(item.get("revenue") or 0.0), reverse=True)
+    return {"ok": True, "rows": items, "total_count": len(items)}
+
+
+def _build_dashboard_category_groups(rows: list[dict]) -> list[dict]:
+    sku_list = sorted({str(row.get("sku") or "").strip() for row in rows if str(row.get("sku") or "").strip()})
+    path_map = get_pricing_catalog_sku_path_map(priority_platform="yandex_market", skus=sku_list) if sku_list else {}
+    grouped: dict[str, dict] = {}
+    for row in rows:
+        sku = str(row.get("sku") or "").strip()
+        leaf_path = str(((path_map.get(sku) or {}) if isinstance(path_map.get(sku), dict) else {}).get("leaf_path") or "").strip()
+        parts = _path_parts(leaf_path)
+        category = parts[0] if parts else "Не определено"
+        brand = _dashboard_brand_from_path(leaf_path)
+        revenue = float(row.get("sale_price") or 0.0)
+        profit = float(row.get("profit") or 0.0)
+        category_bucket = grouped.setdefault(
+            category,
+            {"label": category, "value": 0.0, "profit": 0.0, "brands": {}},
+        )
+        category_bucket["value"] += revenue
+        category_bucket["profit"] += profit
+        brand_bucket = category_bucket["brands"].setdefault(
+            brand,
+            {"label": brand, "value": 0.0, "profit": 0.0},
+        )
+        brand_bucket["value"] += revenue
+        brand_bucket["profit"] += profit
+    out: list[dict] = []
+    for category, bucket in grouped.items():
+        brands = list(bucket["brands"].values())
+        for brand in brands:
+            brand_value = float(brand.get("value") or 0.0)
+            brand_profit = float(brand.get("profit") or 0.0)
+            brand["marginPct"] = (brand_profit / brand_value * 100.0) if brand_value > 0 else None
+        brands.sort(key=lambda item: float(item.get("value") or 0.0), reverse=True)
+        value = float(bucket.get("value") or 0.0)
+        profit = float(bucket.get("profit") or 0.0)
+        out.append(
+            {
+                "label": category,
+                "value": value,
+                "profit": profit,
+                "marginPct": (profit / value * 100.0) if value > 0 else None,
+                "brandCount": len(brands),
+                "brands": brands,
+            }
+        )
+    out.sort(key=lambda item: float(item.get("value") or 0.0), reverse=True)
+    return out
 
 
 def _merge_orders_responses(responses: list[dict]) -> dict:
@@ -604,33 +694,6 @@ async def _fetch_primary_store_dashboard(*, store_id: str, period: str, previous
     }
 
 
-async def _fetch_secondary_store_dashboard(*, store_id: str, period: str) -> dict:
-    date_from, date_to, grain = _overview_date_range(period)
-    store_query = str(store_id or "").strip()
-    data_flow, sku, category = await asyncio.gather(
-        asyncio.to_thread(get_sales_overview_data_flow_status, store_id=store_query),
-        get_sales_overview_retrospective(
-            store_id=store_query,
-            group_by="sku",
-            grain=grain,
-            date_mode="created",
-            date_from=date_from,
-            date_to=date_to,
-            limit=120,
-        ),
-        get_sales_overview_retrospective(
-            store_id=store_query,
-            group_by="category",
-            grain=grain,
-            date_mode="created",
-            date_from=date_from,
-            date_to=date_to,
-            limit=120,
-        ),
-    )
-    return {"dataFlow": data_flow, "sku": sku, "category": category}
-
-
 async def _build_dashboard_summary_response(*, store_id: str, period: str) -> dict:
     context = get_sales_overview_context()
     stores = list(context.get("marketplace_stores") or [])
@@ -665,31 +728,18 @@ async def _build_dashboard_summary_response(*, store_id: str, period: str) -> di
             "previousOrders": _merge_orders_responses([item["previousOrders"] for item in primary_scoped]),
             "previousProblems": _merge_problem_responses([item["previousProblems"] for item in primary_scoped]),
         }
-        comparison = _build_store_comparison(
-            selected_stores,
-            [
-                {
-                    "storeId": str(store.get("store_id") or "").strip(),
-                    "current": item["orders"],
-                    "previous": item["previousOrders"],
-                }
-                for store, item in zip(selected_stores, primary_scoped)
-            ],
-        )
-        secondary_scoped = await asyncio.gather(
-            *[
-                _fetch_secondary_store_dashboard(store_id=str(store.get("store_id") or "").strip(), period=period)
-                for store in selected_stores
-            ]
-        )
-        bundle["dataFlow"] = _merge_data_flow_responses([item["dataFlow"] for item in secondary_scoped])
-        bundle["sku"] = _merge_retrospective_responses([item["sku"] for item in secondary_scoped])
-        bundle["category"] = _attach_category_groups(_merge_retrospective_responses([item["category"] for item in secondary_scoped]))
+        bundle["sku"] = _build_dashboard_sku_rows(list(bundle["orders"].get("rows") or []))
+        bundle["category"] = {
+            "ok": True,
+            "rows": [],
+            "total_count": 0,
+            "category_groups": _build_dashboard_category_groups(list(bundle["orders"].get("rows") or [])),
+        }
         return {
             "ok": True,
             "context": context,
             "bundle": bundle,
-            "storeComparison": comparison,
+            "storeComparison": [],
             "freshness": {
                 "today": _build_layer_freshness(period="today", response=bundle.get("today")),
                 "yesterday": _build_layer_freshness(period="yesterday", response=bundle.get("yesterday")),
@@ -716,39 +766,18 @@ async def _build_dashboard_summary_response(*, store_id: str, period: str) -> di
         "previousOrders": primary["previousOrders"],
         "previousProblems": primary["previousProblems"],
     }
-    secondary, comparison_scoped = await asyncio.gather(
-        _fetch_secondary_store_dashboard(store_id=selected_store_id, period=period),
-        asyncio.gather(
-            *[
-                _fetch_primary_store_dashboard(
-                    store_id=str(store.get("store_id") or "").strip(),
-                    period=period,
-                    previous_start=previous_start,
-                    previous_end=previous_end,
-                )
-                for store in selected_stores
-            ]
-        ),
-    )
-    bundle["dataFlow"] = secondary["dataFlow"]
-    bundle["sku"] = secondary["sku"]
-    bundle["category"] = _attach_category_groups(secondary["category"])
-    comparison = _build_store_comparison(
-        selected_stores,
-        [
-            {
-                "storeId": str(store.get("store_id") or "").strip(),
-                "current": item["orders"],
-                "previous": item["previousOrders"],
-            }
-            for store, item in zip(selected_stores, comparison_scoped)
-        ],
-    )
+    bundle["sku"] = _build_dashboard_sku_rows(list(bundle["orders"].get("rows") or []))
+    bundle["category"] = {
+        "ok": True,
+        "rows": [],
+        "total_count": 0,
+        "category_groups": _build_dashboard_category_groups(list(bundle["orders"].get("rows") or [])),
+    }
     return {
         "ok": True,
         "context": context,
         "bundle": bundle,
-        "storeComparison": comparison,
+        "storeComparison": [],
         "freshness": {
             "today": _build_layer_freshness(period="today", response=bundle.get("today")),
             "yesterday": _build_layer_freshness(period="yesterday", response=bundle.get("yesterday")),
