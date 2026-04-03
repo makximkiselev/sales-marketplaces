@@ -92,6 +92,11 @@ def _today_response_needs_refresh(response: dict | None) -> bool:
     payload = response if isinstance(response, dict) else {}
     rows = list(payload.get("rows") or [])
     loaded_at = str(payload.get("loaded_at") or "").strip()
+    today_key = _to_iso_date(_local_date_only())
+    date_from = str(payload.get("date_from") or "").strip()
+    date_to = str(payload.get("date_to") or "").strip()
+    if date_from != today_key or date_to != today_key:
+        return True
     if rows:
         return False
     return _loaded_at_is_before_today(loaded_at) or _is_loaded_at_stale(loaded_at)
@@ -380,7 +385,12 @@ def _dashboard_cache_get(payload: dict[str, str]) -> dict | None:
         _DASHBOARD_CACHE.pop(key, None)
         return None
     data = wrapped.get("data")
-    return data if isinstance(data, dict) else None
+    if not isinstance(data, dict):
+        return None
+    if not _dashboard_response_is_usable(payload, data):
+        _DASHBOARD_CACHE.pop(key, None)
+        return None
+    return data
 
 
 def _dashboard_cache_set(payload: dict[str, str], value: dict) -> None:
@@ -415,7 +425,28 @@ def _dashboard_snapshot_get(payload: dict[str, str]) -> dict | None:
     if not isinstance(snapshot, dict):
         return None
     response = snapshot.get("response")
-    return response if isinstance(response, dict) else None
+    if not isinstance(response, dict):
+        return None
+    if not _dashboard_response_is_usable(payload, response):
+        return None
+    return response
+
+
+def _dashboard_response_is_usable(payload: dict[str, str], response: dict | None) -> bool:
+    body = response if isinstance(response, dict) else {}
+    bundle = body.get("bundle")
+    if not isinstance(bundle, dict):
+        return False
+    period = str(payload.get("period") or "").strip().lower()
+    if period == "today":
+        return not _today_response_needs_refresh(bundle.get("today") if isinstance(bundle.get("today"), dict) else None)
+    if period == "yesterday":
+        yesterday_key = _to_iso_date(_shift_date(_local_date_only(), -1))
+        payload_body = bundle.get("yesterday") if isinstance(bundle.get("yesterday"), dict) else {}
+        date_from = str(payload_body.get("date_from") or "").strip()
+        date_to = str(payload_body.get("date_to") or "").strip()
+        return date_from == yesterday_key and date_to == yesterday_key
+    return True
 
 
 def _dashboard_default_payloads() -> list[dict[str, str]]:

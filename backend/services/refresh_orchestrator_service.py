@@ -148,6 +148,11 @@ async def refresh_sales_overview_order_rows_current_month_for_store(*args, **kwa
     return await impl(*args, **kwargs)
 
 
+async def refresh_sales_overview_order_rows_today_for_store(*args, **kwargs):
+    from backend.services.yandex_united_orders_report_service import refresh_sales_overview_order_rows_today_for_store as impl
+    return await impl(*args, **kwargs)
+
+
 async def refresh_yandex_united_orders_history_for_store(*args, **kwargs):
     from backend.services.yandex_united_orders_report_service import refresh_yandex_united_orders_history_for_store as impl
     return await impl(*args, **kwargs)
@@ -976,7 +981,7 @@ async def _run_today_orders_refresh(*, store_uids: list[str] | None = None, run_
         campaign_id = str(store.get("store_id") or "").strip()
         try:
             order_rows = await asyncio.wait_for(
-                refresh_sales_overview_order_rows_current_month_for_store(store_uid=store_uid),
+                refresh_sales_overview_order_rows_today_for_store(store_uid=store_uid),
                 timeout=300,
             )
             return {
@@ -999,7 +1004,18 @@ async def _run_today_orders_refresh(*, store_uids: list[str] | None = None, run_
         stores=stores,
         task_factory=_task,
     )
+    _invalidate_sales_overview_dashboard_after_job()
     return result
+
+
+def _invalidate_sales_overview_dashboard_after_job() -> None:
+    try:
+        from backend.routers.sales_overview import invalidate_sales_overview_dashboard_cache, schedule_sales_overview_dashboard_cache_warm
+
+        invalidate_sales_overview_dashboard_cache()
+        schedule_sales_overview_dashboard_cache_warm()
+    except Exception as exc:
+        logger.warning("[refresh_orchestrator] failed to invalidate sales overview dashboard cache: %s", exc)
 
 
 async def _run_sales_reports_refresh(*, store_uids: list[str] | None = None, run_id: int | None = None) -> dict[str, Any]:
