@@ -1211,8 +1211,11 @@ async def _convert_rub_amount_for_store_currency(amount: float, *, currency_code
     return round(value / float(rate), 4)
 
 
-def _tracking_status_allowed(status: str) -> bool:
-    return _status_kind(status) in {"delivered", "open"}
+def _tracking_status_allowed(status: str, *, mode: str = "created") -> bool:
+    status_kind = _status_kind(status)
+    if str(mode or "").strip().lower() == "delivery":
+        return status_kind == "delivered"
+    return status_kind in {"delivered", "open"}
 
 
 def _service_bucket(name: str) -> str:
@@ -1313,7 +1316,7 @@ def _load_orders_scope(*, store_uid: str, item_status: str, date_from: str, date
     max_day: date | None = None
     filtered: list[dict[str, Any]] = []
     for row in row_dicts:
-        if _status_kind(str(row.get("item_status") or "")) == "ignore":
+        if not _tracking_status_allowed(str(row.get("item_status") or ""), mode=mode):
             continue
         row_day = _parse_date_any(row.get("order_created_date")) or (
             (_parse_datetime_any(row.get("order_created_at")) or None).date()
@@ -1670,9 +1673,6 @@ def _tracking_anchor_day(row: dict[str, Any], *, mode: str) -> date | None:
         delivery_day = _parse_date_any(row.get("delivery_date"))
         if delivery_day:
             return delivery_day
-        status_kind = _status_kind(str(row.get("item_status") or ""))
-        if status_kind == "open":
-            return created_day
         return None
     return created_day
 
@@ -1680,6 +1680,7 @@ def _tracking_anchor_day(row: dict[str, Any], *, mode: str) -> date | None:
 def _tracking_include_financials(
     row: dict[str, Any],
     *,
+    mode: str = "created",
     month_key: tuple[int, int],
     active_pair: tuple[int, int],
     anchor: date | None = None,
@@ -1687,6 +1688,8 @@ def _tracking_include_financials(
     status_kind = _status_kind(str(row.get("item_status") or ""))
     if status_kind == "delivered":
         return True
+    if str(mode or "").strip().lower() == "delivery":
+        return False
     if status_kind != "open":
         return False
     if month_key == active_pair:
@@ -2552,7 +2555,7 @@ async def get_sales_overview_tracking(
     for row in order_rows:
         if _is_problem_order_row(row):
             continue
-        if not _tracking_status_allowed(str(row.get("item_status") or "")):
+        if not _tracking_status_allowed(str(row.get("item_status") or ""), mode=mode):
             continue
         anchor = _tracking_anchor_day(row, mode=mode)
         if anchor:
@@ -2573,7 +2576,7 @@ async def get_sales_overview_tracking(
         if _is_problem_order_row(row):
             continue
         status_raw = str(row.get("item_status") or "")
-        if not _tracking_status_allowed(status_raw):
+        if not _tracking_status_allowed(status_raw, mode=mode):
             continue
         status_kind = _status_kind(status_raw)
         anchor = _tracking_anchor_day(row, mode=mode)
@@ -2616,7 +2619,7 @@ async def get_sales_overview_tracking(
         bucket["order_count_total"] += 1
         day_bucket["order_count_total"] += 1
 
-        include_financials = _tracking_include_financials(row, month_key=month_key, active_pair=active_pair, anchor=anchor)
+        include_financials = _tracking_include_financials(row, mode=mode, month_key=month_key, active_pair=active_pair, anchor=anchor)
         if include_financials:
             revenue = float(_num0(row.get("sale_price")))
             buyer_price = float(_num0(row.get("sale_price_with_coinvest")))
@@ -2844,7 +2847,7 @@ async def get_sales_overview_retrospective(
         if _is_problem_order_row(row):
             continue
         status_kind = _status_kind(str(row.get("item_status") or ""))
-        if status_kind == "ignore":
+        if not _tracking_status_allowed(str(row.get("item_status") or ""), mode=mode):
             continue
         anchor = _tracking_anchor_day(row, mode=mode)
         if anchor is None:
@@ -2897,7 +2900,7 @@ async def get_sales_overview_retrospective(
         if "возврат" in str(row.get("item_status") or "").lower():
             period_bucket["return_count"] += 1
 
-        if _tracking_include_financials(row, month_key=month_key, active_pair=active_pair, anchor=anchor):
+        if _tracking_include_financials(row, mode=mode, month_key=month_key, active_pair=active_pair, anchor=anchor):
             revenue = float(_num0(row.get("sale_price")))
             buyer_price = float(_num0(row.get("sale_price_with_coinvest")))
             profit = float(_num0(row.get("profit")))
