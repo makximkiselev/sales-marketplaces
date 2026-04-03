@@ -21,6 +21,7 @@ from backend.services.pricing_runtime_bridge import (
 from backend.services.store_data_model import (
     _connect,
     _connect_system,
+    _placeholders,
     create_refresh_job_run,
     delete_dashboard_snapshots,
     get_monitoring_export_snapshot,
