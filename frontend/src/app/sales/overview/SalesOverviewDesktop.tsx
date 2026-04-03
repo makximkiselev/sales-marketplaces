@@ -355,6 +355,46 @@ export function SalesOverviewDesktop({ vm }: Props) {
                             <td><div>{formatMoney(month.profit_amount, activeTrackingCurrencyCode)}</div>{month.profit_plan_amount != null ? <div className={s.trackingPlanText}>План: {formatMoney(month.profit_plan_amount, activeTrackingCurrencyCode)}</div> : null}</td>
                             <td>{formatPercent(month.profit_pct)}</td><td>{formatPercent(month.revenue && month.coinvest_amount ? (month.coinvest_amount / month.revenue) * 100 : 0)}</td><td>{formatPercent(month.returns_pct)}</td><td>{formatMoney(month.ads_amount, activeTrackingCurrencyCode)}</td><td>{formatMoney(month.operational_errors, activeTrackingCurrencyCode)}</td><td>{formatNumber(month.delivery_time_days)}</td>
                           </tr>
+                          <tr className={s.trackingDaysHostRow}>
+                            <td colSpan={9} className={s.trackingDaysHostCell}>
+                              <div className={`${s.trackingDaysWrap} ${open ? s.trackingDaysWrapOpen : ""}`}>
+                                {(month.days || []).length ? (
+                                  <table className={s.trackingDaysTable}>
+                                    <thead>
+                                      <tr>
+                                        <th className={s.nameCell}>День</th>
+                                        <th>Оборот</th>
+                                        <th>Прибыль</th>
+                                        <th>Маржинальность</th>
+                                        <th>Соинвест</th>
+                                        <th>Возвраты</th>
+                                        <th>Реклама</th>
+                                        <th>Ошибки</th>
+                                        <th>Доставка</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {(month.days || []).map((day: any) => (
+                                        <tr key={`${month.month_key}-${day.date}`}>
+                                          <td className={s.nameCell}>{formatDate(day.date)}</td>
+                                          <td>{formatMoney(day.revenue, activeTrackingCurrencyCode)}</td>
+                                          <td>{formatMoney(day.profit_amount, activeTrackingCurrencyCode)}</td>
+                                          <td>{formatPercent(day.profit_pct)}</td>
+                                          <td>{formatPercent(day.coinvest_pct)}</td>
+                                          <td>{formatPercent(day.returns_pct)}</td>
+                                          <td>{formatMoney(day.ads_amount, activeTrackingCurrencyCode)}</td>
+                                          <td>{formatMoney(day.operational_errors, activeTrackingCurrencyCode)}</td>
+                                          <td>{formatNumber(day.delivery_time_days)}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <div className={s.empty}>Внутри месяца пока нет дневных строк</div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
                         </Fragment>
                       );
                     })}
