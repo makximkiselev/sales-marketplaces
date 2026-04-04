@@ -2139,6 +2139,7 @@ def init_store_data_model() -> None:
         return
     _init_system_store_tables()
     if is_postgres_backend():
+        _init_history_tables()
         _init_store_data_model_postgres()
         _backfill_system_settings_from_legacy()
         return
