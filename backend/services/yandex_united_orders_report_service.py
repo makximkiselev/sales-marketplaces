@@ -2057,7 +2057,9 @@ def _planned_costs_for_row(row: dict[str, Any], ctx: dict[str, Any]) -> dict[str
         acquiring_raw = store_st.get("acquiring_percent")
     commission_rate = _clamp_rate(_num0(commission_raw) / 100.0)
     acquiring_rate = _clamp_rate(_num0(acquiring_raw) / 100.0)
-    ads_raw = row.get("strategy_boost_bid_percent")
+    # Use only the фактически отправленный в Маркет boost bid.
+    # tested/recommended boost is a strategy hypothesis and must not inflate order economics.
+    ads_raw = row.get("strategy_market_boost_bid_percent")
     ads_from_strategy = ads_raw not in (None, "")
     if ads_raw in (None, ""):
         ads_raw = st.get("ads_percent")
@@ -2323,7 +2325,7 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
             {
                 **row,
                 "sale_price": sale_price_raw,
-                "strategy_boost_bid_percent": strategy_boost_bid_percent,
+                "strategy_market_boost_bid_percent": strategy_market_boost_bid_percent,
             },
             plan_ctx,
         )
