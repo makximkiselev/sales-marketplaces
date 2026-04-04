@@ -342,6 +342,40 @@ def _init_history_tables() -> None:
             "CREATE INDEX IF NOT EXISTS idx_sales_overview_order_rows_store_sku "
             "ON sales_overview_order_rows(store_uid, sku)"
         )
+        overview_cols = {row["column_name"] for row in conn.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = current_schema()
+              AND table_name = 'sales_overview_order_rows'
+            """
+        ).fetchall()}
+        if "currency_code" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN currency_code TEXT NOT NULL DEFAULT 'RUB'")
+        if "fx_usd_rub_rate" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN fx_usd_rub_rate DOUBLE PRECISION NULL")
+        if "sale_price_native" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN sale_price_native DOUBLE PRECISION NULL")
+        if "gross_profit_native" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN gross_profit_native DOUBLE PRECISION NULL")
+        if "cogs_price_native" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN cogs_price_native DOUBLE PRECISION NULL")
+        if "commission_native" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN commission_native DOUBLE PRECISION NULL")
+        if "acquiring_native" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN acquiring_native DOUBLE PRECISION NULL")
+        if "delivery_native" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN delivery_native DOUBLE PRECISION NULL")
+        if "ads_native" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN ads_native DOUBLE PRECISION NULL")
+        if "tax_native" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN tax_native DOUBLE PRECISION NULL")
+        if "profit_native" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN profit_native DOUBLE PRECISION NULL")
+        if "sale_price_with_coinvest_native" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN sale_price_with_coinvest_native DOUBLE PRECISION NULL")
+        if "strategy_installed_price_native" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_installed_price_native DOUBLE PRECISION NULL")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS pricing_cogs_snapshots (
