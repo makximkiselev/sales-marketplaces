@@ -1811,6 +1811,10 @@ def _resolve_category_path_for_sku(sku: str, path_map: dict[str, dict[str, Any]]
     return leaf or "Не определено"
 
 
+def _path_parts(path: str) -> list[str]:
+    return [part.strip() for part in str(path or "").split("/") if part.strip()]
+
+
 def _is_problem_order_row(row: dict[str, Any]) -> bool:
     status_kind = _status_kind(str(row.get("item_status") or ""))
     cogs_value = row.get("cogs_price")
