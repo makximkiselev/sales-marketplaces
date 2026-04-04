@@ -1937,22 +1937,35 @@ def _init_store_data_model_postgres() -> None:
                     item_status TEXT NOT NULL DEFAULT '',
                     sku TEXT NOT NULL,
                     item_name TEXT NOT NULL DEFAULT '',
+                    currency_code TEXT NOT NULL DEFAULT 'RUB',
+                    fx_usd_rub_rate DOUBLE PRECISION NULL,
                     sale_price DOUBLE PRECISION NULL,
+                    sale_price_native DOUBLE PRECISION NULL,
                     gross_profit DOUBLE PRECISION NULL,
+                    gross_profit_native DOUBLE PRECISION NULL,
                     cogs_price DOUBLE PRECISION NULL,
+                    cogs_price_native DOUBLE PRECISION NULL,
                     commission DOUBLE PRECISION NULL,
+                    commission_native DOUBLE PRECISION NULL,
                     acquiring DOUBLE PRECISION NULL,
+                    acquiring_native DOUBLE PRECISION NULL,
                     delivery DOUBLE PRECISION NULL,
+                    delivery_native DOUBLE PRECISION NULL,
                     ads DOUBLE PRECISION NULL,
+                    ads_native DOUBLE PRECISION NULL,
                     tax DOUBLE PRECISION NULL,
+                    tax_native DOUBLE PRECISION NULL,
                     profit DOUBLE PRECISION NULL,
+                    profit_native DOUBLE PRECISION NULL,
                     sale_price_with_coinvest DOUBLE PRECISION NULL,
+                    sale_price_with_coinvest_native DOUBLE PRECISION NULL,
                     strategy_cycle_started_at TEXT NOT NULL DEFAULT '',
                     strategy_market_boost_bid_percent DOUBLE PRECISION NULL,
                     strategy_boost_share DOUBLE PRECISION NULL,
                     strategy_boost_bid_percent DOUBLE PRECISION NULL,
                     strategy_snapshot_at TEXT NOT NULL DEFAULT '',
                     strategy_installed_price DOUBLE PRECISION NULL,
+                    strategy_installed_price_native DOUBLE PRECISION NULL,
                     strategy_decision_code TEXT NOT NULL DEFAULT '',
                     strategy_decision_label TEXT NOT NULL DEFAULT '',
                     strategy_control_state TEXT NOT NULL DEFAULT '',
@@ -1981,6 +1994,40 @@ def _init_store_data_model_postgres() -> None:
                 "CREATE INDEX IF NOT EXISTS idx_sales_overview_order_rows_hot_store_sku "
                 "ON sales_overview_order_rows_hot(store_uid, sku)"
             )
+            hot_cols = {row["column_name"] for row in conn.execute(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = current_schema()
+                  AND table_name = 'sales_overview_order_rows_hot'
+                """
+            ).fetchall()}
+            if "currency_code" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN currency_code TEXT NOT NULL DEFAULT 'RUB'")
+            if "fx_usd_rub_rate" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN fx_usd_rub_rate DOUBLE PRECISION NULL")
+            if "sale_price_native" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN sale_price_native DOUBLE PRECISION NULL")
+            if "gross_profit_native" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN gross_profit_native DOUBLE PRECISION NULL")
+            if "cogs_price_native" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN cogs_price_native DOUBLE PRECISION NULL")
+            if "commission_native" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN commission_native DOUBLE PRECISION NULL")
+            if "acquiring_native" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN acquiring_native DOUBLE PRECISION NULL")
+            if "delivery_native" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN delivery_native DOUBLE PRECISION NULL")
+            if "ads_native" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN ads_native DOUBLE PRECISION NULL")
+            if "tax_native" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN tax_native DOUBLE PRECISION NULL")
+            if "profit_native" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN profit_native DOUBLE PRECISION NULL")
+            if "sale_price_with_coinvest_native" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN sale_price_with_coinvest_native DOUBLE PRECISION NULL")
+            if "strategy_installed_price_native" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN strategy_installed_price_native DOUBLE PRECISION NULL")
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS pricing_attractiveness_recommendations_raw (
@@ -2803,22 +2850,35 @@ def _init_store_data_model_sqlite_sales_tables(conn: sqlite3.Connection) -> None
             item_status TEXT NOT NULL DEFAULT '',
             sku TEXT NOT NULL,
             item_name TEXT NOT NULL DEFAULT '',
+            currency_code TEXT NOT NULL DEFAULT 'RUB',
+            fx_usd_rub_rate REAL NULL,
             sale_price REAL NULL,
+            sale_price_native REAL NULL,
             gross_profit REAL NULL,
+            gross_profit_native REAL NULL,
             cogs_price REAL NULL,
+            cogs_price_native REAL NULL,
             commission REAL NULL,
+            commission_native REAL NULL,
             acquiring REAL NULL,
+            acquiring_native REAL NULL,
             delivery REAL NULL,
+            delivery_native REAL NULL,
             ads REAL NULL,
+            ads_native REAL NULL,
             tax REAL NULL,
+            tax_native REAL NULL,
             profit REAL NULL,
+            profit_native REAL NULL,
             sale_price_with_coinvest REAL NULL,
+            sale_price_with_coinvest_native REAL NULL,
             strategy_cycle_started_at TEXT NOT NULL DEFAULT '',
             strategy_market_boost_bid_percent REAL NULL,
             strategy_boost_share REAL NULL,
             strategy_boost_bid_percent REAL NULL,
             strategy_snapshot_at TEXT NOT NULL DEFAULT '',
             strategy_installed_price REAL NULL,
+            strategy_installed_price_native REAL NULL,
             strategy_decision_code TEXT NOT NULL DEFAULT '',
             strategy_decision_label TEXT NOT NULL DEFAULT '',
             strategy_control_state TEXT NOT NULL DEFAULT '',
@@ -2837,6 +2897,32 @@ def _init_store_data_model_sqlite_sales_tables(conn: sqlite3.Connection) -> None
         """
     )
     overview_cols = {row[1] for row in conn.execute("PRAGMA table_info(sales_overview_order_rows)").fetchall()}
+    if "currency_code" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN currency_code TEXT NOT NULL DEFAULT 'RUB'")
+    if "fx_usd_rub_rate" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN fx_usd_rub_rate REAL NULL")
+    if "sale_price_native" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN sale_price_native REAL NULL")
+    if "gross_profit_native" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN gross_profit_native REAL NULL")
+    if "cogs_price_native" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN cogs_price_native REAL NULL")
+    if "commission_native" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN commission_native REAL NULL")
+    if "acquiring_native" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN acquiring_native REAL NULL")
+    if "delivery_native" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN delivery_native REAL NULL")
+    if "ads_native" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN ads_native REAL NULL")
+    if "tax_native" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN tax_native REAL NULL")
+    if "profit_native" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN profit_native REAL NULL")
+    if "sale_price_with_coinvest_native" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN sale_price_with_coinvest_native REAL NULL")
+    if "strategy_installed_price_native" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_installed_price_native REAL NULL")
     if "strategy_cycle_started_at" not in overview_cols:
         conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_cycle_started_at TEXT NOT NULL DEFAULT ''")
     if "strategy_market_boost_bid_percent" not in overview_cols:
@@ -2867,6 +2953,33 @@ def _init_store_data_model_sqlite_sales_tables(conn: sqlite3.Connection) -> None
         conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_uses_promo INTEGER NOT NULL DEFAULT 0")
     if "strategy_market_promo_status" not in overview_cols:
         conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_market_promo_status TEXT NOT NULL DEFAULT ''")
+    hot_overview_cols = {row[1] for row in conn.execute("PRAGMA table_info(sales_overview_order_rows_hot)").fetchall()}
+    if "currency_code" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN currency_code TEXT NOT NULL DEFAULT 'RUB'")
+    if "fx_usd_rub_rate" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN fx_usd_rub_rate REAL NULL")
+    if "sale_price_native" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN sale_price_native REAL NULL")
+    if "gross_profit_native" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN gross_profit_native REAL NULL")
+    if "cogs_price_native" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN cogs_price_native REAL NULL")
+    if "commission_native" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN commission_native REAL NULL")
+    if "acquiring_native" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN acquiring_native REAL NULL")
+    if "delivery_native" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN delivery_native REAL NULL")
+    if "ads_native" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN ads_native REAL NULL")
+    if "tax_native" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN tax_native REAL NULL")
+    if "profit_native" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN profit_native REAL NULL")
+    if "sale_price_with_coinvest_native" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN sale_price_with_coinvest_native REAL NULL")
+    if "strategy_installed_price_native" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN strategy_installed_price_native REAL NULL")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_sales_overview_order_rows_store_date "
         "ON sales_overview_order_rows(store_uid, order_created_date)"
@@ -6363,6 +6476,117 @@ def replace_sales_shows_boost_report_rows_for_period(
     return len(prepared)
 
 
+_SALES_OVERVIEW_ORDER_ROW_COLUMNS = (
+    "store_uid",
+    "platform",
+    "order_created_date",
+    "order_created_at",
+    "shipment_date",
+    "delivery_date",
+    "order_id",
+    "item_status",
+    "sku",
+    "item_name",
+    "currency_code",
+    "fx_usd_rub_rate",
+    "sale_price",
+    "sale_price_native",
+    "gross_profit",
+    "gross_profit_native",
+    "cogs_price",
+    "cogs_price_native",
+    "commission",
+    "commission_native",
+    "acquiring",
+    "acquiring_native",
+    "delivery",
+    "delivery_native",
+    "ads",
+    "ads_native",
+    "tax",
+    "tax_native",
+    "profit",
+    "profit_native",
+    "sale_price_with_coinvest",
+    "sale_price_with_coinvest_native",
+    "strategy_cycle_started_at",
+    "strategy_market_boost_bid_percent",
+    "strategy_boost_share",
+    "strategy_boost_bid_percent",
+    "strategy_snapshot_at",
+    "strategy_installed_price",
+    "strategy_installed_price_native",
+    "strategy_decision_code",
+    "strategy_decision_label",
+    "strategy_control_state",
+    "strategy_attractiveness_status",
+    "strategy_promo_count",
+    "strategy_coinvest_pct",
+    "strategy_selected_iteration_code",
+    "strategy_uses_promo",
+    "strategy_market_promo_status",
+    "uses_planned_costs",
+    "source_updated_at",
+    "calculated_at",
+)
+
+
+def _sales_overview_order_row_db_tuple(*, store_uid: str, row: dict[str, Any], calculated_at: str) -> tuple[Any, ...]:
+    return (
+        store_uid,
+        str(row.get("platform") or "yandex_market").strip() or "yandex_market",
+        str(row.get("order_created_date") or "").strip(),
+        str(row.get("order_created_at") or "").strip(),
+        str(row.get("shipment_date") or "").strip(),
+        str(row.get("delivery_date") or "").strip(),
+        str(row.get("order_id") or "").strip(),
+        str(row.get("item_status") or "").strip(),
+        str(row.get("sku") or "").strip(),
+        str(row.get("item_name") or "").strip(),
+        str(row.get("currency_code") or "RUB").strip().upper() or "RUB",
+        row.get("fx_usd_rub_rate"),
+        row.get("sale_price"),
+        row.get("sale_price_native"),
+        row.get("gross_profit"),
+        row.get("gross_profit_native"),
+        row.get("cogs_price"),
+        row.get("cogs_price_native"),
+        row.get("commission"),
+        row.get("commission_native"),
+        row.get("acquiring"),
+        row.get("acquiring_native"),
+        row.get("delivery"),
+        row.get("delivery_native"),
+        row.get("ads"),
+        row.get("ads_native"),
+        row.get("tax"),
+        row.get("tax_native"),
+        row.get("profit"),
+        row.get("profit_native"),
+        row.get("sale_price_with_coinvest"),
+        row.get("sale_price_with_coinvest_native"),
+        str(row.get("strategy_cycle_started_at") or "").strip(),
+        row.get("strategy_market_boost_bid_percent"),
+        row.get("strategy_boost_share"),
+        row.get("strategy_boost_bid_percent"),
+        str(row.get("strategy_snapshot_at") or "").strip(),
+        row.get("strategy_installed_price"),
+        row.get("strategy_installed_price_native"),
+        str(row.get("strategy_decision_code") or "").strip(),
+        str(row.get("strategy_decision_label") or "").strip(),
+        str(row.get("strategy_control_state") or "").strip(),
+        str(row.get("strategy_attractiveness_status") or "").strip(),
+        int(row.get("strategy_promo_count") or 0),
+        row.get("strategy_coinvest_pct"),
+        str(row.get("strategy_selected_iteration_code") or "").strip(),
+        1 if bool(row.get("strategy_uses_promo")) else 0,
+        str(row.get("strategy_market_promo_status") or "").strip(),
+        1 if bool(row.get("uses_planned_costs")) else 0,
+        str(row.get("source_updated_at") or "").strip(),
+        calculated_at,
+    )
+
+
 def replace_sales_overview_order_rows(
     *,
     store_uid: str,
@@ -6387,48 +6611,7 @@ def replace_sales_overview_order_rows(
         order_created_date = str(row.get("order_created_date") or "").strip()
         if not order_id or not sku or not order_created_date:
             continue
-        prepared.append(
-            (
-                suid,
-                str(row.get("platform") or "yandex_market").strip() or "yandex_market",
-                order_created_date,
-                str(row.get("order_created_at") or "").strip(),
-                str(row.get("shipment_date") or "").strip(),
-                str(row.get("delivery_date") or "").strip(),
-                order_id,
-                str(row.get("item_status") or "").strip(),
-                sku,
-                str(row.get("item_name") or "").strip(),
-                row.get("sale_price"),
-                row.get("gross_profit"),
-                row.get("cogs_price"),
-                row.get("commission"),
-                row.get("acquiring"),
-                row.get("delivery"),
-                row.get("ads"),
-                row.get("tax"),
-                row.get("profit"),
-                row.get("sale_price_with_coinvest"),
-                str(row.get("strategy_cycle_started_at") or "").strip(),
-                row.get("strategy_market_boost_bid_percent"),
-                row.get("strategy_boost_share"),
-                row.get("strategy_boost_bid_percent"),
-                str(row.get("strategy_snapshot_at") or "").strip(),
-                row.get("strategy_installed_price"),
-                str(row.get("strategy_decision_code") or "").strip(),
-                str(row.get("strategy_decision_label") or "").strip(),
-                str(row.get("strategy_control_state") or "").strip(),
-                str(row.get("strategy_attractiveness_status") or "").strip(),
-                int(row.get("strategy_promo_count") or 0),
-                row.get("strategy_coinvest_pct"),
-                str(row.get("strategy_selected_iteration_code") or "").strip(),
-                1 if bool(row.get("strategy_uses_promo")) else 0,
-                str(row.get("strategy_market_promo_status") or "").strip(),
-                1 if bool(row.get("uses_planned_costs")) else 0,
-                str(row.get("source_updated_at") or "").strip(),
-                now,
-            )
-        )
+        prepared.append(_sales_overview_order_row_db_tuple(store_uid=suid, row=row, calculated_at=now))
     with _connect_history() as conn:
         if replace_all:
             conn.execute(
@@ -6446,19 +6629,11 @@ def replace_sales_overview_order_rows(
                 (suid, from_date, to_date),
             )
         if prepared:
-            values_sql = _placeholders(38)
+            values_sql = _placeholders(len(_SALES_OVERVIEW_ORDER_ROW_COLUMNS))
             _executemany(conn, 
                 f"""
                 INSERT INTO sales_overview_order_rows (
-                    store_uid, platform, order_created_date, order_created_at, shipment_date, delivery_date,
-                    order_id, item_status, sku, item_name, sale_price, gross_profit, cogs_price, commission,
-                    acquiring, delivery, ads, tax, profit, sale_price_with_coinvest,
-                    strategy_cycle_started_at, strategy_market_boost_bid_percent, strategy_boost_share,
-                    strategy_boost_bid_percent, strategy_snapshot_at, strategy_installed_price,
-                    strategy_decision_code, strategy_decision_label, strategy_control_state,
-                    strategy_attractiveness_status, strategy_promo_count, strategy_coinvest_pct, strategy_selected_iteration_code,
-                    strategy_uses_promo, strategy_market_promo_status, uses_planned_costs,
-                    source_updated_at, calculated_at
+                    {", ".join(_SALES_OVERVIEW_ORDER_ROW_COLUMNS)}
                 ) VALUES ({values_sql})
                 ON CONFLICT(store_uid, order_id, sku) DO UPDATE SET
                     platform = excluded.platform,
@@ -6468,22 +6643,35 @@ def replace_sales_overview_order_rows(
                     delivery_date = excluded.delivery_date,
                     item_status = excluded.item_status,
                     item_name = excluded.item_name,
+                    currency_code = excluded.currency_code,
+                    fx_usd_rub_rate = excluded.fx_usd_rub_rate,
                     sale_price = excluded.sale_price,
+                    sale_price_native = excluded.sale_price_native,
                     gross_profit = excluded.gross_profit,
+                    gross_profit_native = excluded.gross_profit_native,
                     cogs_price = excluded.cogs_price,
+                    cogs_price_native = excluded.cogs_price_native,
                     commission = excluded.commission,
+                    commission_native = excluded.commission_native,
                     acquiring = excluded.acquiring,
+                    acquiring_native = excluded.acquiring_native,
                     delivery = excluded.delivery,
+                    delivery_native = excluded.delivery_native,
                     ads = excluded.ads,
+                    ads_native = excluded.ads_native,
                     tax = excluded.tax,
+                    tax_native = excluded.tax_native,
                     profit = excluded.profit,
+                    profit_native = excluded.profit_native,
                     sale_price_with_coinvest = excluded.sale_price_with_coinvest,
+                    sale_price_with_coinvest_native = excluded.sale_price_with_coinvest_native,
                     strategy_cycle_started_at = excluded.strategy_cycle_started_at,
                     strategy_market_boost_bid_percent = excluded.strategy_market_boost_bid_percent,
                     strategy_boost_share = excluded.strategy_boost_share,
                     strategy_boost_bid_percent = excluded.strategy_boost_bid_percent,
                     strategy_snapshot_at = excluded.strategy_snapshot_at,
                     strategy_installed_price = excluded.strategy_installed_price,
+                    strategy_installed_price_native = excluded.strategy_installed_price_native,
                     strategy_decision_code = excluded.strategy_decision_code,
                     strategy_decision_label = excluded.strategy_decision_label,
                     strategy_control_state = excluded.strategy_control_state,
@@ -6527,48 +6715,7 @@ def replace_sales_overview_order_rows_hot(
         order_created_date = str(row.get("order_created_date") or "").strip()
         if not order_id or not sku or not order_created_date:
             continue
-        prepared.append(
-            (
-                suid,
-                str(row.get("platform") or "yandex_market").strip() or "yandex_market",
-                order_created_date,
-                str(row.get("order_created_at") or "").strip(),
-                str(row.get("shipment_date") or "").strip(),
-                str(row.get("delivery_date") or "").strip(),
-                order_id,
-                str(row.get("item_status") or "").strip(),
-                sku,
-                str(row.get("item_name") or "").strip(),
-                row.get("sale_price"),
-                row.get("gross_profit"),
-                row.get("cogs_price"),
-                row.get("commission"),
-                row.get("acquiring"),
-                row.get("delivery"),
-                row.get("ads"),
-                row.get("tax"),
-                row.get("profit"),
-                row.get("sale_price_with_coinvest"),
-                str(row.get("strategy_cycle_started_at") or "").strip(),
-                row.get("strategy_market_boost_bid_percent"),
-                row.get("strategy_boost_share"),
-                row.get("strategy_boost_bid_percent"),
-                str(row.get("strategy_snapshot_at") or "").strip(),
-                row.get("strategy_installed_price"),
-                str(row.get("strategy_decision_code") or "").strip(),
-                str(row.get("strategy_decision_label") or "").strip(),
-                str(row.get("strategy_control_state") or "").strip(),
-                str(row.get("strategy_attractiveness_status") or "").strip(),
-                int(row.get("strategy_promo_count") or 0),
-                row.get("strategy_coinvest_pct"),
-                str(row.get("strategy_selected_iteration_code") or "").strip(),
-                1 if bool(row.get("strategy_uses_promo")) else 0,
-                str(row.get("strategy_market_promo_status") or "").strip(),
-                1 if bool(row.get("uses_planned_costs")) else 0,
-                str(row.get("source_updated_at") or "").strip(),
-                now,
-            )
-        )
+        prepared.append(_sales_overview_order_row_db_tuple(store_uid=suid, row=row, calculated_at=now))
     with _connect() as conn:
         if replace_all:
             conn.execute(
@@ -6586,20 +6733,12 @@ def replace_sales_overview_order_rows_hot(
                 (suid, from_date, to_date),
             )
         if prepared:
-            values_sql = _placeholders(38)
+            values_sql = _placeholders(len(_SALES_OVERVIEW_ORDER_ROW_COLUMNS))
             _executemany(
                 conn,
                 f"""
                 INSERT INTO sales_overview_order_rows_hot (
-                    store_uid, platform, order_created_date, order_created_at, shipment_date, delivery_date,
-                    order_id, item_status, sku, item_name, sale_price, gross_profit, cogs_price, commission,
-                    acquiring, delivery, ads, tax, profit, sale_price_with_coinvest,
-                    strategy_cycle_started_at, strategy_market_boost_bid_percent, strategy_boost_share,
-                    strategy_boost_bid_percent, strategy_snapshot_at, strategy_installed_price,
-                    strategy_decision_code, strategy_decision_label, strategy_control_state,
-                    strategy_attractiveness_status, strategy_promo_count, strategy_coinvest_pct, strategy_selected_iteration_code,
-                    strategy_uses_promo, strategy_market_promo_status, uses_planned_costs,
-                    source_updated_at, calculated_at
+                    {", ".join(_SALES_OVERVIEW_ORDER_ROW_COLUMNS)}
                 ) VALUES ({values_sql})
                 ON CONFLICT(store_uid, order_id, sku) DO UPDATE SET
                     platform = excluded.platform,
@@ -6609,22 +6748,35 @@ def replace_sales_overview_order_rows_hot(
                     delivery_date = excluded.delivery_date,
                     item_status = excluded.item_status,
                     item_name = excluded.item_name,
+                    currency_code = excluded.currency_code,
+                    fx_usd_rub_rate = excluded.fx_usd_rub_rate,
                     sale_price = excluded.sale_price,
+                    sale_price_native = excluded.sale_price_native,
                     gross_profit = excluded.gross_profit,
+                    gross_profit_native = excluded.gross_profit_native,
                     cogs_price = excluded.cogs_price,
+                    cogs_price_native = excluded.cogs_price_native,
                     commission = excluded.commission,
+                    commission_native = excluded.commission_native,
                     acquiring = excluded.acquiring,
+                    acquiring_native = excluded.acquiring_native,
                     delivery = excluded.delivery,
+                    delivery_native = excluded.delivery_native,
                     ads = excluded.ads,
+                    ads_native = excluded.ads_native,
                     tax = excluded.tax,
+                    tax_native = excluded.tax_native,
                     profit = excluded.profit,
+                    profit_native = excluded.profit_native,
                     sale_price_with_coinvest = excluded.sale_price_with_coinvest,
+                    sale_price_with_coinvest_native = excluded.sale_price_with_coinvest_native,
                     strategy_cycle_started_at = excluded.strategy_cycle_started_at,
                     strategy_market_boost_bid_percent = excluded.strategy_market_boost_bid_percent,
                     strategy_boost_share = excluded.strategy_boost_share,
                     strategy_boost_bid_percent = excluded.strategy_boost_bid_percent,
                     strategy_snapshot_at = excluded.strategy_snapshot_at,
                     strategy_installed_price = excluded.strategy_installed_price,
+                    strategy_installed_price_native = excluded.strategy_installed_price_native,
                     strategy_decision_code = excluded.strategy_decision_code,
                     strategy_decision_label = excluded.strategy_decision_label,
                     strategy_control_state = excluded.strategy_control_state,
@@ -6658,25 +6810,7 @@ def _load_sales_overview_order_rows_combined(
     if not suid:
         return []
     sku_list = [str(sku or "").strip() for sku in (skus or []) if str(sku or "").strip()]
-    current_month_start = _current_month_start_iso()
     merged: dict[tuple[str, str], dict[str, Any]] = {}
-    history_sql = f"""
-        SELECT *
-        FROM sales_overview_order_rows
-        WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
-          AND order_created_date < {'%s' if is_postgres_backend() else '?'}
-    """
-    history_params: list[Any] = [suid, current_month_start]
-    if sku_list:
-        history_sql += f" AND sku IN ({_placeholders(len(sku_list))})"
-        history_params.extend(sku_list)
-    with _connect_history() as conn:
-        rows = conn.execute(history_sql, tuple(history_params)).fetchall()
-    for row in rows:
-        item = dict(row)
-        key = (str(item.get("order_id") or "").strip(), str(item.get("sku") or "").strip())
-        if all(key):
-            merged[key] = item
     try:
         hot_sql = f"""
             SELECT *
@@ -6696,6 +6830,22 @@ def _load_sales_overview_order_rows_combined(
                 merged[key] = item
     except Exception:
         pass
+    history_sql = f"""
+        SELECT *
+        FROM sales_overview_order_rows
+        WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
+    """
+    history_params: list[Any] = [suid]
+    if sku_list:
+        history_sql += f" AND sku IN ({_placeholders(len(sku_list))})"
+        history_params.extend(sku_list)
+    with _connect_history() as conn:
+        history_rows = conn.execute(history_sql, tuple(history_params)).fetchall()
+    for row in history_rows:
+        item = dict(row)
+        key = (str(item.get("order_id") or "").strip(), str(item.get("sku") or "").strip())
+        if all(key):
+            merged[key] = item
     return list(merged.values())
 
 

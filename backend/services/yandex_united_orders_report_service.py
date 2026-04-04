@@ -919,15 +919,11 @@ async def refresh_sales_overview_history(
             continue
         built = await _build_sales_overview_order_rows_for_store(store_uid=store_uid)
         built_rows = list(built.get("rows") or [])
-        history_rows = [row for row in built_rows if str(row.get("order_created_date") or "").strip() < month_start]
-        hot_rows = [row for row in built_rows if str(row.get("order_created_date") or "").strip() >= month_start]
+        history_rows, hot_rows = _split_materialized_rows_by_lifecycle(built_rows)
         rebuilt_rows = replace_sales_overview_order_rows(store_uid=store_uid, rows=history_rows)
         replace_sales_overview_order_rows_hot(
             store_uid=store_uid,
             rows=hot_rows,
-            replace_all=False,
-            date_from=month_start,
-            date_to=datetime.now(MSK).date().isoformat(),
         )
         pruned_cogs_rows = prune_pricing_cogs_snapshots_for_store(store_uid=store_uid, keep_recent_days=3)
         rebuilt.append({"store_uid": store_uid, "rows": rebuilt_rows, "pruned_cogs_rows": pruned_cogs_rows})
@@ -944,18 +940,12 @@ async def refresh_sales_overview_history(
 
 async def refresh_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[str, Any]:
     built = await _build_sales_overview_order_rows_for_store(store_uid=store_uid)
-    month_start = datetime.now(MSK).date().replace(day=1).isoformat()
-    today_key = datetime.now(MSK).date().isoformat()
     built_rows = list(built.get("rows") or [])
-    history_rows = [row for row in built_rows if str(row.get("order_created_date") or "").strip() < month_start]
-    hot_rows = [row for row in built_rows if str(row.get("order_created_date") or "").strip() >= month_start]
+    history_rows, hot_rows = _split_materialized_rows_by_lifecycle(built_rows)
     rows_count = replace_sales_overview_order_rows(store_uid=store_uid, rows=history_rows)
     replace_sales_overview_order_rows_hot(
         store_uid=store_uid,
         rows=hot_rows,
-        replace_all=False,
-        date_from=month_start,
-        date_to=today_key,
     )
     pruned_cogs_rows = prune_pricing_cogs_snapshots_for_store(store_uid=store_uid, keep_recent_days=3)
     return {"ok": True, "store_uid": store_uid, "rows": rows_count, "pruned_cogs_rows": pruned_cogs_rows}
@@ -977,13 +967,22 @@ async def refresh_sales_overview_order_rows_current_month_for_store(*, store_uid
         except Exception:
             pass
     built = await _build_sales_overview_order_rows_for_store(store_uid=store_uid)
-    rows = [
-        row for row in list(built.get("rows") or [])
+    scoped_rows = [
+        row
+        for row in list(built.get("rows") or [])
         if month_start <= str(row.get("order_created_date") or "").strip() <= today_key
     ]
+    history_rows, hot_rows = _split_materialized_rows_by_lifecycle(scoped_rows)
+    replace_sales_overview_order_rows(
+        store_uid=store_uid,
+        rows=history_rows,
+        replace_all=False,
+        date_from=month_start,
+        date_to=today_key,
+    )
     rows_count = replace_sales_overview_order_rows_hot(
         store_uid=store_uid,
-        rows=rows,
+        rows=hot_rows,
         replace_all=False,
         date_from=month_start,
         date_to=today_key,
@@ -1014,13 +1013,22 @@ async def refresh_sales_overview_order_rows_today_for_store(*, store_uid: str) -
         except Exception:
             pass
     built = await _build_sales_overview_order_rows_for_store(store_uid=store_uid)
-    rows = [
-        row for row in list(built.get("rows") or [])
+    scoped_rows = [
+        row
+        for row in list(built.get("rows") or [])
         if str(row.get("order_created_date") or "").strip() == today_key
     ]
+    history_rows, hot_rows = _split_materialized_rows_by_lifecycle(scoped_rows)
+    replace_sales_overview_order_rows(
+        store_uid=store_uid,
+        rows=history_rows,
+        replace_all=False,
+        date_from=today_key,
+        date_to=today_key,
+    )
     rows_count = replace_sales_overview_order_rows_hot(
         store_uid=store_uid,
-        rows=rows,
+        rows=hot_rows,
         replace_all=False,
         date_from=today_key,
         date_to=today_key,
@@ -1194,9 +1202,30 @@ def _status_kind(status: str) -> str:
     return "other"
 
 
+def _is_history_status_kind(status_kind: str) -> bool:
+    return str(status_kind or "").strip().lower() in {"delivered", "return"}
+
+
 def _abs_amount(value: Any) -> float:
     num = _parse_decimal(value)
     return round(abs(float(num or 0.0)), 4)
+
+
+async def _convert_store_amount_to_rub(amount: float | None, *, currency_code: str, fx_rate: float | None = None, calc_date: date | None) -> float | None:
+    if amount in (None, ""):
+        return None
+    value = float(amount or 0.0)
+    code = str(currency_code or "RUB").strip().upper() or "RUB"
+    if code != "USD":
+        return round(value, 4)
+    rate = float(fx_rate or 0.0)
+    if rate <= 0:
+        rate_day = calc_date or _today_msk()
+        fresh_rate = await _get_cbr_usd_rub_rate_for_date(rate_day)
+        rate = float(fresh_rate or 0.0)
+    if rate <= 0:
+        return round(value, 4)
+    return round(value * rate, 4)
 
 
 async def _convert_rub_amount_for_store_currency(amount: float, *, currency_code: str, calc_date: date | None) -> float:
@@ -1209,6 +1238,20 @@ async def _convert_rub_amount_for_store_currency(amount: float, *, currency_code
     if not rate or rate <= 0:
         return round(value, 4)
     return round(value / float(rate), 4)
+
+
+def _split_materialized_rows_by_lifecycle(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    history_rows: list[dict[str, Any]] = []
+    hot_rows: list[dict[str, Any]] = []
+    for row in rows or []:
+        status_kind = _status_kind(str((row or {}).get("item_status") or ""))
+        if status_kind == "ignore":
+            continue
+        if _is_history_status_kind(status_kind):
+            history_rows.append(row)
+        else:
+            hot_rows.append(row)
+    return history_rows, hot_rows
 
 
 def _tracking_status_allowed(status: str, *, mode: str = "created") -> bool:
@@ -1256,6 +1299,41 @@ def _resolve_acquiring_amount(fact: dict[str, Any], planned: dict[str, Any]) -> 
     if planned_acquiring > 0:
         return planned_acquiring, True
     return round(transfer + acceptance, 4), False
+
+
+async def _resolve_cost_amount_pair(
+    *,
+    fact_rub: float | None,
+    planned_native: float | None,
+    currency_code: str,
+    fx_rate: float | None,
+    calc_date: date | None,
+    allow_planned: bool = True,
+    default_zero: bool = False,
+) -> tuple[float | None, float | None, bool]:
+    if fact_rub not in (None, 0, 0.0):
+        rub_value = round(float(fact_rub), 4)
+        if str(currency_code or "RUB").strip().upper() == "USD" and float(fx_rate or 0.0) > 0:
+            native_value = round(rub_value / float(fx_rate), 4)
+        else:
+            native_value = await _convert_rub_amount_for_store_currency(
+                rub_value,
+                currency_code=currency_code,
+                calc_date=calc_date,
+            )
+        return rub_value, native_value, False
+    if allow_planned and planned_native not in (None, 0, 0.0):
+        native_value = round(float(planned_native), 4)
+        rub_value = await _convert_store_amount_to_rub(
+            native_value,
+            currency_code=currency_code,
+            fx_rate=fx_rate,
+            calc_date=calc_date,
+        )
+        return rub_value, native_value, True
+    if default_zero:
+        return 0.0, 0.0, False
+    return None, None, False
 
 
 def _load_orders_scope(*, store_uid: str, item_status: str, date_from: str, date_to: str) -> tuple[list[dict[str, Any]], list[str], str, str, str]:
@@ -1624,24 +1702,7 @@ def _snapshot_fallback_metrics(*, store_uid: str, orders: list[dict[str, Any]]) 
 
 def _load_sales_overview_order_fact_rows(*, store_uid: str) -> list[dict[str, Any]]:
     ph = "%s" if is_postgres_backend() else "?"
-    month_start = datetime.now(MSK).date().replace(day=1).isoformat()
     merged: dict[tuple[str, str], dict[str, Any]] = {}
-    with _connect_history() as conn:
-        rows = conn.execute(
-            f"""
-            SELECT *
-            FROM sales_overview_order_rows
-            WHERE store_uid = {ph}
-              AND order_created_date < {ph}
-            ORDER BY COALESCE(order_created_at, order_created_date) ASC, order_id ASC
-            """,
-            (store_uid, month_start),
-        ).fetchall()
-    for row in rows:
-        item = dict(row)
-        key = (str(item.get("order_id") or "").strip(), str(item.get("sku") or "").strip())
-        if all(key):
-            merged[key] = item
     try:
         with _connect() as conn:
             hot_rows = conn.execute(
@@ -1660,6 +1721,21 @@ def _load_sales_overview_order_fact_rows(*, store_uid: str) -> list[dict[str, An
                 merged[key] = item
     except Exception:
         pass
+    with _connect_history() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT *
+            FROM sales_overview_order_rows
+            WHERE store_uid = {ph}
+            ORDER BY COALESCE(order_created_at, order_created_date) ASC, order_id ASC
+            """,
+            (store_uid,),
+        ).fetchall()
+    for row in rows:
+        item = dict(row)
+        key = (str(item.get("order_id") or "").strip(), str(item.get("sku") or "").strip())
+        if all(key):
+            merged[key] = item
     result = list(merged.values())
     result.sort(key=lambda item: (str(item.get("order_created_at") or item.get("order_created_date") or ""), str(item.get("order_id") or ""), str(item.get("sku") or "")))
     return result
@@ -2120,11 +2196,7 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
             continue
         bucket = _service_bucket(str(payload.get("offerOrServiceName") or ""))
         trans_dt = _parse_datetime_any(payload.get("transactionDate"))
-        amount = await _convert_rub_amount_for_store_currency(
-            _abs_amount(payload.get("transactionSum")),
-            currency_code=currency_code,
-            calc_date=trans_dt.astimezone(MSK).date() if trans_dt else None,
-        )
+        amount = _abs_amount(payload.get("transactionSum"))
         if not bucket or amount <= 0 or bucket in {"extra_ads", "operational_error"}:
             continue
         order_id = str(payload.get("orderId") or payload.get("shopOrderId") or "").strip()
@@ -2190,34 +2262,35 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
         if raw_cogs is None:
             raw_cogs = cogs_map.get((_normalize_order_key(order_id), ""))
         used_snapshot_cogs = False
-        cogs_value: float | None = float(raw_cogs) if raw_cogs is not None else None
+        cogs_value_rub: float | None = float(raw_cogs) if raw_cogs is not None else None
         strict_order_cogs_for_delivered = bool(source_id) and status_kind == "delivered"
         # For HOT/open orders we want the latest known SKU cogs, not a stale
         # hourly snapshot taken before the order was created.
-        if cogs_value is None and status_kind == "open":
-            cogs_value = snapshot_latest_by_sku.get(sku_key)
-            used_snapshot_cogs = cogs_value is not None
-        if cogs_value is None and not strict_order_cogs_for_delivered:
-            cogs_value = snapshot_cogs.get((order_id, sku_key))
-            used_snapshot_cogs = cogs_value is not None
-        if cogs_value is None and status_kind == "delivered" and not strict_order_cogs_for_delivered:
+        if cogs_value_rub is None and status_kind == "open":
+            cogs_value_rub = snapshot_latest_by_sku.get(sku_key)
+            used_snapshot_cogs = cogs_value_rub is not None
+        if cogs_value_rub is None and not strict_order_cogs_for_delivered:
+            cogs_value_rub = snapshot_cogs.get((order_id, sku_key))
+            used_snapshot_cogs = cogs_value_rub is not None
+        if cogs_value_rub is None and status_kind == "delivered" and not strict_order_cogs_for_delivered:
             calc_day = str((row or {}).get("order_created_date") or "").strip()
-            cogs_value = snapshot_day_avg.get(calc_day)
-            used_snapshot_cogs = cogs_value is not None
-        if cogs_value is None and not strict_order_cogs_for_delivered:
-            cogs_value = snapshot_latest_by_sku.get(sku_key)
-            used_snapshot_cogs = cogs_value is not None
+            cogs_value_rub = snapshot_day_avg.get(calc_day)
+            used_snapshot_cogs = cogs_value_rub is not None
+        if cogs_value_rub is None and not strict_order_cogs_for_delivered:
+            cogs_value_rub = snapshot_latest_by_sku.get(sku_key)
+            used_snapshot_cogs = cogs_value_rub is not None
         calc_date = _parse_date_any((row or {}).get("order_created_date")) or (
             (_parse_datetime_any((row or {}).get("order_created_at")) or datetime.now(MSK)).date()
         )
-        if cogs_value is not None:
-            cogs_value = await _convert_rub_amount_for_store_currency(
-                float(cogs_value),
-                currency_code=currency_code,
-                calc_date=calc_date,
-            )
-        if cogs_value is not None:
+        fx_usd_rub_rate = 1.0 if currency_code != "USD" else float(await _get_cbr_usd_rub_rate_for_date(calc_date) or 0.0)
+        if cogs_value_rub is not None:
             matched += 1
+        cogs_value = round(float(cogs_value_rub or 0.0), 4) if cogs_value_rub is not None else None
+        cogs_value_native = await _convert_rub_amount_for_store_currency(
+            float(cogs_value_rub or 0.0),
+            currency_code=currency_code,
+            calc_date=calc_date,
+        ) if cogs_value_rub is not None else None
         key = (order_id, sku_key)
         fact = dict(actual_costs.get(key) or actual_costs.get((order_id, "")) or {})
         if order_id in order_level_costs and order_line_counts.get(order_id):
@@ -2241,8 +2314,26 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
                 sale_price_with_coinvest_raw = round(float(sale_price_raw) * (1.0 - coinvest_rate), 4)
             elif sale_price_raw is not None and sale_price_raw > 0:
                 sale_price_with_coinvest_raw = sale_price_raw
-        sale_price = float(sale_price_raw or 0.0)
-        sale_price_with_coinvest = float(sale_price_with_coinvest_raw or sale_price_raw or 0.0)
+        sale_price_native = float(sale_price_raw or 0.0)
+        sale_price_with_coinvest_native = float(sale_price_with_coinvest_raw or sale_price_raw or 0.0)
+        sale_price = float(await _convert_store_amount_to_rub(
+            sale_price_native,
+            currency_code=currency_code,
+            fx_rate=fx_usd_rub_rate,
+            calc_date=calc_date,
+        ) or 0.0)
+        sale_price_with_coinvest = float(await _convert_store_amount_to_rub(
+            sale_price_with_coinvest_native,
+            currency_code=currency_code,
+            fx_rate=fx_usd_rub_rate,
+            calc_date=calc_date,
+        ) or 0.0)
+        strategy_installed_price_rub = await _convert_store_amount_to_rub(
+            strategy_installed_price,
+            currency_code=currency_code,
+            fx_rate=fx_usd_rub_rate,
+            calc_date=calc_date,
+        )
         planned = _planned_costs_for_row(
             {
                 **row,
@@ -2253,44 +2344,117 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
         )
         planned_ads_from_strategy = bool(planned.get("ads_from_strategy"))
         if status_kind == "delivered":
-            used_planned_commission = fact.get("commission") in (None, 0, 0.0) and planned.get("commission") not in (None, 0, 0.0)
-            acquiring_amount, used_planned_acquiring = _resolve_acquiring_amount(fact, planned)
-            used_planned_delivery = fact.get("delivery") in (None, 0, 0.0) and planned.get("delivery") not in (None, 0, 0.0)
-            commission = fact.get("commission") if fact.get("commission") not in (None, 0, 0.0) else planned.get("commission")
-            acquiring = acquiring_amount if acquiring_amount > 0 else None
-            delivery = fact.get("delivery") if fact.get("delivery") not in (None, 0, 0.0) else planned.get("delivery")
-            used_planned_ads = fact.get("ads") in (None, 0, 0.0) and planned_ads_from_strategy and planned.get("ads") not in (None, 0, 0.0)
-            ads = fact.get("ads") if fact.get("ads") not in (None, 0, 0.0) else (planned.get("ads") if used_planned_ads else 0.0)
-            tax = planned.get("tax")
+            commission, commission_native, used_planned_commission = await _resolve_cost_amount_pair(
+                fact_rub=fact.get("commission"),
+                planned_native=planned.get("commission"),
+                currency_code=currency_code,
+                fx_rate=fx_usd_rub_rate,
+                calc_date=calc_date,
+            )
+            acquiring, acquiring_native, used_planned_acquiring = await _resolve_cost_amount_pair(
+                fact_rub=fact.get("acquiring_transfer") if fact.get("acquiring_transfer") not in (None, 0, 0.0) or fact.get("acquiring_acceptance") not in (None, 0, 0.0) else None,
+                planned_native=planned.get("acquiring"),
+                currency_code=currency_code,
+                fx_rate=fx_usd_rub_rate,
+                calc_date=calc_date,
+            )
+            if acquiring in (None, 0, 0.0):
+                combined_acquiring_rub = round(float(fact.get("acquiring_transfer") or 0.0) + float(fact.get("acquiring_acceptance") or 0.0), 4)
+                if combined_acquiring_rub > 0:
+                    acquiring, acquiring_native, used_planned_acquiring = await _resolve_cost_amount_pair(
+                        fact_rub=combined_acquiring_rub,
+                        planned_native=planned.get("acquiring"),
+                        currency_code=currency_code,
+                        fx_rate=fx_usd_rub_rate,
+                        calc_date=calc_date,
+                    )
+            delivery, delivery_native, used_planned_delivery = await _resolve_cost_amount_pair(
+                fact_rub=fact.get("delivery"),
+                planned_native=planned.get("delivery"),
+                currency_code=currency_code,
+                fx_rate=fx_usd_rub_rate,
+                calc_date=calc_date,
+            )
+            ads, ads_native, used_planned_ads = await _resolve_cost_amount_pair(
+                fact_rub=fact.get("ads"),
+                planned_native=planned.get("ads") if planned_ads_from_strategy else None,
+                currency_code=currency_code,
+                fx_rate=fx_usd_rub_rate,
+                calc_date=calc_date,
+                default_zero=True,
+            )
+            tax = await _convert_store_amount_to_rub(planned.get("tax"), currency_code=currency_code, fx_rate=fx_usd_rub_rate, calc_date=calc_date)
+            tax_native = planned.get("tax")
             uses_planned_costs = bool(cogs_value is None) or used_snapshot_cogs or used_planned_commission or used_planned_acquiring or used_planned_delivery or used_planned_ads
         elif status_kind == "return":
-            acquiring_amount, used_planned_acquiring = _resolve_acquiring_amount(fact, planned)
-            used_planned_delivery = fact.get("delivery") in (None, 0, 0.0) and planned.get("delivery") not in (None, 0, 0.0)
             commission = None
-            acquiring = acquiring_amount if acquiring_amount > 0 else None
-            delivery = fact.get("delivery") if fact.get("delivery") not in (None, 0, 0.0) else planned.get("delivery")
+            commission_native = None
+            acquiring, acquiring_native, used_planned_acquiring = await _resolve_cost_amount_pair(
+                fact_rub=round(float(fact.get("acquiring_transfer") or 0.0) + float(fact.get("acquiring_acceptance") or 0.0), 4),
+                planned_native=planned.get("acquiring"),
+                currency_code=currency_code,
+                fx_rate=fx_usd_rub_rate,
+                calc_date=calc_date,
+            )
+            delivery, delivery_native, used_planned_delivery = await _resolve_cost_amount_pair(
+                fact_rub=fact.get("delivery"),
+                planned_native=planned.get("delivery"),
+                currency_code=currency_code,
+                fx_rate=fx_usd_rub_rate,
+                calc_date=calc_date,
+            )
             ads = None
-            tax = planned.get("tax")
+            ads_native = None
+            tax = await _convert_store_amount_to_rub(planned.get("tax"), currency_code=currency_code, fx_rate=fx_usd_rub_rate, calc_date=calc_date)
+            tax_native = planned.get("tax")
             uses_planned_costs = bool(cogs_value is None) or used_snapshot_cogs or used_planned_acquiring or used_planned_delivery
         elif status_kind == "open":
-            commission = planned.get("commission")
-            acquiring = planned.get("acquiring")
-            delivery = planned.get("delivery")
-            ads = planned.get("ads")
-            tax = planned.get("tax")
+            commission = await _convert_store_amount_to_rub(planned.get("commission"), currency_code=currency_code, fx_rate=fx_usd_rub_rate, calc_date=calc_date)
+            commission_native = planned.get("commission")
+            acquiring = await _convert_store_amount_to_rub(planned.get("acquiring"), currency_code=currency_code, fx_rate=fx_usd_rub_rate, calc_date=calc_date)
+            acquiring_native = planned.get("acquiring")
+            delivery = await _convert_store_amount_to_rub(planned.get("delivery"), currency_code=currency_code, fx_rate=fx_usd_rub_rate, calc_date=calc_date)
+            delivery_native = planned.get("delivery")
+            ads = await _convert_store_amount_to_rub(planned.get("ads"), currency_code=currency_code, fx_rate=fx_usd_rub_rate, calc_date=calc_date)
+            ads_native = planned.get("ads")
+            tax = await _convert_store_amount_to_rub(planned.get("tax"), currency_code=currency_code, fx_rate=fx_usd_rub_rate, calc_date=calc_date)
+            tax_native = planned.get("tax")
             uses_planned_costs = True
         else:
-            used_planned_commission = fact.get("commission") in (None, 0, 0.0) and planned.get("commission") not in (None, 0, 0.0)
-            acquiring_amount, used_planned_acquiring = _resolve_acquiring_amount(fact, planned)
-            used_planned_delivery = fact.get("delivery") in (None, 0, 0.0) and planned.get("delivery") not in (None, 0, 0.0)
-            commission = fact.get("commission") if fact.get("commission") not in (None, 0, 0.0) else planned.get("commission")
-            acquiring = acquiring_amount if acquiring_amount > 0 else None
-            delivery = fact.get("delivery") if fact.get("delivery") not in (None, 0, 0.0) else planned.get("delivery")
-            used_planned_ads = fact.get("ads") in (None, 0, 0.0) and planned_ads_from_strategy and planned.get("ads") not in (None, 0, 0.0)
-            ads = fact.get("ads") if fact.get("ads") not in (None, 0, 0.0) else (planned.get("ads") if used_planned_ads else 0.0)
-            tax = planned.get("tax")
+            commission, commission_native, used_planned_commission = await _resolve_cost_amount_pair(
+                fact_rub=fact.get("commission"),
+                planned_native=planned.get("commission"),
+                currency_code=currency_code,
+                fx_rate=fx_usd_rub_rate,
+                calc_date=calc_date,
+            )
+            acquiring, acquiring_native, used_planned_acquiring = await _resolve_cost_amount_pair(
+                fact_rub=round(float(fact.get("acquiring_transfer") or 0.0) + float(fact.get("acquiring_acceptance") or 0.0), 4),
+                planned_native=planned.get("acquiring"),
+                currency_code=currency_code,
+                fx_rate=fx_usd_rub_rate,
+                calc_date=calc_date,
+            )
+            delivery, delivery_native, used_planned_delivery = await _resolve_cost_amount_pair(
+                fact_rub=fact.get("delivery"),
+                planned_native=planned.get("delivery"),
+                currency_code=currency_code,
+                fx_rate=fx_usd_rub_rate,
+                calc_date=calc_date,
+            )
+            ads, ads_native, used_planned_ads = await _resolve_cost_amount_pair(
+                fact_rub=fact.get("ads"),
+                planned_native=planned.get("ads") if planned_ads_from_strategy else None,
+                currency_code=currency_code,
+                fx_rate=fx_usd_rub_rate,
+                calc_date=calc_date,
+                default_zero=True,
+            )
+            tax = await _convert_store_amount_to_rub(planned.get("tax"), currency_code=currency_code, fx_rate=fx_usd_rub_rate, calc_date=calc_date)
+            tax_native = planned.get("tax")
             uses_planned_costs = bool(cogs_value is None) or used_snapshot_cogs or used_planned_commission or used_planned_acquiring or used_planned_delivery or used_planned_ads
         gross_profit = round(sale_price - float(cogs_value or 0.0), 2)
+        gross_profit_native = round(float(sale_price_native or 0.0) - float(cogs_value_native or 0.0), 2)
         profit = round(
             sale_price
             - float(cogs_value or 0.0)
@@ -2299,6 +2463,16 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
             - float(delivery or 0.0)
             - float(ads or 0.0)
             - float(tax or 0.0),
+            2,
+        )
+        profit_native = round(
+            float(sale_price_native or 0.0)
+            - float(cogs_value_native or 0.0)
+            - float(commission_native or 0.0)
+            - float(acquiring_native or 0.0)
+            - float(delivery_native or 0.0)
+            - float(ads_native or 0.0)
+            - float(tax_native or 0.0),
             2,
         )
         materialized_rows.append(
@@ -2316,22 +2490,35 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
                 "item_status": str((row or {}).get("item_status") or "").strip(),
                 "sku": sku_key,
                 "item_name": str((row or {}).get("item_name") or "").strip(),
-                "sale_price": billing_price,
+                "currency_code": currency_code,
+                "fx_usd_rub_rate": fx_usd_rub_rate if currency_code == "USD" and fx_usd_rub_rate > 0 else 1.0,
+                "sale_price": sale_price,
+                "sale_price_native": sale_price_native,
                 "gross_profit": gross_profit,
+                "gross_profit_native": gross_profit_native,
                 "cogs_price": cogs_value,
+                "cogs_price_native": cogs_value_native,
                 "commission": commission,
+                "commission_native": commission_native,
                 "acquiring": acquiring,
+                "acquiring_native": acquiring_native,
                 "delivery": delivery,
+                "delivery_native": delivery_native,
                 "ads": ads,
+                "ads_native": ads_native,
                 "tax": tax,
+                "tax_native": tax_native,
                 "profit": profit,
+                "profit_native": profit_native,
                 "sale_price_with_coinvest": sale_price_with_coinvest,
+                "sale_price_with_coinvest_native": sale_price_with_coinvest_native,
                 "strategy_cycle_started_at": strategy_cycle_started_at,
                 "strategy_market_boost_bid_percent": strategy_market_boost_bid_percent,
                 "strategy_boost_share": strategy_boost_share,
                 "strategy_boost_bid_percent": strategy_boost_bid_percent,
                 "strategy_snapshot_at": strategy_snapshot_at,
-                "strategy_installed_price": strategy_installed_price,
+                "strategy_installed_price": strategy_installed_price_rub,
+                "strategy_installed_price_native": strategy_installed_price,
                 "strategy_decision_code": strategy_decision_code,
                 "strategy_decision_label": strategy_decision_label,
                 "strategy_control_state": strategy_control_state,
@@ -2544,11 +2731,7 @@ async def get_sales_overview_tracking(
 
         store_extra_ads_by_day = _load_extra_ads_scope(store_uid=store_uid, date_from="1900-01-01", date_to="2999-12-31")
         for day_key, extra_amount in (store_extra_ads_by_day or {}).items():
-            amount = await _convert_rub_amount_for_store_currency(
-                float(extra_amount or 0.0),
-                currency_code=store_currency_code,
-                calc_date=_parse_date_any(day_key),
-            )
+            amount = float(extra_amount or 0.0)
             extra_ads_by_day[day_key] = round(float(extra_ads_by_day.get(day_key, 0.0)) + amount, 4)
 
         netting_rows = _load_netting_scope(store_uid=store_uid, date_from="1900-01-01", date_to="2999-12-31")
@@ -2562,11 +2745,7 @@ async def get_sales_overview_tracking(
             if not trans_dt:
                 continue
             day_key = trans_dt.astimezone(MSK).date().isoformat()
-            amount = await _convert_rub_amount_for_store_currency(
-                _abs_amount(payload.get("transactionSum")),
-                currency_code=store_currency_code,
-                calc_date=trans_dt.astimezone(MSK).date(),
-            )
+            amount = _abs_amount(payload.get("transactionSum"))
             operational_errors_by_day[day_key] = round(float(operational_errors_by_day.get(day_key, 0.0)) + amount, 4)
 
     if not order_rows:
