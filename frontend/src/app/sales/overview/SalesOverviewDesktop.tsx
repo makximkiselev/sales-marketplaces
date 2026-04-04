@@ -494,12 +494,12 @@ export function SalesOverviewDesktop({ vm }: Props) {
           <PageSectionTitle title="Категории во времени" meta={`Рядов: ${formatNumber(categoryRetrospective?.total_count)}`} />
           <div className={s.tableWrap}>
             <table className={s.table}>
-              <thead><tr><th className={s.nameCell}>Категория</th><th className={s.nameCell}>Родитель</th><th>Оборот</th><th>Прибыль</th><th>Маржинальность</th><th>Соинвест</th><th>Возвраты</th><th>Периоды</th></tr></thead>
+              <thead><tr><th className={s.nameCell}>Категория</th><th className={s.nameCell}>Родитель</th><th>Оборот</th><th>Средний соинвест</th><th>Прибыль</th><th>Маржинальность</th><th>Периоды</th></tr></thead>
               <tbody>
-                {categoryRows.length === 0 ? <tr><td colSpan={8} className={s.empty}>Нет данных по категориям</td></tr> : categoryRows.map((row: any) => (
+                {categoryRows.length === 0 ? <tr><td colSpan={7} className={s.empty}>Нет данных по категориям</td></tr> : categoryRows.map((row: any) => (
                   <tr key={row.key}>
-                    <td className={s.nameCell}>{row.label || row.category_path || "—"}</td><td className={s.nameCell}>{row.category_parent_path || "—"}</td><td>{formatMoney(row.revenue, "RUB")}</td><td>{formatMoney(row.profit_amount, "RUB")}</td><td>{formatPercent(row.profit_pct)}</td><td>{formatMoney(row.coinvest_amount, "RUB")}</td><td>{formatPercent(row.returns_pct)}</td>
-                    <td className={s.nameCell}>{(row.periods || []).slice(0, 4).map((period: any) => <div key={`${row.key}-${period.period_key}`} className={s.subtleText}>{period.period_label}: {formatMoney(period.revenue, "RUB")} / {formatMoney(period.profit_amount, "RUB")}</div>)}</td>
+                    <td className={s.nameCell}>{row.label || row.category_path || "—"}</td><td className={s.nameCell}>{row.category_parent_path || "—"}</td><td>{formatMoney(row.revenue, "RUB")}</td><td>{formatPercent(row.coinvest_pct)}</td><td>{formatMoney(row.profit_amount, "RUB")}</td><td>{formatPercent(row.profit_pct)}</td>
+                    <td className={s.nameCell}>{(row.periods || []).slice(0, 4).map((period: any) => <div key={`${row.key}-${period.period_key}`} className={s.subtleText}>{period.period_label}: {formatMoney(period.revenue, "RUB")} / {formatPercent(period.coinvest_pct)} / {formatMoney(period.profit_amount, "RUB")}</div>)}</td>
                   </tr>
                 ))}
               </tbody>

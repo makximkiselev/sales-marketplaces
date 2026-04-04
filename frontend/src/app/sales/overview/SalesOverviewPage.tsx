@@ -171,6 +171,7 @@ type RetrospectivePeriod = {
   profit_amount?: number | null;
   profit_pct?: number | null;
   coinvest_amount?: number | null;
+  coinvest_pct?: number | null;
   ads_amount?: number | null;
   returns_pct?: number | null;
   order_count_total?: number | null;
@@ -188,6 +189,7 @@ type RetrospectiveRow = {
   profit_amount?: number | null;
   profit_pct?: number | null;
   coinvest_amount?: number | null;
+  coinvest_pct?: number | null;
   ads_amount?: number | null;
   returns_pct?: number | null;
   order_count_total?: number | null;
