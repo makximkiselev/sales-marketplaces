@@ -49,16 +49,26 @@ type OrderRow = {
   sku?: string;
   item_name?: string;
   sale_price?: number | null;
+  sale_price_native?: number | null;
   sale_price_with_coinvest?: number | null;
+  sale_price_with_coinvest_native?: number | null;
   cogs_price?: number | null;
+  cogs_price_native?: number | null;
   commission?: number | null;
+  commission_native?: number | null;
   acquiring?: number | null;
+  acquiring_native?: number | null;
   delivery?: number | null;
+  delivery_native?: number | null;
   ads?: number | null;
+  ads_native?: number | null;
   tax?: number | null;
+  tax_native?: number | null;
   profit?: number | null;
+  profit_native?: number | null;
   strategy_snapshot_at?: string;
   strategy_installed_price?: number | null;
+  strategy_installed_price_native?: number | null;
   strategy_decision_label?: string;
   strategy_attractiveness_status?: string;
   strategy_promo_count?: number;
@@ -213,7 +223,7 @@ const ORDERS_PERIOD_OPTIONS: Array<{ value: OrdersPeriod; label: string }> = [
 
 const OVERVIEW_CLIENT_CACHE = new Map<string, OverviewCacheEntry>();
 const OVERVIEW_CONTEXT_CACHE_KEY = "page_sales_overview_context_v1";
-const OVERVIEW_SNAPSHOT_PREFIX = "page_sales_overview_snapshot_v2:";
+const OVERVIEW_SNAPSHOT_PREFIX = "page_sales_overview_snapshot_v4:";
 
 function getInitialSearchParams() {
   if (typeof window === "undefined") return new URLSearchParams();
@@ -706,8 +716,8 @@ export default function SalesOverviewPage() {
   const summaryCards = useMemo(() => {
     if (tab === "tracking") {
       return [
-        { label: "Оборот", value: formatMoney(tracking?.kpis?.revenue, activeTrackingCurrencyCode), detail: tracking?.loaded_at ? `Обновлено: ${formatDateTime(tracking.loaded_at)}` : undefined },
-        { label: "Прибыль", value: formatMoney(tracking?.kpis?.profit, activeTrackingCurrencyCode), detail: `Рентабельность: ${formatPercent(tracking?.kpis?.profit_pct)}` },
+        { label: "Оборот", value: formatMoney(tracking?.kpis?.revenue, "RUB"), detail: tracking?.loaded_at ? `Обновлено: ${formatDateTime(tracking.loaded_at)}` : undefined },
+        { label: "Прибыль", value: formatMoney(tracking?.kpis?.profit, "RUB"), detail: `Рентабельность: ${formatPercent(tracking?.kpis?.profit_pct)}` },
         { label: "Средний соинвест", value: formatPercent(tracking?.kpis?.avg_coinvest_pct), detail: `Активных дней: ${formatNumber(tracking?.kpis?.days)}` },
       ];
     }
@@ -716,8 +726,8 @@ export default function SalesOverviewPage() {
       const profit = skuRows.reduce((acc, row) => acc + Number(row.profit_amount || 0), 0);
       return [
         { label: "SKU в срезе", value: formatNumber(skuRetrospective?.total_count), detail: `Период: ${grain === "month" ? "по месяцам" : "по дням"}` },
-        { label: "Оборот", value: formatMoney(revenue, activeStoreCurrencyCode), detail: customDateFrom && customDateTo ? `${formatDate(customDateFrom)} - ${formatDate(customDateTo)}` : `Дата: ${dateMode === "created" ? "по заказу" : "по доставке"}` },
-        { label: "Прибыль", value: formatMoney(profit, activeStoreCurrencyCode), detail: `Рентабельность: ${revenue > 0 ? formatPercent((profit / revenue) * 100) : "—"}` },
+        { label: "Оборот", value: formatMoney(revenue, "RUB"), detail: customDateFrom && customDateTo ? `${formatDate(customDateFrom)} - ${formatDate(customDateTo)}` : `Дата: ${dateMode === "created" ? "по заказу" : "по доставке"}` },
+        { label: "Прибыль", value: formatMoney(profit, "RUB"), detail: `Рентабельность: ${revenue > 0 ? formatPercent((profit / revenue) * 100) : "—"}` },
       ];
     }
     if (tab === "category") {
@@ -725,8 +735,8 @@ export default function SalesOverviewPage() {
       const profit = categoryRows.reduce((acc, row) => acc + Number(row.profit_amount || 0), 0);
       return [
         { label: "Категорий в срезе", value: formatNumber(categoryRetrospective?.total_count), detail: `Период: ${grain === "month" ? "по месяцам" : "по дням"}` },
-        { label: "Оборот", value: formatMoney(revenue, activeStoreCurrencyCode), detail: customDateFrom && customDateTo ? `${formatDate(customDateFrom)} - ${formatDate(customDateTo)}` : `Дата: ${dateMode === "created" ? "по заказу" : "по доставке"}` },
-        { label: "Прибыль", value: formatMoney(profit, activeStoreCurrencyCode), detail: `Рентабельность: ${revenue > 0 ? formatPercent((profit / revenue) * 100) : "—"}` },
+        { label: "Оборот", value: formatMoney(revenue, "RUB"), detail: customDateFrom && customDateTo ? `${formatDate(customDateFrom)} - ${formatDate(customDateTo)}` : `Дата: ${dateMode === "created" ? "по заказу" : "по доставке"}` },
+        { label: "Прибыль", value: formatMoney(profit, "RUB"), detail: `Рентабельность: ${revenue > 0 ? formatPercent((profit / revenue) * 100) : "—"}` },
       ];
     }
     if (tab === "problems") {
@@ -739,9 +749,9 @@ export default function SalesOverviewPage() {
     return [
       { label: "Заказы", value: formatNumber(orders?.kpis?.orders_count), detail: orders?.loaded_at ? `Обновлено: ${formatDateTime(orders.loaded_at)}` : undefined },
       { label: "Средний соинвест", value: formatPercent(orders?.kpis?.avg_coinvest_pct), detail: orders?.date_from && orders?.date_to ? `${formatDate(orders.date_from)} - ${formatDate(orders.date_to)}` : undefined },
-      { label: "Доп. реклама", value: formatMoney(orders?.kpis?.additional_ads, activeStoreCurrencyCode), detail: `Ошибки: ${formatMoney(orders?.kpis?.operational_errors, activeStoreCurrencyCode)}` },
+      { label: "Доп. реклама", value: formatMoney(orders?.kpis?.additional_ads, "RUB"), detail: `Ошибки: ${formatMoney(orders?.kpis?.operational_errors, "RUB")}` },
     ];
-  }, [activeStoreCurrencyCode, activeTrackingCurrencyCode, categoryRetrospective?.total_count, categoryRows, customDateFrom, customDateTo, dateMode, grain, orders, problemOrders, skuRetrospective?.total_count, skuRows, tab, tracking]);
+  }, [categoryRetrospective?.total_count, categoryRows, customDateFrom, customDateTo, dateMode, grain, orders, problemOrders, skuRetrospective?.total_count, skuRows, tab, tracking]);
 
   const vm = {
     stylesRef: styles,

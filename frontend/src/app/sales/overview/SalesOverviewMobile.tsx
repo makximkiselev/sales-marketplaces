@@ -44,6 +44,14 @@ export function SalesOverviewMobile({ vm }: Props) {
   } = vm;
 
   const rows = tab === "orders" ? orderRows : tab === "problems" ? problemRows : tab === "sku" ? skuRows : categoryRows;
+  const priceCurrencyCode = activeStoreCurrencyCode || "RUB";
+  const economicsCurrencyCode = "RUB";
+  const priceValue = (row: any, key: string) => {
+    if (String(priceCurrencyCode).trim().toUpperCase() === "USD") {
+      return row?.[`${key}_native`] ?? row?.[key];
+    }
+    return row?.[key];
+  };
   const currentStoreLabel = tab === "tracking" ? activeTrackingStore?.label : activeStore?.label;
   const modeLabel = dateMode === "delivery" ? "Дата доставки" : "Дата заказа";
   const grainLabel = grain === "day" ? "По дням" : "По месяцам";
@@ -222,15 +230,15 @@ export function SalesOverviewMobile({ vm }: Props) {
                 <div className={styles.mobileOverviewMetrics}>
                   {"sale_price" in row ? (
                     <>
-                      <div className={styles.mobileOverviewMetric}><span>Продажа</span><strong>{formatMoney(row.sale_price, activeStoreCurrencyCode)}</strong></div>
-                      <div className={styles.mobileOverviewMetric}><span>Платеж покупателя</span><strong>{formatMoney(row.sale_price_with_coinvest, activeStoreCurrencyCode)}</strong></div>
-                      <div className={styles.mobileOverviewMetric}><span>Прибыль</span><strong>{formatMoney(row.profit, activeStoreCurrencyCode)}</strong></div>
-                      <div className={styles.mobileOverviewMetric}><span>Маржа</span><strong>{formatPercent(row.profit && row.sale_price ? (Number(row.profit) / Number(row.sale_price)) * 100 : null)}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Продажа</span><strong>{formatMoney(priceValue(row, "sale_price"), priceCurrencyCode)}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Платеж покупателя</span><strong>{formatMoney(priceValue(row, "sale_price_with_coinvest"), priceCurrencyCode)}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Прибыль</span><strong>{formatMoney(row.profit, economicsCurrencyCode)}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Себестоимость</span><strong>{formatMoney(row.cogs_price, economicsCurrencyCode)}</strong></div>
                     </>
                   ) : (
                     <>
-                      <div className={styles.mobileOverviewMetric}><span>Оборот</span><strong>{formatMoney(row.revenue, activeStoreCurrencyCode)}</strong></div>
-                      <div className={styles.mobileOverviewMetric}><span>Прибыль</span><strong>{formatMoney(row.profit_amount, activeStoreCurrencyCode)}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Оборот</span><strong>{formatMoney(row.revenue, "RUB")}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Прибыль</span><strong>{formatMoney(row.profit_amount, "RUB")}</strong></div>
                       <div className={styles.mobileOverviewMetric}><span>Маржа</span><strong>{formatPercent(row.profit_pct)}</strong></div>
                     </>
                   )}

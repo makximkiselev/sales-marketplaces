@@ -79,6 +79,14 @@ export function SalesOverviewDesktop({ vm }: Props) {
         return "—";
     }
   };
+  const priceCurrencyCode = activeStoreCurrencyCode || "RUB";
+  const economicsCurrencyCode = "RUB";
+  const priceValue = (row: any, key: string) => {
+    if (String(priceCurrencyCode).trim().toUpperCase() === "USD") {
+      return row?.[`${key}_native`] ?? row?.[key];
+    }
+    return row?.[key];
+  };
 
   const s = stylesRef as typeof styles;
   const overviewTabs = [
@@ -117,9 +125,11 @@ export function SalesOverviewDesktop({ vm }: Props) {
   };
   const activeTabCopy = tabCopy[tab] || tabCopy.orders;
   const currentStoreLabel = tab === "tracking" ? activeTrackingStore?.label : activeStore?.label;
-  const currentCurrencySymbol = String(tab === "tracking" ? activeTrackingCurrencyCode : activeStoreCurrencyCode).trim().toUpperCase() === "USD"
-    ? "$"
-    : "₽";
+  const currentCurrencyLabel = (() => {
+    if (tab === "tracking" || tab === "sku" || tab === "category") return "Аналитика: ₽";
+    if (String(activeStoreCurrencyCode).trim().toUpperCase() === "USD") return "Цены: $ · Экономика: ₽";
+    return "Цены и экономика: ₽";
+  })();
   const currentPeriodLabel = ORDERS_PERIOD_OPTIONS.find((option: any) => option.value === period)?.label || "Период";
   const quickFacts = [
     currentStoreLabel ? { label: "Магазин", value: currentStoreLabel } : null,
@@ -146,7 +156,7 @@ export function SalesOverviewDesktop({ vm }: Props) {
         meta={(
           <div className={layoutStyles.heroMeta}>
             {currentStoreLabel ? <span className={layoutStyles.metaChip}>{currentStoreLabel}</span> : null}
-            <span className={layoutStyles.metaChip}>{currentCurrencySymbol}</span>
+            <span className={layoutStyles.metaChip}>{currentCurrencyLabel}</span>
           </div>
         )}
       >
@@ -296,12 +306,12 @@ export function SalesOverviewDesktop({ vm }: Props) {
                       <td>{row.sku || "—"}</td>
                       <td className={s.nameCell}>{row.item_name || "—"}</td>
                       <td><span className={`${s.statusBadge} ${s[`tone_${statusTone(row.item_status)}` as keyof typeof s]}`}>{row.item_status || "—"}</span></td>
-                      <td>{formatMoney(row.sale_price, activeStoreCurrencyCode)}</td>
-                      <td>{formatMoney(row.sale_price_with_coinvest, activeStoreCurrencyCode)}</td>
-                      <td><div>{formatMoney(row.strategy_installed_price, activeStoreCurrencyCode)}</div><div className={s.subtleText}>{formatDateTime(row.strategy_snapshot_at)}</div></td>
-                      <td>{formatDelta(row.sale_price, row.strategy_installed_price, activeStoreCurrencyCode)}</td>
+                      <td>{formatMoney(priceValue(row, "sale_price"), priceCurrencyCode)}</td>
+                      <td>{formatMoney(priceValue(row, "sale_price_with_coinvest"), priceCurrencyCode)}</td>
+                      <td><div>{formatMoney(priceValue(row, "strategy_installed_price"), priceCurrencyCode)}</div><div className={s.subtleText}>{formatDateTime(row.strategy_snapshot_at)}</div></td>
+                      <td>{formatDelta(priceValue(row, "sale_price"), priceValue(row, "strategy_installed_price"), priceCurrencyCode)}</td>
                       <td>
-                        <div>{formatMoney(row.ads, activeStoreCurrencyCode)}</div>
+                        <div>{formatMoney(row.ads, economicsCurrencyCode)}</div>
                         <div className={s.subtleText}>
                           Буст план: {formatPercent(row.strategy_boost_bid_percent)} / Факт: {formatPercent(row.actual_market_boost_bid_percent)}
                         </div>
@@ -309,13 +319,13 @@ export function SalesOverviewDesktop({ vm }: Props) {
                           Источник: {adsSourceLabel(row.ads_source)} {formatPercent(row.ads_rate_percent)}
                         </div>
                       </td>
-                      <td>{formatMoney(row.cogs_price, activeStoreCurrencyCode)}</td>
-                      <td><div>{formatMoney(row.commission, activeStoreCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.commission, row.sale_price)}</div></td>
-                      <td><div>{formatMoney(row.acquiring, activeStoreCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.acquiring, row.sale_price)}</div></td>
-                      <td>{formatMoney(row.delivery, activeStoreCurrencyCode)}</td>
-                      <td><div>{formatMoney(row.tax, activeStoreCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.tax, row.sale_price)}</div></td>
-                      <td>{formatMoney(totalCosts, activeStoreCurrencyCode)}</td>
-                      <td><div>{formatMoney(row.profit, activeStoreCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.profit, row.sale_price)}</div></td>
+                      <td>{formatMoney(row.cogs_price, economicsCurrencyCode)}</td>
+                      <td><div>{formatMoney(row.commission, economicsCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.commission, row.sale_price)}</div></td>
+                      <td><div>{formatMoney(row.acquiring, economicsCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.acquiring, row.sale_price)}</div></td>
+                      <td>{formatMoney(row.delivery, economicsCurrencyCode)}</td>
+                      <td><div>{formatMoney(row.tax, economicsCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.tax, row.sale_price)}</div></td>
+                      <td>{formatMoney(totalCosts, economicsCurrencyCode)}</td>
+                      <td><div>{formatMoney(row.profit, economicsCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.profit, row.sale_price)}</div></td>
                     </tr>
                   );
                 })}
@@ -347,7 +357,7 @@ export function SalesOverviewDesktop({ vm }: Props) {
               <tbody>
                 {problemRows.length === 0 ? <tr><td colSpan={9} className={s.empty}>Нет проблемных заказов</td></tr> : problemRows.map((row: any) => (
                   <tr key={`${row.order_id || ""}-${row.sku || ""}`}>
-                    <td>{formatDateTime(row.order_created_at)}</td><td>{formatDate(row.delivery_date)}</td><td>{row.order_id || "—"}</td><td>{row.sku || "—"}</td><td className={s.nameCell}>{row.item_name || "—"}</td><td><span className={`${s.statusBadge} ${s.tone_warn}`}>{row.item_status || "—"}</span></td><td>{formatMoney(row.sale_price, activeStoreCurrencyCode)}</td><td>{formatMoney(row.cogs_price, activeStoreCurrencyCode)}</td><td className={s.nameCell}>Доставлен, но нет себестоимости. Заказ исключён из чистой аналитики.</td>
+                    <td>{formatDateTime(row.order_created_at)}</td><td>{formatDate(row.delivery_date)}</td><td>{row.order_id || "—"}</td><td>{row.sku || "—"}</td><td className={s.nameCell}>{row.item_name || "—"}</td><td><span className={`${s.statusBadge} ${s.tone_warn}`}>{row.item_status || "—"}</span></td><td>{formatMoney(priceValue(row, "sale_price"), priceCurrencyCode)}</td><td>{formatMoney(row.cogs_price, economicsCurrencyCode)}</td><td className={s.nameCell}>Доставлен, но нет себестоимости. Заказ исключён из чистой аналитики.</td>
                   </tr>
                 ))}
               </tbody>
@@ -372,9 +382,9 @@ export function SalesOverviewDesktop({ vm }: Props) {
                         <Fragment key={month.month_key}>
                           <tr className={`${s.trackingMonthRow} ${open ? s.trackingMonthRowActive : ""}`} onClick={() => setExpandedMonthKey((prev: string) => prev === month.month_key ? "" : month.month_key)}>
                             <td className={s.trackingMonthCell}><span className={s.trackingChevron}>{open ? "▾" : "▸"}</span>{month.month_label}</td>
-                            <td><div>{formatMoney(month.revenue, activeTrackingCurrencyCode)}</div>{month.revenue_plan_amount != null ? <div className={s.trackingPlanText}>План: {formatMoney(month.revenue_plan_amount, activeTrackingCurrencyCode)}</div> : null}</td>
-                            <td><div>{formatMoney(month.profit_amount, activeTrackingCurrencyCode)}</div>{month.profit_plan_amount != null ? <div className={s.trackingPlanText}>План: {formatMoney(month.profit_plan_amount, activeTrackingCurrencyCode)}</div> : null}</td>
-                            <td>{formatPercent(month.profit_pct)}</td><td>{formatPercent(month.revenue && month.coinvest_amount ? (month.coinvest_amount / month.revenue) * 100 : 0)}</td><td>{formatPercent(month.returns_pct)}</td><td>{formatMoney(month.ads_amount, activeTrackingCurrencyCode)}</td><td>{formatMoney(month.operational_errors, activeTrackingCurrencyCode)}</td><td>{formatNumber(month.delivery_time_days)}</td>
+                            <td><div>{formatMoney(month.revenue, "RUB")}</div>{month.revenue_plan_amount != null ? <div className={s.trackingPlanText}>План: {formatMoney(month.revenue_plan_amount, "RUB")}</div> : null}</td>
+                            <td><div>{formatMoney(month.profit_amount, "RUB")}</div>{month.profit_plan_amount != null ? <div className={s.trackingPlanText}>План: {formatMoney(month.profit_plan_amount, "RUB")}</div> : null}</td>
+                            <td>{formatPercent(month.profit_pct)}</td><td>{formatPercent(month.revenue && month.coinvest_amount ? (month.coinvest_amount / month.revenue) * 100 : 0)}</td><td>{formatPercent(month.returns_pct)}</td><td>{formatMoney(month.ads_amount, "RUB")}</td><td>{formatMoney(month.operational_errors, "RUB")}</td><td>{formatNumber(month.delivery_time_days)}</td>
                           </tr>
                           <tr className={s.trackingDaysHostRow}>
                             <td colSpan={9} className={s.trackingDaysHostCell}>
@@ -398,13 +408,13 @@ export function SalesOverviewDesktop({ vm }: Props) {
                                       {(month.days || []).map((day: any) => (
                                         <tr key={`${month.month_key}-${day.date}`}>
                                           <td className={s.nameCell}>{formatDate(day.date)}</td>
-                                          <td>{formatMoney(day.revenue, activeTrackingCurrencyCode)}</td>
-                                          <td>{formatMoney(day.profit_amount, activeTrackingCurrencyCode)}</td>
+                                          <td>{formatMoney(day.revenue, "RUB")}</td>
+                                          <td>{formatMoney(day.profit_amount, "RUB")}</td>
                                           <td>{formatPercent(day.profit_pct)}</td>
                                           <td>{formatPercent(day.coinvest_pct)}</td>
                                           <td>{formatPercent(day.returns_pct)}</td>
-                                          <td>{formatMoney(day.ads_amount, activeTrackingCurrencyCode)}</td>
-                                          <td>{formatMoney(day.operational_errors, activeTrackingCurrencyCode)}</td>
+                                          <td>{formatMoney(day.ads_amount, "RUB")}</td>
+                                          <td>{formatMoney(day.operational_errors, "RUB")}</td>
                                           <td>{formatNumber(day.delivery_time_days)}</td>
                                         </tr>
                                       ))}
@@ -437,8 +447,8 @@ export function SalesOverviewDesktop({ vm }: Props) {
                 {skuRows.length === 0 ? <tr><td colSpan={8} className={s.empty}>Нет данных по товарам</td></tr> : skuRows.map((row: any) => (
                   <tr key={row.key}>
                     <td className={s.nameCell}><div>{row.sku || "—"}</div><div className={s.subtleText}>{row.item_name || row.label || "—"}</div></td>
-                    <td className={s.nameCell}>{row.category_path || "—"}</td><td>{formatMoney(row.revenue, activeStoreCurrencyCode)}</td><td>{formatMoney(row.profit_amount, activeStoreCurrencyCode)}</td><td>{formatPercent(row.profit_pct)}</td><td>{formatMoney(row.coinvest_amount, activeStoreCurrencyCode)}</td><td>{formatPercent(row.returns_pct)}</td>
-                    <td className={s.nameCell}>{(row.periods || []).slice(0, 4).map((period: any) => <div key={`${row.key}-${period.period_key}`} className={s.subtleText}>{period.period_label}: {formatMoney(period.revenue, activeStoreCurrencyCode)} / {formatMoney(period.profit_amount, activeStoreCurrencyCode)}</div>)}</td>
+                    <td className={s.nameCell}>{row.category_path || "—"}</td><td>{formatMoney(row.revenue, "RUB")}</td><td>{formatMoney(row.profit_amount, "RUB")}</td><td>{formatPercent(row.profit_pct)}</td><td>{formatMoney(row.coinvest_amount, "RUB")}</td><td>{formatPercent(row.returns_pct)}</td>
+                    <td className={s.nameCell}>{(row.periods || []).slice(0, 4).map((period: any) => <div key={`${row.key}-${period.period_key}`} className={s.subtleText}>{period.period_label}: {formatMoney(period.revenue, "RUB")} / {formatMoney(period.profit_amount, "RUB")}</div>)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -456,8 +466,8 @@ export function SalesOverviewDesktop({ vm }: Props) {
               <tbody>
                 {categoryRows.length === 0 ? <tr><td colSpan={7} className={s.empty}>Нет данных по категориям</td></tr> : categoryRows.map((row: any) => (
                   <tr key={row.key}>
-                    <td className={s.nameCell}>{row.label || row.category_path || "—"}</td><td>{formatMoney(row.revenue, activeStoreCurrencyCode)}</td><td>{formatMoney(row.profit_amount, activeStoreCurrencyCode)}</td><td>{formatPercent(row.profit_pct)}</td><td>{formatMoney(row.coinvest_amount, activeStoreCurrencyCode)}</td><td>{formatPercent(row.returns_pct)}</td>
-                    <td className={s.nameCell}>{(row.periods || []).slice(0, 4).map((period: any) => <div key={`${row.key}-${period.period_key}`} className={s.subtleText}>{period.period_label}: {formatMoney(period.revenue, activeStoreCurrencyCode)} / {formatMoney(period.profit_amount, activeStoreCurrencyCode)}</div>)}</td>
+                    <td className={s.nameCell}>{row.label || row.category_path || "—"}</td><td>{formatMoney(row.revenue, "RUB")}</td><td>{formatMoney(row.profit_amount, "RUB")}</td><td>{formatPercent(row.profit_pct)}</td><td>{formatMoney(row.coinvest_amount, "RUB")}</td><td>{formatPercent(row.returns_pct)}</td>
+                    <td className={s.nameCell}>{(row.periods || []).slice(0, 4).map((period: any) => <div key={`${row.key}-${period.period_key}`} className={s.subtleText}>{period.period_label}: {formatMoney(period.revenue, "RUB")} / {formatMoney(period.profit_amount, "RUB")}</div>)}</td>
                   </tr>
                 ))}
               </tbody>
