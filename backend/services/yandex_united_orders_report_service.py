@@ -2337,10 +2337,15 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
             if billing_price is not None and marketplace_subsidy is not None
             else billing_price
         )
+        has_actual_buyer_price = payment_price is not None or (
+            billing_price is not None and marketplace_subsidy is not None
+        )
         if status_kind == "open":
             if strategy_installed_price is not None and strategy_installed_price > 0:
                 sale_price_raw = strategy_installed_price
-            if sale_price_raw is not None and sale_price_raw > 0 and strategy_coinvest_pct is not None:
+            if has_actual_buyer_price:
+                pass
+            elif sale_price_raw is not None and sale_price_raw > 0 and strategy_coinvest_pct is not None:
                 coinvest_rate = _clamp_rate(float(strategy_coinvest_pct) / 100.0)
                 sale_price_with_coinvest_raw = round(float(sale_price_raw) * (1.0 - coinvest_rate), 4)
             elif sale_price_raw is not None and sale_price_raw > 0:
