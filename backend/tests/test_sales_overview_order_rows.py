@@ -74,8 +74,12 @@ class SalesOverviewOrderRowsTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(no_actual["ads"], 120.0)
         self.assertFalse(no_actual["ads_from_strategy"])
+        self.assertEqual(no_actual["ads_rate_percent"], 12.0)
+        self.assertEqual(no_actual["ads_source"], "store_target_drr")
         self.assertEqual(with_actual["ads"], 50.0)
         self.assertTrue(with_actual["ads_from_strategy"])
+        self.assertEqual(with_actual["ads_rate_percent"], 5.0)
+        self.assertEqual(with_actual["ads_source"], "market_boost_fact")
 
 
 if __name__ == "__main__":

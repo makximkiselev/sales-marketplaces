@@ -67,6 +67,19 @@ export function SalesOverviewDesktop({ vm }: Props) {
     ORDERS_PERIOD_OPTIONS,
   } = vm;
 
+  const adsSourceLabel = (source?: string | null): string => {
+    switch (String(source || "")) {
+      case "market_boost_fact":
+        return "Маркет";
+      case "category_ads_percent":
+        return "Категория";
+      case "store_target_drr":
+        return "Магазин";
+      default:
+        return "—";
+    }
+  };
+
   const s = stylesRef as typeof styles;
   const overviewTabs = [
     { id: "orders", label: "По заказам" },
@@ -287,7 +300,15 @@ export function SalesOverviewDesktop({ vm }: Props) {
                       <td>{formatMoney(row.sale_price_with_coinvest, activeStoreCurrencyCode)}</td>
                       <td><div>{formatMoney(row.strategy_installed_price, activeStoreCurrencyCode)}</div><div className={s.subtleText}>{formatDateTime(row.strategy_snapshot_at)}</div></td>
                       <td>{formatDelta(row.sale_price, row.strategy_installed_price, activeStoreCurrencyCode)}</td>
-                      <td><div>{formatMoney(row.ads, activeStoreCurrencyCode)}</div><div className={s.subtleText}>План: {formatPercent(row.strategy_boost_bid_percent)} / Факт: {formatPercent(row.strategy_market_boost_bid_percent)}</div></td>
+                      <td>
+                        <div>{formatMoney(row.ads, activeStoreCurrencyCode)}</div>
+                        <div className={s.subtleText}>
+                          Буст план: {formatPercent(row.strategy_boost_bid_percent)} / Факт: {formatPercent(row.actual_market_boost_bid_percent)}
+                        </div>
+                        <div className={s.subtleText}>
+                          Источник: {adsSourceLabel(row.ads_source)} {formatPercent(row.ads_rate_percent)}
+                        </div>
+                      </td>
                       <td>{formatMoney(row.cogs_price, activeStoreCurrencyCode)}</td>
                       <td><div>{formatMoney(row.commission, activeStoreCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.commission, row.sale_price)}</div></td>
                       <td><div>{formatMoney(row.acquiring, activeStoreCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.acquiring, row.sale_price)}</div></td>

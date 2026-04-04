@@ -328,8 +328,11 @@ def _init_history_tables() -> None:
                 sale_price_with_coinvest REAL NULL,
                 strategy_cycle_started_at TEXT NOT NULL DEFAULT '',
                 strategy_market_boost_bid_percent REAL NULL,
+                actual_market_boost_bid_percent REAL NULL,
                 strategy_boost_share REAL NULL,
                 strategy_boost_bid_percent REAL NULL,
+                ads_rate_percent REAL NULL,
+                ads_source TEXT NOT NULL DEFAULT '',
                 strategy_snapshot_at TEXT NOT NULL DEFAULT '',
                 strategy_installed_price REAL NULL,
                 strategy_decision_code TEXT NOT NULL DEFAULT '',
@@ -394,6 +397,12 @@ def _init_history_tables() -> None:
             conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN sale_price_with_coinvest_native DOUBLE PRECISION NULL")
         if "strategy_installed_price_native" not in overview_cols:
             conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_installed_price_native DOUBLE PRECISION NULL")
+        if "actual_market_boost_bid_percent" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN actual_market_boost_bid_percent DOUBLE PRECISION NULL")
+        if "ads_rate_percent" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN ads_rate_percent DOUBLE PRECISION NULL")
+        if "ads_source" not in overview_cols:
+            conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN ads_source TEXT NOT NULL DEFAULT ''")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS pricing_cogs_snapshots (
@@ -2013,8 +2022,11 @@ def _init_store_data_model_postgres() -> None:
                     sale_price_with_coinvest_native DOUBLE PRECISION NULL,
                     strategy_cycle_started_at TEXT NOT NULL DEFAULT '',
                     strategy_market_boost_bid_percent DOUBLE PRECISION NULL,
+                    actual_market_boost_bid_percent DOUBLE PRECISION NULL,
                     strategy_boost_share DOUBLE PRECISION NULL,
                     strategy_boost_bid_percent DOUBLE PRECISION NULL,
+                    ads_rate_percent DOUBLE PRECISION NULL,
+                    ads_source TEXT NOT NULL DEFAULT '',
                     strategy_snapshot_at TEXT NOT NULL DEFAULT '',
                     strategy_installed_price DOUBLE PRECISION NULL,
                     strategy_installed_price_native DOUBLE PRECISION NULL,
@@ -2080,6 +2092,12 @@ def _init_store_data_model_postgres() -> None:
                 conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN sale_price_with_coinvest_native DOUBLE PRECISION NULL")
             if "strategy_installed_price_native" not in hot_cols:
                 conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN strategy_installed_price_native DOUBLE PRECISION NULL")
+            if "actual_market_boost_bid_percent" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN actual_market_boost_bid_percent DOUBLE PRECISION NULL")
+            if "ads_rate_percent" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN ads_rate_percent DOUBLE PRECISION NULL")
+            if "ads_source" not in hot_cols:
+                conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN ads_source TEXT NOT NULL DEFAULT ''")
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS pricing_attractiveness_recommendations_raw (
@@ -2980,10 +2998,16 @@ def _init_store_data_model_sqlite_sales_tables(conn: sqlite3.Connection) -> None
         conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_cycle_started_at TEXT NOT NULL DEFAULT ''")
     if "strategy_market_boost_bid_percent" not in overview_cols:
         conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_market_boost_bid_percent REAL NULL")
+    if "actual_market_boost_bid_percent" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN actual_market_boost_bid_percent REAL NULL")
     if "strategy_boost_share" not in overview_cols:
         conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_boost_share REAL NULL")
     if "strategy_boost_bid_percent" not in overview_cols:
         conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_boost_bid_percent REAL NULL")
+    if "ads_rate_percent" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN ads_rate_percent REAL NULL")
+    if "ads_source" not in overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN ads_source TEXT NOT NULL DEFAULT ''")
     if "strategy_snapshot_at" not in overview_cols:
         conn.execute("ALTER TABLE sales_overview_order_rows ADD COLUMN strategy_snapshot_at TEXT NOT NULL DEFAULT ''")
     if "strategy_installed_price" not in overview_cols:
@@ -3033,6 +3057,18 @@ def _init_store_data_model_sqlite_sales_tables(conn: sqlite3.Connection) -> None
         conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN sale_price_with_coinvest_native REAL NULL")
     if "strategy_installed_price_native" not in hot_overview_cols:
         conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN strategy_installed_price_native REAL NULL")
+    if "strategy_market_boost_bid_percent" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN strategy_market_boost_bid_percent REAL NULL")
+    if "actual_market_boost_bid_percent" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN actual_market_boost_bid_percent REAL NULL")
+    if "strategy_boost_share" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN strategy_boost_share REAL NULL")
+    if "strategy_boost_bid_percent" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN strategy_boost_bid_percent REAL NULL")
+    if "ads_rate_percent" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN ads_rate_percent REAL NULL")
+    if "ads_source" not in hot_overview_cols:
+        conn.execute("ALTER TABLE sales_overview_order_rows_hot ADD COLUMN ads_source TEXT NOT NULL DEFAULT ''")
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_sales_overview_order_rows_store_date "
         "ON sales_overview_order_rows(store_uid, order_created_date)"
@@ -6628,8 +6664,11 @@ _SALES_OVERVIEW_ORDER_ROW_COLUMNS = (
     "sale_price_with_coinvest_native",
     "strategy_cycle_started_at",
     "strategy_market_boost_bid_percent",
+    "actual_market_boost_bid_percent",
     "strategy_boost_share",
     "strategy_boost_bid_percent",
+    "ads_rate_percent",
+    "ads_source",
     "strategy_snapshot_at",
     "strategy_installed_price",
     "strategy_installed_price_native",
@@ -6684,8 +6723,11 @@ def _sales_overview_order_row_db_tuple(*, store_uid: str, row: dict[str, Any], c
         row.get("sale_price_with_coinvest_native"),
         str(row.get("strategy_cycle_started_at") or "").strip(),
         row.get("strategy_market_boost_bid_percent"),
+        row.get("actual_market_boost_bid_percent"),
         row.get("strategy_boost_share"),
         row.get("strategy_boost_bid_percent"),
+        row.get("ads_rate_percent"),
+        str(row.get("ads_source") or "").strip(),
         str(row.get("strategy_snapshot_at") or "").strip(),
         row.get("strategy_installed_price"),
         row.get("strategy_installed_price_native"),
@@ -6784,8 +6826,11 @@ def replace_sales_overview_order_rows(
                     sale_price_with_coinvest_native = excluded.sale_price_with_coinvest_native,
                     strategy_cycle_started_at = excluded.strategy_cycle_started_at,
                     strategy_market_boost_bid_percent = excluded.strategy_market_boost_bid_percent,
+                    actual_market_boost_bid_percent = excluded.actual_market_boost_bid_percent,
                     strategy_boost_share = excluded.strategy_boost_share,
                     strategy_boost_bid_percent = excluded.strategy_boost_bid_percent,
+                    ads_rate_percent = excluded.ads_rate_percent,
+                    ads_source = excluded.ads_source,
                     strategy_snapshot_at = excluded.strategy_snapshot_at,
                     strategy_installed_price = excluded.strategy_installed_price,
                     strategy_installed_price_native = excluded.strategy_installed_price_native,
@@ -6889,8 +6934,11 @@ def replace_sales_overview_order_rows_hot(
                     sale_price_with_coinvest_native = excluded.sale_price_with_coinvest_native,
                     strategy_cycle_started_at = excluded.strategy_cycle_started_at,
                     strategy_market_boost_bid_percent = excluded.strategy_market_boost_bid_percent,
+                    actual_market_boost_bid_percent = excluded.actual_market_boost_bid_percent,
                     strategy_boost_share = excluded.strategy_boost_share,
                     strategy_boost_bid_percent = excluded.strategy_boost_bid_percent,
+                    ads_rate_percent = excluded.ads_rate_percent,
+                    ads_source = excluded.ads_source,
                     strategy_snapshot_at = excluded.strategy_snapshot_at,
                     strategy_installed_price = excluded.strategy_installed_price,
                     strategy_installed_price_native = excluded.strategy_installed_price_native,

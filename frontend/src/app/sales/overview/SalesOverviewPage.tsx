@@ -65,6 +65,9 @@ type OrderRow = {
   strategy_coinvest_pct?: number | null;
   strategy_boost_bid_percent?: number | null;
   strategy_market_boost_bid_percent?: number | null;
+  actual_market_boost_bid_percent?: number | null;
+  ads_rate_percent?: number | null;
+  ads_source?: string;
 };
 
 type OrdersResp = {
