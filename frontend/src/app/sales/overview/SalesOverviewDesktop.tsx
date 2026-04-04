@@ -47,6 +47,8 @@ export function SalesOverviewDesktop({ vm }: Props) {
     setPageSize,
     grain,
     setGrain,
+    categoryLevel,
+    setCategoryLevel,
     trackingStoreId,
     setTrackingStoreId,
     expandedMonthKey,
@@ -105,11 +107,11 @@ export function SalesOverviewDesktop({ vm }: Props) {
 
   const s = stylesRef as typeof styles;
   const overviewTabs = [
-    { id: "orders", label: "По заказам" },
-    { id: "problems", label: "Проблемные" },
     { id: "tracking", label: "Трекинг" },
-    { id: "sku", label: "Товары" },
+    { id: "orders", label: "По заказам" },
     { id: "category", label: "Категории" },
+    { id: "sku", label: "Товары" },
+    { id: "problems", label: "Проблемные" },
   ] as const;
   const tabCopy: Record<string, { eyebrow: string; title: string; subtitle: string }> = {
     orders: {
@@ -236,6 +238,17 @@ export function SalesOverviewDesktop({ vm }: Props) {
                   <select className={`input input-size-fluid ${s.dateInput}`} value={grain} onChange={(e) => setGrain(e.target.value)}>
                     <option value="month">По месяцам</option>
                     <option value="day">По дням</option>
+                  </select>
+                </label>
+              ) : null}
+
+              {tab === "category" ? (
+                <label className={s.overviewControlField}>
+                  <span className={s.overviewControlLabel}>Уровень категорий</span>
+                  <select className={`input input-size-fluid ${s.dateInput}`} value={categoryLevel} onChange={(e) => setCategoryLevel(e.target.value)}>
+                    <option value="level1">Уровень 1</option>
+                    <option value="level2">Уровень 2</option>
+                    <option value="level3">Уровень 3</option>
                   </select>
                 </label>
               ) : null}
@@ -481,11 +494,11 @@ export function SalesOverviewDesktop({ vm }: Props) {
           <PageSectionTitle title="Категории во времени" meta={`Рядов: ${formatNumber(categoryRetrospective?.total_count)}`} />
           <div className={s.tableWrap}>
             <table className={s.table}>
-              <thead><tr><th className={s.nameCell}>Категория</th><th>Оборот</th><th>Прибыль</th><th>Маржинальность</th><th>Соинвест</th><th>Возвраты</th><th>Периоды</th></tr></thead>
+              <thead><tr><th className={s.nameCell}>Категория</th><th className={s.nameCell}>Родитель</th><th>Оборот</th><th>Прибыль</th><th>Маржинальность</th><th>Соинвест</th><th>Возвраты</th><th>Периоды</th></tr></thead>
               <tbody>
-                {categoryRows.length === 0 ? <tr><td colSpan={7} className={s.empty}>Нет данных по категориям</td></tr> : categoryRows.map((row: any) => (
+                {categoryRows.length === 0 ? <tr><td colSpan={8} className={s.empty}>Нет данных по категориям</td></tr> : categoryRows.map((row: any) => (
                   <tr key={row.key}>
-                    <td className={s.nameCell}>{row.label || row.category_path || "—"}</td><td>{formatMoney(row.revenue, "RUB")}</td><td>{formatMoney(row.profit_amount, "RUB")}</td><td>{formatPercent(row.profit_pct)}</td><td>{formatMoney(row.coinvest_amount, "RUB")}</td><td>{formatPercent(row.returns_pct)}</td>
+                    <td className={s.nameCell}>{row.label || row.category_path || "—"}</td><td className={s.nameCell}>{row.category_parent_path || "—"}</td><td>{formatMoney(row.revenue, "RUB")}</td><td>{formatMoney(row.profit_amount, "RUB")}</td><td>{formatPercent(row.profit_pct)}</td><td>{formatMoney(row.coinvest_amount, "RUB")}</td><td>{formatPercent(row.returns_pct)}</td>
                     <td className={s.nameCell}>{(row.periods || []).slice(0, 4).map((period: any) => <div key={`${row.key}-${period.period_key}`} className={s.subtleText}>{period.period_label}: {formatMoney(period.revenue, "RUB")} / {formatMoney(period.profit_amount, "RUB")}</div>)}</td>
                   </tr>
                 ))}

@@ -182,6 +182,8 @@ type RetrospectiveRow = {
   sku?: string;
   item_name?: string;
   category_path?: string;
+  category_parent_path?: string;
+  category_level?: string;
   revenue?: number | null;
   profit_amount?: number | null;
   profit_pct?: number | null;
@@ -205,6 +207,7 @@ type TabKey = "tracking" | "orders" | "problems" | "sku" | "category";
 type OrdersPeriod = "today" | "yesterday" | "week" | "month" | "quarter";
 type DateMode = "created" | "delivery";
 type RetrospectiveGrain = "month" | "day";
+type CategoryLevel = "level1" | "level2" | "level3";
 
 type OverviewCacheEntry = {
   tracking?: TrackingResp | null;
@@ -489,6 +492,10 @@ export default function SalesOverviewPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [grain, setGrain] = useState<RetrospectiveGrain>(initialParams.get("grain") === "day" ? "day" : "month");
+  const [categoryLevel, setCategoryLevel] = useState<CategoryLevel>((() => {
+    const value = initialParams.get("categoryLevel");
+    return value === "level1" || value === "level2" || value === "level3" ? value : "level2";
+  })());
   const [trackingStoreId, setTrackingStoreId] = useState(initialParams.get("trackingStoreId") || "");
   const [customDateFrom] = useState(initialParams.get("date_from") || "");
   const [customDateTo] = useState(initialParams.get("date_to") || "");
@@ -625,7 +632,7 @@ export default function SalesOverviewPage() {
           nextState.dataFlow = flowData;
         } else if (tab === "category") {
           const fetchScopedCategory = async (sid: string) => fetchJson<RetrospectiveResp>(
-            `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=category&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}${rangeQuery}&limit=120`,
+            `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=category&category_level=${encodeURIComponent(categoryLevel)}&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}${rangeQuery}&limit=120`,
           );
           const [categoryData, flowData] = await Promise.all([
             storeId === "all"
@@ -660,7 +667,7 @@ export default function SalesOverviewPage() {
     return () => {
       cancelled = true;
     };
-  }, [context, storeId, trackingStoreId, tab, dateMode, period, itemStatus, page, pageSize, grain, customDateFrom, customDateTo]);
+  }, [context, storeId, trackingStoreId, tab, dateMode, period, itemStatus, page, pageSize, grain, categoryLevel, customDateFrom, customDateTo]);
 
   useEffect(() => {
     setPage(1);
@@ -709,11 +716,12 @@ export default function SalesOverviewPage() {
     params.set("dateMode", dateMode);
     params.set("period", period);
     params.set("grain", grain);
+    params.set("categoryLevel", categoryLevel);
     if (itemStatus) params.set("itemStatus", itemStatus);
     if (customDateFrom) params.set("date_from", customDateFrom);
     if (customDateTo) params.set("date_to", customDateTo);
     window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
-  }, [customDateFrom, customDateTo, dateMode, grain, itemStatus, period, storeId, tab, trackingStoreId]);
+  }, [categoryLevel, customDateFrom, customDateTo, dateMode, grain, itemStatus, period, storeId, tab, trackingStoreId]);
 
   const summaryCards = useMemo(() => {
     if (tab === "tracking") {
@@ -737,6 +745,7 @@ export default function SalesOverviewPage() {
       const profit = categoryRows.reduce((acc, row) => acc + Number(row.profit_amount || 0), 0);
       return [
         { label: "Категорий в срезе", value: formatNumber(categoryRetrospective?.total_count), detail: `Период: ${grain === "month" ? "по месяцам" : "по дням"}` },
+        { label: "Уровень", value: categoryLevel === "level1" ? "Уровень 1" : categoryLevel === "level2" ? "Уровень 2" : "Уровень 3", detail: `Период: ${grain === "month" ? "по месяцам" : "по дням"}` },
         { label: "Оборот", value: formatMoney(revenue, "RUB"), detail: customDateFrom && customDateTo ? `${formatDate(customDateFrom)} - ${formatDate(customDateTo)}` : `Дата: ${dateMode === "created" ? "по заказу" : "по доставке"}` },
         { label: "Прибыль", value: formatMoney(profit, "RUB"), detail: `Рентабельность: ${revenue > 0 ? formatPercent((profit / revenue) * 100) : "—"}` },
       ];
@@ -753,7 +762,7 @@ export default function SalesOverviewPage() {
       { label: "Средний соинвест", value: formatPercent(orders?.kpis?.avg_coinvest_pct), detail: orders?.date_from && orders?.date_to ? `${formatDate(orders.date_from)} - ${formatDate(orders.date_to)}` : undefined },
       { label: "Доп. реклама", value: formatMoney(orders?.kpis?.additional_ads, "RUB"), detail: `Ошибки: ${formatMoney(orders?.kpis?.operational_errors, "RUB")}` },
     ];
-  }, [categoryRetrospective?.total_count, categoryRows, customDateFrom, customDateTo, dateMode, grain, orders, problemOrders, skuRetrospective?.total_count, skuRows, tab, tracking]);
+  }, [categoryLevel, categoryRetrospective?.total_count, categoryRows, customDateFrom, customDateTo, dateMode, grain, orders, problemOrders, skuRetrospective?.total_count, skuRows, tab, tracking]);
 
   const vm = {
     stylesRef: styles,
@@ -791,6 +800,8 @@ export default function SalesOverviewPage() {
     setPageSize,
     grain,
     setGrain,
+    categoryLevel,
+    setCategoryLevel,
     trackingStoreId,
     setTrackingStoreId,
     expandedMonthKey,

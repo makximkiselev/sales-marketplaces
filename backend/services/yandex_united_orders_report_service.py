@@ -3067,6 +3067,7 @@ async def get_sales_overview_retrospective(
     store_id: str = "",
     date_mode: str = "created",
     group_by: str = "sku",
+    category_level: str = "level2",
     grain: str = "month",
     date_from: str = "",
     date_to: str = "",
@@ -3079,6 +3080,9 @@ async def get_sales_overview_retrospective(
 
     mode = "delivery" if str(date_mode or "").strip().lower() == "delivery" else "created"
     dimension = "category" if str(group_by or "").strip().lower() == "category" else "sku"
+    level = str(category_level or "level2").strip().lower()
+    if level not in {"level1", "level2", "level3"}:
+        level = "level2"
     period_grain = "day" if str(grain or "").strip().lower() == "day" else "month"
     from_day = _parse_date_any(date_from)
     to_day = _parse_date_any(date_to)
@@ -3120,12 +3124,18 @@ async def get_sales_overview_retrospective(
         sku = str(row.get("sku") or "").strip()
         item_name = str(row.get("item_name") or "").strip()
         category_path = _resolve_category_path_for_sku(sku, path_map)
+        category_parts = _path_parts(category_path)
         if dimension == "category":
-            group_key = category_path
-            group_label = category_path
+            level_idx = 0 if level == "level1" else 1 if level == "level2" else 2
+            if len(category_parts) <= level_idx:
+                continue
+            group_key = " / ".join(category_parts[: level_idx + 1])
+            group_label = category_parts[level_idx]
+            parent_path = " / ".join(category_parts[:level_idx]) if level_idx > 0 else ""
         else:
             group_key = sku
             group_label = item_name or sku
+            parent_path = ""
 
         bucket = grouped.setdefault(group_key, {
             "key": group_key,
@@ -3133,6 +3143,8 @@ async def get_sales_overview_retrospective(
             "sku": sku if dimension == "sku" else "",
             "item_name": item_name if dimension == "sku" else "",
             "category_path": category_path,
+            "category_parent_path": parent_path,
+            "category_level": level if dimension == "category" else "",
             "order_count_total": 0,
             "return_count": 0,
             "revenue": 0.0,
@@ -3205,6 +3217,8 @@ async def get_sales_overview_retrospective(
             "sku": bucket["sku"],
             "item_name": bucket["item_name"],
             "category_path": bucket["category_path"],
+            "category_parent_path": bucket.get("category_parent_path") or "",
+            "category_level": bucket.get("category_level") or "",
             "revenue": round(revenue, 2),
             "profit_amount": round(profit_amount, 2),
             "profit_pct": round((profit_amount / revenue * 100.0), 2) if revenue > 0 else 0.0,
@@ -3222,6 +3236,7 @@ async def get_sales_overview_retrospective(
         "store_uid": store_uid,
         "date_mode": mode,
         "group_by": dimension,
+        "category_level": level if dimension == "category" else "",
         "grain": period_grain,
         "rows": rows_payload[:limit_num],
         "total_count": len(rows_payload),

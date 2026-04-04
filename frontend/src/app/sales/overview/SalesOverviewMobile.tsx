@@ -29,6 +29,8 @@ export function SalesOverviewMobile({ vm }: Props) {
     setDateMode,
     grain,
     setGrain,
+    categoryLevel,
+    setCategoryLevel,
     setPage,
     trackingStoreId,
     setTrackingStoreId,
@@ -99,11 +101,11 @@ export function SalesOverviewMobile({ vm }: Props) {
           subtitle="Мобильный слой продаж без широких таблиц."
           tabs={{
             items: [
-              { id: "orders", label: "Заказы" },
-              { id: "problems", label: "Проблемные" },
               { id: "tracking", label: "Трекинг" },
-              { id: "sku", label: "Товары" },
+              { id: "orders", label: "Заказы" },
               { id: "category", label: "Категории" },
+              { id: "sku", label: "Товары" },
+              { id: "problems", label: "Проблемные" },
             ],
             activeId: tab,
             onChange: setTab,
@@ -181,6 +183,16 @@ export function SalesOverviewMobile({ vm }: Props) {
                         <option value="day">По дням</option>
                       </select>
                     </div>
+                    {tab === "category" ? (
+                      <div className={styles.mobileFilterGroup}>
+                        <div className={styles.mobileFilterLabel}>Уровень категорий</div>
+                        <select className={`input input-size-fluid ${styles.dateInput}`} value={categoryLevel} onChange={(e) => { resetPage(); setCategoryLevel(e.target.value); }}>
+                          <option value="level1">Уровень 1</option>
+                          <option value="level2">Уровень 2</option>
+                          <option value="level3">Уровень 3</option>
+                        </select>
+                      </div>
+                    ) : null}
                   </>
                 ) : null}
               </>
@@ -191,6 +203,7 @@ export function SalesOverviewMobile({ vm }: Props) {
             {tab === "orders" || tab === "problems" ? <span className={layoutStyles.metaChip}>{periodLabel}</span> : null}
             {tab === "tracking" || tab === "sku" || tab === "category" ? <span className={layoutStyles.metaChip}>{modeLabel}</span> : null}
             {tab === "sku" || tab === "category" ? <span className={layoutStyles.metaChip}>{grainLabel}</span> : null}
+            {tab === "category" ? <span className={layoutStyles.metaChip}>{categoryLevel === "level1" ? "Уровень 1" : categoryLevel === "level2" ? "Уровень 2" : "Уровень 3"}</span> : null}
             {tab === "orders" && itemStatus ? <span className={layoutStyles.metaChip}>{itemStatus}</span> : null}
           </div>
         </WorkspacePageHero>
