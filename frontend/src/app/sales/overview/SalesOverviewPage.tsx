@@ -441,6 +441,7 @@ function SummaryCard({ label, value, detail }: { label: string; value: string; d
 function makeOverviewCacheKey(params: {
   tab: TabKey;
   storeId: string;
+  trackingStoreId: string;
   period: OrdersPeriod;
   itemStatus: string;
   dateMode: DateMode;
@@ -473,6 +474,7 @@ export default function SalesOverviewPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [grain, setGrain] = useState<RetrospectiveGrain>(initialParams.get("grain") === "day" ? "day" : "month");
+  const [trackingStoreId, setTrackingStoreId] = useState(initialParams.get("trackingStoreId") || "");
   const [customDateFrom] = useState(initialParams.get("date_from") || "");
   const [customDateTo] = useState(initialParams.get("date_to") || "");
   const [tracking, setTracking] = useState<TrackingResp | null>(null);
@@ -495,6 +497,7 @@ export default function SalesOverviewPage() {
         writePageSnapshot(OVERVIEW_CONTEXT_CACHE_KEY, data);
         const firstStore = String(data.marketplace_stores?.[0]?.store_id || "").trim();
         setStoreId((prev) => prev || firstStore);
+        setTrackingStoreId((prev) => prev || firstStore || "all");
       } catch (err) {
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "Не удалось загрузить контекст");
@@ -507,6 +510,7 @@ export default function SalesOverviewPage() {
       setContext(cachedContext);
       const firstStore = String(cachedContext.marketplace_stores?.[0]?.store_id || "").trim();
       setStoreId((prev) => prev || firstStore);
+      setTrackingStoreId((prev) => prev || firstStore || "all");
       setLoading(false);
     }
     void loadContext();
@@ -521,6 +525,7 @@ export default function SalesOverviewPage() {
     const cacheKey = makeOverviewCacheKey({
       tab,
       storeId,
+      trackingStoreId,
       period,
       itemStatus,
       dateMode,
@@ -562,8 +567,8 @@ export default function SalesOverviewPage() {
 
         if (tab === "tracking") {
           const [trackingData, flowData] = await Promise.all([
-            fetchJson<TrackingResp>(`/api/sales/overview/tracking?store_id=${encodeURIComponent(storeId)}&date_mode=${encodeURIComponent(dateMode)}`),
-            fetchJson<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(storeId)}`),
+            fetchJson<TrackingResp>(`/api/sales/overview/tracking?store_id=${encodeURIComponent(trackingStoreId)}&date_mode=${encodeURIComponent(dateMode)}`),
+            fetchJson<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(trackingStoreId)}`),
           ]);
           nextState.tracking = trackingData;
           nextState.dataFlow = flowData;
@@ -640,7 +645,7 @@ export default function SalesOverviewPage() {
     return () => {
       cancelled = true;
     };
-  }, [context, storeId, tab, dateMode, period, itemStatus, page, pageSize, grain, customDateFrom, customDateTo]);
+  }, [context, storeId, trackingStoreId, tab, dateMode, period, itemStatus, page, pageSize, grain, customDateFrom, customDateTo]);
 
   useEffect(() => {
     setPage(1);
@@ -650,12 +655,18 @@ export default function SalesOverviewPage() {
     () => [{ store_uid: "all", store_id: "all", platform: "multi", platform_label: "Все магазины", label: "Все магазины", currency_code: "RUB" }, ...(context?.marketplace_stores || [])],
     [context],
   );
-  const trackingStores = stores;
+  const trackingStores = useMemo<StoreCtx[]>(
+    () => [{ store_uid: "all", store_id: "all", platform: "yandex_market", platform_label: "Яндекс Маркет", label: "Все магазины", currency_code: "RUB" }, ...((context?.marketplace_stores || []))],
+    [context],
+  );
   const availableStatuses = useMemo(() => orders?.available_statuses || [], [orders]);
   const activeStore = useMemo(() => stores.find((store) => String(store.store_id) === String(storeId)) || null, [stores, storeId]);
   const activeStoreCurrencyCode = String(activeStore?.currency_code || "RUB").trim().toUpperCase() || "RUB";
-  const activeTrackingStore = activeStore;
-  const activeTrackingCurrencyCode = activeStoreCurrencyCode;
+  const activeTrackingStore = useMemo(
+    () => trackingStores.find((store) => String(store.store_id) === String(trackingStoreId)) || null,
+    [trackingStores, trackingStoreId],
+  );
+  const activeTrackingCurrencyCode = String(activeTrackingStore?.currency_code || "RUB").trim().toUpperCase() || "RUB";
   const trackingYears = useMemo(() => tracking?.years || [], [tracking]);
   const orderRows = useMemo(() => orders?.rows || [], [orders]);
   const problemRows = useMemo(() => problemOrders?.rows || [], [problemOrders]);
@@ -679,6 +690,7 @@ export default function SalesOverviewPage() {
     const params = new URLSearchParams();
     params.set("tab", tab);
     params.set("storeId", storeId);
+    if (trackingStoreId) params.set("trackingStoreId", trackingStoreId);
     params.set("dateMode", dateMode);
     params.set("period", period);
     params.set("grain", grain);
@@ -686,7 +698,7 @@ export default function SalesOverviewPage() {
     if (customDateFrom) params.set("date_from", customDateFrom);
     if (customDateTo) params.set("date_to", customDateTo);
     window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
-  }, [customDateFrom, customDateTo, dateMode, grain, itemStatus, period, storeId, tab]);
+  }, [customDateFrom, customDateTo, dateMode, grain, itemStatus, period, storeId, tab, trackingStoreId]);
 
   const summaryCards = useMemo(() => {
     if (tab === "tracking") {
@@ -764,8 +776,8 @@ export default function SalesOverviewPage() {
     setPageSize,
     grain,
     setGrain,
-    trackingStoreId: storeId,
-    setTrackingStoreId: setStoreId,
+    trackingStoreId,
+    setTrackingStoreId,
     expandedMonthKey,
     setExpandedMonthKey,
     tracking,
