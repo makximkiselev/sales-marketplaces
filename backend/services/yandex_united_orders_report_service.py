@@ -1241,6 +1241,25 @@ async def _convert_rub_amount_for_store_currency(amount: float, *, currency_code
     return round(value / float(rate), 4)
 
 
+async def _normalize_cogs_amounts(
+    raw_value: float | None,
+    *,
+    currency_code: str,
+    fx_rate: float | None,
+    calc_date: date | None,
+) -> tuple[float | None, float | None]:
+    if raw_value in (None, ""):
+        return None, None
+    native_value = round(float(raw_value or 0.0), 4)
+    rub_value = await _convert_store_amount_to_rub(
+        native_value,
+        currency_code=currency_code,
+        fx_rate=fx_rate,
+        calc_date=calc_date,
+    )
+    return rub_value, native_value
+
+
 def _split_materialized_rows_by_lifecycle(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     history_rows: list[dict[str, Any]] = []
     hot_rows: list[dict[str, Any]] = []
@@ -2293,35 +2312,35 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
         if raw_cogs is None:
             raw_cogs = cogs_map.get((_normalize_order_key(order_id), ""))
         used_snapshot_cogs = False
-        cogs_value_rub: float | None = float(raw_cogs) if raw_cogs is not None else None
+        cogs_source_value: float | None = float(raw_cogs) if raw_cogs is not None else None
         strict_order_cogs_for_delivered = bool(source_id) and status_kind == "delivered"
         # For HOT/open orders we want the latest known SKU cogs, not a stale
         # hourly snapshot taken before the order was created.
-        if cogs_value_rub is None and status_kind == "open":
-            cogs_value_rub = snapshot_latest_by_sku.get(sku_key)
-            used_snapshot_cogs = cogs_value_rub is not None
-        if cogs_value_rub is None and not strict_order_cogs_for_delivered:
-            cogs_value_rub = snapshot_cogs.get((order_id, sku_key))
-            used_snapshot_cogs = cogs_value_rub is not None
-        if cogs_value_rub is None and status_kind == "delivered" and not strict_order_cogs_for_delivered:
+        if cogs_source_value is None and status_kind == "open":
+            cogs_source_value = snapshot_latest_by_sku.get(sku_key)
+            used_snapshot_cogs = cogs_source_value is not None
+        if cogs_source_value is None and not strict_order_cogs_for_delivered:
+            cogs_source_value = snapshot_cogs.get((order_id, sku_key))
+            used_snapshot_cogs = cogs_source_value is not None
+        if cogs_source_value is None and status_kind == "delivered" and not strict_order_cogs_for_delivered:
             calc_day = str((row or {}).get("order_created_date") or "").strip()
-            cogs_value_rub = snapshot_day_avg.get(calc_day)
-            used_snapshot_cogs = cogs_value_rub is not None
-        if cogs_value_rub is None and not strict_order_cogs_for_delivered:
-            cogs_value_rub = snapshot_latest_by_sku.get(sku_key)
-            used_snapshot_cogs = cogs_value_rub is not None
+            cogs_source_value = snapshot_day_avg.get(calc_day)
+            used_snapshot_cogs = cogs_source_value is not None
+        if cogs_source_value is None and not strict_order_cogs_for_delivered:
+            cogs_source_value = snapshot_latest_by_sku.get(sku_key)
+            used_snapshot_cogs = cogs_source_value is not None
         calc_date = _parse_date_any((row or {}).get("order_created_date")) or (
             (_parse_datetime_any((row or {}).get("order_created_at")) or datetime.now(MSK)).date()
         )
         fx_usd_rub_rate = 1.0 if currency_code != "USD" else float(await _get_cbr_usd_rub_rate_for_date(calc_date) or 0.0)
-        if cogs_value_rub is not None:
+        if cogs_source_value is not None:
             matched += 1
-        cogs_value = round(float(cogs_value_rub or 0.0), 4) if cogs_value_rub is not None else None
-        cogs_value_native = await _convert_rub_amount_for_store_currency(
-            float(cogs_value_rub or 0.0),
+        cogs_value, cogs_value_native = await _normalize_cogs_amounts(
+            cogs_source_value,
             currency_code=currency_code,
+            fx_rate=fx_usd_rub_rate,
             calc_date=calc_date,
-        ) if cogs_value_rub is not None else None
+        )
         key = (order_id, sku_key)
         fact = dict(actual_costs.get(key) or actual_costs.get((order_id, "")) or {})
         if order_id in order_level_costs and order_line_counts.get(order_id):
