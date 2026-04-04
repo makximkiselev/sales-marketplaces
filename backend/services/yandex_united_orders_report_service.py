@@ -2158,14 +2158,6 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
         if marketplace_subsidy is None:
             marketplace_subsidy = _parse_decimal((row or {}).get("subsidy_amount"))
         payment_price = _parse_decimal((row or {}).get("payment_price"))
-        sale_price = float(billing_price or 0.0)
-        sale_price_with_coinvest = (
-            payment_price
-            if payment_price is not None
-            else (billing_price - marketplace_subsidy)
-            if billing_price is not None and marketplace_subsidy is not None
-            else billing_price
-        )
         order_id = str((row or {}).get("order_id") or "").strip()
         sku_key = str((row or {}).get("sku") or "").strip()
         status_kind = _status_kind(str((row or {}).get("item_status") or ""))
@@ -2233,10 +2225,28 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
             for bucket_name, bucket_value in (order_level_costs.get(order_id) or {}).items():
                 if bucket_value:
                     fact[bucket_name] = round(float(fact.get(bucket_name) or 0.0) + (float(bucket_value) / share_divisor), 4)
+        sale_price_raw = billing_price
+        sale_price_with_coinvest_raw = (
+            payment_price
+            if payment_price is not None
+            else (billing_price - marketplace_subsidy)
+            if billing_price is not None and marketplace_subsidy is not None
+            else billing_price
+        )
+        if status_kind == "open":
+            if strategy_installed_price is not None and strategy_installed_price > 0:
+                sale_price_raw = strategy_installed_price
+            if sale_price_raw is not None and sale_price_raw > 0 and strategy_coinvest_pct is not None:
+                coinvest_rate = _clamp_rate(float(strategy_coinvest_pct) / 100.0)
+                sale_price_with_coinvest_raw = round(float(sale_price_raw) * (1.0 - coinvest_rate), 4)
+            elif sale_price_raw is not None and sale_price_raw > 0:
+                sale_price_with_coinvest_raw = sale_price_raw
+        sale_price = float(sale_price_raw or 0.0)
+        sale_price_with_coinvest = float(sale_price_with_coinvest_raw or sale_price_raw or 0.0)
         planned = _planned_costs_for_row(
             {
                 **row,
-                "sale_price": billing_price,
+                "sale_price": sale_price_raw,
                 "strategy_boost_bid_percent": strategy_boost_bid_percent,
             },
             plan_ctx,
