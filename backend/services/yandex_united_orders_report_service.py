@@ -34,6 +34,7 @@ from backend.services.store_data_model import (
     get_pricing_strategy_history_rows,
     get_fx_rates_cache,
     get_pricing_catalog_sku_path_map,
+    get_pricing_market_boost_export_history_rows,
     get_pricing_category_settings_map,
     get_pricing_category_tree,
     get_pricing_logistics_product_settings_map,
@@ -1980,6 +1981,48 @@ def _build_strategy_snapshot_from_iterations(*, rows: list[dict[str, Any]]) -> d
     }
 
 
+def _load_actual_market_boost_map(*, store_uid: str, orders: list[dict[str, Any]]) -> dict[tuple[str, str], float]:
+    order_points: dict[tuple[str, str], datetime] = {}
+    sku_set: set[str] = set()
+    for row in orders:
+        order_id = str(row.get("order_id") or "").strip()
+        sku = str(row.get("sku") or "").strip()
+        created_at = _parse_datetime_any(row.get("order_created_at")) or _parse_datetime_any(row.get("order_created_date"))
+        if not order_id or not sku or created_at is None:
+            continue
+        order_points[(order_id, sku)] = created_at.astimezone(MSK)
+        sku_set.add(sku)
+    if not order_points or not sku_set:
+        return {}
+    history_rows = get_pricing_market_boost_export_history_rows(store_uid=store_uid, skus=sorted(sku_set))
+    by_sku: dict[str, list[tuple[datetime, float]]] = {}
+    for row in history_rows:
+        sku = str(row.get("sku") or "").strip()
+        raw_dt = str(row.get("requested_at") or "").strip()
+        boost = _parse_decimal(row.get("boost_bid_percent"))
+        if not sku or not raw_dt or boost is None:
+            continue
+        try:
+            snap_dt = datetime.fromisoformat(raw_dt.replace("Z", "+00:00"))
+        except Exception:
+            continue
+        if snap_dt.tzinfo is None:
+            snap_dt = snap_dt.replace(tzinfo=timezone.utc)
+        by_sku.setdefault(sku, []).append((snap_dt.astimezone(MSK), float(boost)))
+    resolved: dict[tuple[str, str], float] = {}
+    for key, created_at in order_points.items():
+        _order_id, sku = key
+        chosen: float | None = None
+        for snap_dt, boost in by_sku.get(sku, []):
+            if snap_dt <= created_at:
+                chosen = boost
+                continue
+            break
+        if chosen is not None:
+            resolved[key] = chosen
+    return resolved
+
+
 def _load_strategy_iteration_snapshot_map(*, store_uid: str, orders: list[dict[str, Any]]) -> dict[tuple[str, str], dict[str, Any]]:
     order_points: dict[tuple[str, str], datetime] = {}
     sku_set: set[str] = set()
@@ -2169,6 +2212,7 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
             )
         ],
     )
+    actual_market_boost_map = _load_actual_market_boost_map(store_uid=store_uid, orders=rows)
     plan_ctx = _planned_cost_context(store_uid, [str(row.get("sku") or "").strip() for row in rows])
     netting_rows = _load_netting_scope(store_uid=store_uid, date_from=min_date or "1900-01-01", date_to=max_date or "2999-12-31")
     netting_delivery_by_order_sku, netting_delivery_by_order = _build_netting_delivery_map(netting_rows)
@@ -2245,6 +2289,7 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
         strategy_selected_iteration_code = str(strategy_snapshot.get("selected_iteration_code") or "").strip()
         strategy_uses_promo = bool(strategy_snapshot.get("uses_promo"))
         strategy_market_promo_status = str(strategy_snapshot.get("market_promo_status") or "").strip()
+        actual_market_boost_bid_percent = actual_market_boost_map.get((order_id, sku_key))
         raw_cogs = cogs_map.get((_normalize_order_key(order_id), sku_key))
         if raw_cogs is None:
             raw_cogs = cogs_map.get((_normalize_order_key(order_id), ""))
@@ -2325,7 +2370,7 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
             {
                 **row,
                 "sale_price": sale_price_raw,
-                "strategy_market_boost_bid_percent": strategy_market_boost_bid_percent,
+                "strategy_market_boost_bid_percent": actual_market_boost_bid_percent,
             },
             plan_ctx,
         )

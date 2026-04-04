@@ -44,6 +44,39 @@ class SalesOverviewOrderRowsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(native, 5.0)
         self.assertFalse(used_planned)
 
+    def test_planned_costs_use_only_actual_market_boost(self) -> None:
+        ctx = {
+            "path_map": {},
+            "category_settings": {},
+            "store_settings": {"target_drr_percent": 12.0},
+            "logistics_store": {},
+            "logistics_product": {},
+        }
+
+        no_actual = svc._planned_costs_for_row(
+            {
+                "sku": "SKU-1",
+                "sale_price": 1000.0,
+                "strategy_boost_bid_percent": 8.0,
+                "strategy_market_boost_bid_percent": None,
+            },
+            ctx,
+        )
+        with_actual = svc._planned_costs_for_row(
+            {
+                "sku": "SKU-1",
+                "sale_price": 1000.0,
+                "strategy_boost_bid_percent": 8.0,
+                "strategy_market_boost_bid_percent": 5.0,
+            },
+            ctx,
+        )
+
+        self.assertEqual(no_actual["ads"], 120.0)
+        self.assertFalse(no_actual["ads_from_strategy"])
+        self.assertEqual(with_actual["ads"], 50.0)
+        self.assertTrue(with_actual["ads_from_strategy"])
+
 
 if __name__ == "__main__":
     unittest.main()

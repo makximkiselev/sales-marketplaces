@@ -23,6 +23,7 @@ from backend.services.pricing_prices_service import _load_stock_map_from_source
 from backend.services.storage import get_source_by_id, is_source_mode_enabled, load_integrations
 from backend.services.store_data_model import (
     _connect,
+    append_pricing_market_boost_export_history_bulk,
     append_pricing_market_price_export_history_bulk,
     get_pricing_store_settings,
     update_pricing_strategy_market_promo_feedback,
@@ -686,6 +687,14 @@ async def _push_market_boosts_for_store(*, store_uid: str, business_id: str, cam
         ]
     }
     url = f"{YANDEX_BASE_URL}/businesses/{business_id}/bids"
+    requested_at = datetime.now().astimezone().isoformat()
+    append_pricing_market_boost_export_history_bulk(
+        store_uid=store_uid,
+        campaign_id=campaign_id,
+        rows=values,
+        requested_at=requested_at,
+        source="final_export",
+    )
     async with httpx.AsyncClient(timeout=90) as client:
         resp = await client.put(url, headers=_ym_headers(api_key), json=body)
         if resp.status_code >= 400:

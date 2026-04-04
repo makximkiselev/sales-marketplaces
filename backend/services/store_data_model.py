@@ -38,6 +38,7 @@ _HISTORY_RETENTION_RULES: tuple[tuple[str, str, int], ...] = (
     ("pricing_strategy_iteration_history", "captured_at", 7),
     ("pricing_cogs_snapshots", "snapshot_at", 7),
     ("pricing_market_price_export_history", "requested_at", 7),
+    ("pricing_market_boost_export_history", "requested_at", 7),
     ("sales_market_order_items", "loaded_at", 90),
     ("sales_overview_order_rows", "calculated_at", 90),
     ("yandex_goods_price_report_history", "captured_at", 30),
@@ -161,6 +162,23 @@ def _init_history_tables() -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_pricing_market_price_export_history_store_sku_time "
             "ON pricing_market_price_export_history(store_uid, sku, requested_at)"
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS pricing_market_boost_export_history (
+                store_uid TEXT NOT NULL,
+                sku TEXT NOT NULL,
+                requested_at TEXT NOT NULL,
+                campaign_id TEXT NOT NULL DEFAULT '',
+                boost_bid_percent REAL NULL,
+                source TEXT NOT NULL DEFAULT 'strategy',
+                PRIMARY KEY (store_uid, sku, requested_at)
+            )
+            """
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_pricing_market_boost_export_history_store_sku_time "
+            "ON pricing_market_boost_export_history(store_uid, sku, requested_at)"
         )
         conn.execute(
             """
@@ -4809,6 +4827,70 @@ def append_pricing_market_price_export_history_bulk(
         )
         conn.commit()
     return len(prepared)
+
+
+def append_pricing_market_boost_export_history_bulk(
+    *,
+    store_uid: str,
+    campaign_id: str,
+    rows: list[dict[str, Any]],
+    requested_at: str | None = None,
+    source: str = "strategy",
+) -> int:
+    init_store_data_model()
+    suid = str(store_uid or "").strip()
+    campaign = str(campaign_id or "").strip()
+    when = str(requested_at or _now_iso()).strip() or _now_iso()
+    src = str(source or "strategy").strip() or "strategy"
+    if not suid or not rows:
+        return 0
+    prepared: list[tuple[Any, ...]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        sku = str(row.get("sku") or "").strip()
+        if not sku:
+            continue
+        prepared.append((suid, sku, when, campaign, row.get("bid"), src))
+    if not prepared:
+        return 0
+    values_sql = _placeholders(6)
+    with _connect_history() as conn:
+        _executemany(conn,
+            f"""
+            INSERT INTO pricing_market_boost_export_history (
+                store_uid, sku, requested_at, campaign_id, boost_bid_percent, source
+            ) VALUES ({values_sql})
+            ON CONFLICT(store_uid, sku, requested_at) DO UPDATE SET
+                campaign_id = excluded.campaign_id,
+                boost_bid_percent = excluded.boost_bid_percent,
+                source = excluded.source
+            """,
+            prepared,
+        )
+        conn.commit()
+    return len(prepared)
+
+
+def get_pricing_market_boost_export_history_rows(*, store_uid: str, skus: list[str]) -> list[dict[str, Any]]:
+    init_store_data_model()
+    suid = str(store_uid or "").strip()
+    sku_list = [str(item or "").strip() for item in skus if str(item or "").strip()]
+    if not suid or not sku_list:
+        return []
+    placeholders = _placeholders(len(sku_list))
+    with _connect_history() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT store_uid, sku, requested_at, campaign_id, boost_bid_percent, source
+            FROM pricing_market_boost_export_history
+            WHERE store_uid = {'%s' if is_postgres_backend() else '?'}
+              AND sku IN ({placeholders})
+            ORDER BY requested_at ASC
+            """,
+            [suid, *sku_list],
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def get_pricing_boost_results_map(*, store_uids: list[str], skus: list[str]) -> dict[str, dict[str, dict[str, Any]]]:
