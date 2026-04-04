@@ -223,6 +223,7 @@ export function SalesOverviewMobile({ vm }: Props) {
                   {"sale_price" in row ? (
                     <>
                       <div className={styles.mobileOverviewMetric}><span>Продажа</span><strong>{formatMoney(row.sale_price, activeStoreCurrencyCode)}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Платеж покупателя</span><strong>{formatMoney(row.sale_price_with_coinvest, activeStoreCurrencyCode)}</strong></div>
                       <div className={styles.mobileOverviewMetric}><span>Прибыль</span><strong>{formatMoney(row.profit, activeStoreCurrencyCode)}</strong></div>
                       <div className={styles.mobileOverviewMetric}><span>Маржа</span><strong>{formatPercent(row.profit && row.sale_price ? (Number(row.profit) / Number(row.sale_price)) * 100 : null)}</strong></div>
                     </>
