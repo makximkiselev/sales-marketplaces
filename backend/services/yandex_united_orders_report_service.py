@@ -2104,14 +2104,7 @@ def _planned_costs_for_row(row: dict[str, Any], ctx: dict[str, Any]) -> dict[str
     # tested/recommended boost is a strategy hypothesis and must not inflate order economics.
     ads_raw = row.get("strategy_market_boost_bid_percent")
     ads_from_strategy = ads_raw not in (None, "")
-    ads_source = "market_boost_fact" if ads_from_strategy else "category_ads_percent"
-    if ads_raw in (None, ""):
-        ads_raw = st.get("ads_percent")
-    if ads_raw in (None, ""):
-        ads_source = "store_target_drr"
-        ads_raw = store_st.get("target_drr_percent")
-    elif not ads_from_strategy:
-        ads_source = "category_ads_percent"
+    ads_source = "market_boost_fact" if ads_from_strategy else "none"
     ads_rate = _clamp_rate(_num0(ads_raw) / 100.0)
     tax_raw = st.get("tax_percent")
     if tax_raw in (None, ""):
