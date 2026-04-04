@@ -567,7 +567,8 @@ async def _warm_sales_overview_dashboard_cache(payloads: list[dict[str, str]]) -
     for raw_payload in payloads:
         store_id = str(raw_payload.get("store_id") or "all").strip() or "all"
         period = str(raw_payload.get("period") or "today").strip().lower() or "today"
-        payload_map[(store_id, period)] = {"store_id": store_id, "period": period}
+        normalized = _dashboard_cache_payload(store_id=store_id, period=period)
+        payload_map[(store_id, period)] = normalized
     for payload in payload_map.values():
         key = _dashboard_cache_key(payload)
         if _dashboard_cache_get(payload):

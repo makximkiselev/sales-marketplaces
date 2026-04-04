@@ -1316,7 +1316,7 @@ def _load_orders_scope(*, store_uid: str, item_status: str, date_from: str, date
     max_day: date | None = None
     filtered: list[dict[str, Any]] = []
     for row in row_dicts:
-        if not _tracking_status_allowed(str(row.get("item_status") or ""), mode=mode):
+        if not _tracking_status_allowed(str(row.get("item_status") or "")):
             continue
         row_day = _parse_date_any(row.get("order_created_date")) or (
             (_parse_datetime_any(row.get("order_created_at")) or None).date()
