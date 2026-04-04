@@ -46,11 +46,14 @@ export function SalesOverviewMobile({ vm }: Props) {
   const rows = tab === "orders" ? orderRows : tab === "problems" ? problemRows : tab === "sku" ? skuRows : categoryRows;
   const priceCurrencyCode = activeStoreCurrencyCode || "RUB";
   const economicsCurrencyCode = "RUB";
-  const priceValue = (row: any, key: string) => {
-    if (String(priceCurrencyCode).trim().toUpperCase() === "USD") {
-      return row?.[`${key}_native`] ?? row?.[key];
-    }
-    return row?.[key];
+  const hasNativeCurrency = String(priceCurrencyCode).trim().toUpperCase() === "USD";
+  const nativeValue = (row: any, key: string) => row?.[`${key}_native`] ?? row?.[key];
+  const fxLabel = (row: any) => {
+    const code = String(row?.currency_code || priceCurrencyCode || "RUB").trim().toUpperCase() || "RUB";
+    if (code !== "USD") return "1.00";
+    const rate = Number(row?.fx_usd_rub_rate || 0);
+    if (!rate) return "—";
+    return `${rate.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ₽/$`;
   };
   const currentStoreLabel = tab === "tracking" ? activeTrackingStore?.label : activeStore?.label;
   const modeLabel = dateMode === "delivery" ? "Дата доставки" : "Дата заказа";
@@ -230,10 +233,11 @@ export function SalesOverviewMobile({ vm }: Props) {
                 <div className={styles.mobileOverviewMetrics}>
                   {"sale_price" in row ? (
                     <>
-                      <div className={styles.mobileOverviewMetric}><span>Продажа</span><strong>{formatMoney(priceValue(row, "sale_price"), priceCurrencyCode)}</strong></div>
-                      <div className={styles.mobileOverviewMetric}><span>Платеж покупателя</span><strong>{formatMoney(priceValue(row, "sale_price_with_coinvest"), priceCurrencyCode)}</strong></div>
-                      <div className={styles.mobileOverviewMetric}><span>Прибыль</span><strong>{formatMoney(row.profit, economicsCurrencyCode)}</strong></div>
-                      <div className={styles.mobileOverviewMetric}><span>Себестоимость</span><strong>{formatMoney(row.cogs_price, economicsCurrencyCode)}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Курс</span><strong>{fxLabel(row)}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Продажа</span><strong>{formatMoney(row.sale_price, "RUB")}{hasNativeCurrency ? <small className={styles.mobileOverviewMetricNote}>{formatMoney(nativeValue(row, "sale_price"), priceCurrencyCode)}</small> : null}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Платеж покупателя</span><strong>{formatMoney(row.sale_price_with_coinvest, "RUB")}{hasNativeCurrency ? <small className={styles.mobileOverviewMetricNote}>{formatMoney(nativeValue(row, "sale_price_with_coinvest"), priceCurrencyCode)}</small> : null}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Прибыль</span><strong>{formatMoney(row.profit, economicsCurrencyCode)}{hasNativeCurrency ? <small className={styles.mobileOverviewMetricNote}>{formatMoney(row.profit_native, priceCurrencyCode)}</small> : null}</strong></div>
+                      <div className={styles.mobileOverviewMetric}><span>Себестоимость</span><strong>{formatMoney(row.cogs_price, economicsCurrencyCode)}{hasNativeCurrency ? <small className={styles.mobileOverviewMetricNote}>{formatMoney(row.cogs_price_native, priceCurrencyCode)}</small> : null}</strong></div>
                     </>
                   ) : (
                     <>

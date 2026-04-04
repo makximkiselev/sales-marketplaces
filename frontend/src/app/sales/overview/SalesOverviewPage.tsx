@@ -48,6 +48,8 @@ type OrderRow = {
   item_status?: string;
   sku?: string;
   item_name?: string;
+  currency_code?: string | null;
+  fx_usd_rub_rate?: number | null;
   sale_price?: number | null;
   sale_price_native?: number | null;
   sale_price_with_coinvest?: number | null;

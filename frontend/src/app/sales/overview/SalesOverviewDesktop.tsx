@@ -81,11 +81,26 @@ export function SalesOverviewDesktop({ vm }: Props) {
   };
   const priceCurrencyCode = activeStoreCurrencyCode || "RUB";
   const economicsCurrencyCode = "RUB";
-  const priceValue = (row: any, key: string) => {
-    if (String(priceCurrencyCode).trim().toUpperCase() === "USD") {
-      return row?.[`${key}_native`] ?? row?.[key];
-    }
-    return row?.[key];
+  const hasNativeCurrency = String(priceCurrencyCode).trim().toUpperCase() === "USD";
+  const nativeValue = (row: any, key: string) => row?.[`${key}_native`] ?? row?.[key];
+  const moneyWithNative = (rubValue: number | null | undefined, nativeVal: number | null | undefined) => (
+    <>
+      <div>{formatMoney(rubValue, "RUB")}</div>
+      {hasNativeCurrency ? <div className={s.subtleText}>{formatMoney(nativeVal, priceCurrencyCode)}</div> : null}
+    </>
+  );
+  const rubWithOptionalNative = (rubValue: number | null | undefined, nativeVal: number | null | undefined) => (
+    <>
+      <div>{formatMoney(rubValue, economicsCurrencyCode)}</div>
+      {hasNativeCurrency ? <div className={s.subtleText}>{formatMoney(nativeVal, priceCurrencyCode)}</div> : null}
+    </>
+  );
+  const orderFxLabel = (row: any) => {
+    const code = String(row?.currency_code || priceCurrencyCode || "RUB").trim().toUpperCase() || "RUB";
+    if (code !== "USD") return "1.00";
+    const rate = Number(row?.fx_usd_rub_rate || 0);
+    if (!rate) return "—";
+    return `${rate.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ₽/$`;
   };
 
   const s = stylesRef as typeof styles;
@@ -127,8 +142,8 @@ export function SalesOverviewDesktop({ vm }: Props) {
   const currentStoreLabel = tab === "tracking" ? activeTrackingStore?.label : activeStore?.label;
   const currentCurrencyLabel = (() => {
     if (tab === "tracking" || tab === "sku" || tab === "category") return "Аналитика: ₽";
-    if (String(activeStoreCurrencyCode).trim().toUpperCase() === "USD") return "Цены: $ · Экономика: ₽";
-    return "Цены и экономика: ₽";
+    if (hasNativeCurrency) return "По заказам: ₽ · Справочно: $";
+    return "По заказам: ₽";
   })();
   const currentPeriodLabel = ORDERS_PERIOD_OPTIONS.find((option: any) => option.value === period)?.label || "Период";
   const quickFacts = [
@@ -291,12 +306,12 @@ export function SalesOverviewDesktop({ vm }: Props) {
             <table className={s.table}>
               <thead>
                 <tr>
-                  <th>Дата</th><th>Заказ</th><th>SKU</th><th className={s.nameCell}>Наименование</th><th>Статус</th><th>Продажа</th><th>С соинвестом</th><th>Цена стратегии</th><th>Отклонение</th><th>Реклама</th><th>Себестоимость</th><th>Комиссия</th><th>Эквайринг</th><th>Логистика</th><th>Налог</th><th>Расходы</th><th>Прибыль</th>
+                  <th>Дата</th><th>Заказ</th><th>SKU</th><th className={s.nameCell}>Наименование</th><th>Статус</th><th>Курс</th><th>Продажа</th><th>С соинвестом</th><th>Цена стратегии</th><th>Отклонение</th><th>Реклама</th><th>Себестоимость</th><th>Комиссия</th><th>Эквайринг</th><th>Логистика</th><th>Налог</th><th>Расходы</th><th>Прибыль</th>
                 </tr>
               </thead>
               <tbody>
                 {orderRows.length === 0 ? (
-                  <tr><td colSpan={17} className={s.empty}>Нет заказов для выбранных параметров</td></tr>
+                  <tr><td colSpan={18} className={s.empty}>Нет заказов для выбранных параметров</td></tr>
                 ) : orderRows.map((row: any) => {
                   const totalCosts = Number(row.commission || 0) + Number(row.acquiring || 0) + Number(row.delivery || 0) + Number(row.tax || 0) + Number(row.ads || 0);
                   return (
@@ -306,12 +321,16 @@ export function SalesOverviewDesktop({ vm }: Props) {
                       <td>{row.sku || "—"}</td>
                       <td className={s.nameCell}>{row.item_name || "—"}</td>
                       <td><span className={`${s.statusBadge} ${s[`tone_${statusTone(row.item_status)}` as keyof typeof s]}`}>{row.item_status || "—"}</span></td>
-                      <td>{formatMoney(priceValue(row, "sale_price"), priceCurrencyCode)}</td>
-                      <td>{formatMoney(priceValue(row, "sale_price_with_coinvest"), priceCurrencyCode)}</td>
-                      <td><div>{formatMoney(priceValue(row, "strategy_installed_price"), priceCurrencyCode)}</div><div className={s.subtleText}>{formatDateTime(row.strategy_snapshot_at)}</div></td>
-                      <td>{formatDelta(priceValue(row, "sale_price"), priceValue(row, "strategy_installed_price"), priceCurrencyCode)}</td>
+                      <td>{orderFxLabel(row)}</td>
+                      <td>{moneyWithNative(row.sale_price, nativeValue(row, "sale_price"))}</td>
+                      <td>{moneyWithNative(row.sale_price_with_coinvest, nativeValue(row, "sale_price_with_coinvest"))}</td>
+                      <td><div>{moneyWithNative(row.strategy_installed_price, nativeValue(row, "strategy_installed_price"))}</div><div className={s.subtleText}>{formatDateTime(row.strategy_snapshot_at)}</div></td>
                       <td>
-                        <div>{formatMoney(row.ads, economicsCurrencyCode)}</div>
+                        <div>{formatDelta(row.sale_price, row.strategy_installed_price, "RUB")}</div>
+                        {hasNativeCurrency ? <div className={s.subtleText}>{formatDelta(nativeValue(row, "sale_price"), nativeValue(row, "strategy_installed_price"), priceCurrencyCode)}</div> : null}
+                      </td>
+                      <td>
+                        {rubWithOptionalNative(row.ads, row.ads_native)}
                         <div className={s.subtleText}>
                           Буст план: {formatPercent(row.strategy_boost_bid_percent)} / Факт: {formatPercent(row.actual_market_boost_bid_percent)}
                         </div>
@@ -319,13 +338,13 @@ export function SalesOverviewDesktop({ vm }: Props) {
                           Источник: {adsSourceLabel(row.ads_source)} {formatPercent(row.ads_rate_percent)}
                         </div>
                       </td>
-                      <td>{formatMoney(row.cogs_price, economicsCurrencyCode)}</td>
-                      <td><div>{formatMoney(row.commission, economicsCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.commission, row.sale_price)}</div></td>
-                      <td><div>{formatMoney(row.acquiring, economicsCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.acquiring, row.sale_price)}</div></td>
-                      <td>{formatMoney(row.delivery, economicsCurrencyCode)}</td>
-                      <td><div>{formatMoney(row.tax, economicsCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.tax, row.sale_price)}</div></td>
+                      <td>{rubWithOptionalNative(row.cogs_price, row.cogs_price_native)}</td>
+                      <td><div>{rubWithOptionalNative(row.commission, row.commission_native)}</div><div className={s.subtleText}>{percentOfBase(row.commission, row.sale_price)}</div></td>
+                      <td><div>{rubWithOptionalNative(row.acquiring, row.acquiring_native)}</div><div className={s.subtleText}>{percentOfBase(row.acquiring, row.sale_price)}</div></td>
+                      <td>{rubWithOptionalNative(row.delivery, row.delivery_native)}</td>
+                      <td><div>{rubWithOptionalNative(row.tax, row.tax_native)}</div><div className={s.subtleText}>{percentOfBase(row.tax, row.sale_price)}</div></td>
                       <td>{formatMoney(totalCosts, economicsCurrencyCode)}</td>
-                      <td><div>{formatMoney(row.profit, economicsCurrencyCode)}</div><div className={s.subtleText}>{percentOfBase(row.profit, row.sale_price)}</div></td>
+                      <td><div>{rubWithOptionalNative(row.profit, row.profit_native)}</div><div className={s.subtleText}>{percentOfBase(row.profit, row.sale_price)}</div></td>
                     </tr>
                   );
                 })}
@@ -357,7 +376,7 @@ export function SalesOverviewDesktop({ vm }: Props) {
               <tbody>
                 {problemRows.length === 0 ? <tr><td colSpan={9} className={s.empty}>Нет проблемных заказов</td></tr> : problemRows.map((row: any) => (
                   <tr key={`${row.order_id || ""}-${row.sku || ""}`}>
-                    <td>{formatDateTime(row.order_created_at)}</td><td>{formatDate(row.delivery_date)}</td><td>{row.order_id || "—"}</td><td>{row.sku || "—"}</td><td className={s.nameCell}>{row.item_name || "—"}</td><td><span className={`${s.statusBadge} ${s.tone_warn}`}>{row.item_status || "—"}</span></td><td>{formatMoney(priceValue(row, "sale_price"), priceCurrencyCode)}</td><td>{formatMoney(row.cogs_price, economicsCurrencyCode)}</td><td className={s.nameCell}>Доставлен, но нет себестоимости. Заказ исключён из чистой аналитики.</td>
+                    <td>{formatDateTime(row.order_created_at)}</td><td>{formatDate(row.delivery_date)}</td><td>{row.order_id || "—"}</td><td>{row.sku || "—"}</td><td className={s.nameCell}>{row.item_name || "—"}</td><td><span className={`${s.statusBadge} ${s.tone_warn}`}>{row.item_status || "—"}</span></td><td>{moneyWithNative(row.sale_price, nativeValue(row, "sale_price"))}</td><td>{rubWithOptionalNative(row.cogs_price, row.cogs_price_native)}</td><td className={s.nameCell}>Доставлен, но нет себестоимости. Заказ исключён из чистой аналитики.</td>
                   </tr>
                 ))}
               </tbody>

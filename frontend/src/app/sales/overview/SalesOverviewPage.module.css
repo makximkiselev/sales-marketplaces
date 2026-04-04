@@ -541,9 +541,19 @@
 }
 
 .mobileOverviewMetric strong {
+  display: grid;
+  justify-items: end;
   color: #edf4ff;
   font-size: 14px;
   line-height: 1.25;
+}
+
+.mobileOverviewMetricNote {
+  margin-top: 2px;
+  color: #8fb9ff;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
 }
 
 @media (max-width: 960px) {
@@ -651,6 +661,10 @@
 
   .mobileOverviewMetric strong {
     font-size: 13px;
+  }
+
+  .mobileOverviewMetricNote {
+    font-size: 10px;
   }
 
   .mobileFilterGrid {
