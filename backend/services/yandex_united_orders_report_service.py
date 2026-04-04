@@ -2376,7 +2376,11 @@ async def get_sales_overview_history(
     if not store_uid:
         return {"ok": True, "rows": [], "total_count": 0, "page": 1, "page_size": page_size, "available_statuses": [], "min_date": "", "max_date": "", "loaded_at": "", "kpis": {}}
     snapshot = get_sales_overview_order_rows(store_uid=store_uid, page=1, page_size=1)
-    available_statuses = list(snapshot.get("available_statuses") or [])
+    available_statuses = [
+        status
+        for status in list(snapshot.get("available_statuses") or [])
+        if _tracking_status_allowed(str(status or ""), mode="created")
+    ]
     min_date = str(snapshot.get("min_date") or "").strip()
     max_date = str(snapshot.get("max_date") or "").strip()
     loaded_at = str(snapshot.get("loaded_at") or "").strip()
@@ -2400,7 +2404,14 @@ async def get_sales_overview_history(
         chunk_rows = list(chunk.get("rows") or [])
         if not chunk_rows:
             break
-        clean_rows.extend([row for row in chunk_rows if not _is_problem_order_row(row)])
+        clean_rows.extend(
+            [
+                row
+                for row in chunk_rows
+                if not _is_problem_order_row(row)
+                and _tracking_status_allowed(str(row.get("item_status") or ""), mode="created")
+            ]
+        )
         if len(chunk_rows) < 1000:
             break
         fetch_page += 1
