@@ -91,7 +91,12 @@ def _with_system_conn(fn):
             return fn(conn)
         except Exception:
             _reset_shared_system_conn()
-            raise
+            retry_conn = _get_shared_system_conn()
+            try:
+                return fn(retry_conn)
+            except Exception:
+                _reset_shared_system_conn()
+                raise
 
 
 def warm_auth_runtime() -> None:
