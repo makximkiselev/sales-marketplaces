@@ -1011,10 +1011,19 @@ async def _run_today_orders_refresh(*, store_uids: list[str] | None = None, run_
 
 def _invalidate_sales_overview_dashboard_after_job() -> None:
     try:
-        from backend.routers.sales_overview import invalidate_sales_overview_dashboard_cache, schedule_sales_overview_dashboard_cache_warm
+        from backend.routers.sales_overview import (
+            invalidate_sales_overview_dashboard_cache,
+            run_sales_overview_dashboard_cache_warm_sync,
+            schedule_sales_overview_dashboard_cache_warm,
+        )
 
         invalidate_sales_overview_dashboard_cache()
-        schedule_sales_overview_dashboard_cache_warm()
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            threading.Thread(target=run_sales_overview_dashboard_cache_warm_sync, daemon=True).start()
+        else:
+            schedule_sales_overview_dashboard_cache_warm()
     except Exception as exc:
         logger.warning("[refresh_orchestrator] failed to invalidate sales overview dashboard cache: %s", exc)
 

@@ -92,7 +92,7 @@ BACKEND_RELOAD_ENABLED = _env_bool("BACKEND_RELOAD", "UVICORN_RELOAD", default=T
 BLOCKING_STARTUP_PRIME = _env_bool("STARTUP_PRIME_BLOCKING", default=False)
 STARTUP_CACHE_PRIME_ENABLED = _env_bool("STARTUP_CACHE_PRIME_ENABLED", default=False)
 STARTUP_HEAVY_REFRESH_ENABLED = _env_bool("STARTUP_HEAVY_REFRESH_ENABLED", default=False)
-REFRESH_SCHEDULER_AUTOSTART = _env_bool("REFRESH_SCHEDULER_AUTOSTART", default=False)
+REFRESH_SCHEDULER_AUTOSTART = _env_bool("REFRESH_SCHEDULER_AUTOSTART", default=True)
 ELASTICITY_SCHEDULER = BackgroundScheduler(
     executors={"default": APSchedulerThreadPoolExecutor(1)},
     job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 7200},
