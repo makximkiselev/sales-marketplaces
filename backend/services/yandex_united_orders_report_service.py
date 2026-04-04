@@ -1247,10 +1247,28 @@ async def _normalize_cogs_amounts(
     currency_code: str,
     fx_rate: float | None,
     calc_date: date | None,
+    source_currency: str = "store",
 ) -> tuple[float | None, float | None]:
     if raw_value in (None, ""):
         return None, None
-    native_value = round(float(raw_value or 0.0), 4)
+    value = round(float(raw_value or 0.0), 4)
+    source_code = str(source_currency or "store").strip().upper() or "STORE"
+    if source_code == "RUB":
+        rub_value = value
+        if str(currency_code or "RUB").strip().upper() == "USD":
+            rate = float(fx_rate or 0.0)
+            if rate > 0:
+                native_value = round(rub_value / rate, 4)
+            else:
+                native_value = await _convert_rub_amount_for_store_currency(
+                    rub_value,
+                    currency_code=currency_code,
+                    calc_date=calc_date,
+                )
+        else:
+            native_value = rub_value
+        return round(rub_value, 4), round(float(native_value or 0.0), 4)
+    native_value = value
     rub_value = await _convert_store_amount_to_rub(
         native_value,
         currency_code=currency_code,
@@ -2339,11 +2357,13 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
         fx_usd_rub_rate = 1.0 if currency_code != "USD" else float(await _get_cbr_usd_rub_rate_for_date(calc_date) or 0.0)
         if cogs_source_value is not None:
             matched += 1
+        cogs_source_currency = "RUB" if raw_cogs is not None else "store"
         cogs_value, cogs_value_native = await _normalize_cogs_amounts(
             cogs_source_value,
             currency_code=currency_code,
             fx_rate=fx_usd_rub_rate,
             calc_date=calc_date,
+            source_currency=cogs_source_currency,
         )
         key = (order_id, sku_key)
         fact = dict(actual_costs.get(key) or actual_costs.get((order_id, "")) or {})

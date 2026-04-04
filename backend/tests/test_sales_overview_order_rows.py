@@ -55,6 +55,18 @@ class SalesOverviewOrderRowsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(native, 374.0)
         self.assertEqual(rub, 36091.0)
 
+    async def test_normalize_cogs_amounts_treats_rub_order_source_as_rub_for_usd_store(self) -> None:
+        rub, native = await svc._normalize_cogs_amounts(
+            112500.0,
+            currency_code="USD",
+            fx_rate=79.7293,
+            calc_date=svc.date(2026, 4, 4),
+            source_currency="RUB",
+        )
+
+        self.assertEqual(rub, 112500.0)
+        self.assertEqual(native, 1411.0246)
+
     def test_planned_costs_use_only_actual_market_boost(self) -> None:
         ctx = {
             "path_map": {},
