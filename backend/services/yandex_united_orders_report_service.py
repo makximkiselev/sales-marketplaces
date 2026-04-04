@@ -2155,26 +2155,14 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
     existing_order_rows_map = get_sales_overview_order_rows_map(store_uid=store_uid, order_skus=order_keys)
     strategy_iteration_snapshot_map = _load_strategy_iteration_snapshot_map(
         store_uid=store_uid,
-        orders=[
-            row
-            for row in rows
-            if not _strategy_snapshot_is_complete(
-                _strategy_snapshot_from_existing_order_row(
-                    existing_order_rows_map.get((str(row.get("order_id") or "").strip(), str(row.get("sku") or "").strip())) or {}
-                )
-            )
-        ],
+        orders=list(rows),
     )
     strategy_snapshot_map = _load_strategy_snapshot_map(
         store_uid=store_uid,
         orders=[
             row
             for row in rows
-            if not _strategy_snapshot_is_complete(
-                _strategy_snapshot_from_existing_order_row(
-                    existing_order_rows_map.get((str(row.get("order_id") or "").strip(), str(row.get("sku") or "").strip())) or {}
-                )
-            ) and not strategy_iteration_snapshot_map.get(
+            if not strategy_iteration_snapshot_map.get(
                 (str(row.get("order_id") or "").strip(), str(row.get("sku") or "").strip())
             )
         ],
@@ -2233,14 +2221,11 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
         order_id = str((row or {}).get("order_id") or "").strip()
         sku_key = str((row or {}).get("sku") or "").strip()
         status_kind = _status_kind(str((row or {}).get("item_status") or ""))
+        existing_strategy_snapshot = _strategy_snapshot_from_existing_order_row(existing_order_rows_map.get((order_id, sku_key)) or {})
         strategy_snapshot = (
-            (
-                _strategy_snapshot_from_existing_order_row(existing_order_rows_map.get((order_id, sku_key)) or {})
-                if _strategy_snapshot_is_complete(_strategy_snapshot_from_existing_order_row(existing_order_rows_map.get((order_id, sku_key)) or {}))
-                else {}
-            )
-            or strategy_iteration_snapshot_map.get((order_id, sku_key))
+            strategy_iteration_snapshot_map.get((order_id, sku_key))
             or strategy_snapshot_map.get((order_id, sku_key))
+            or (existing_strategy_snapshot if _strategy_snapshot_is_complete(existing_strategy_snapshot) else {})
             or {}
         )
         strategy_cycle_started_at = str(strategy_snapshot.get("cycle_started_at") or "").strip()
