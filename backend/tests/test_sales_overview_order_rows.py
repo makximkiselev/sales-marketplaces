@@ -132,13 +132,61 @@ class SalesOverviewOrderRowsTests(unittest.IsolatedAsyncioTestCase):
 
         with patch.object(svc, "_catalog_marketplace_stores_context", return_value=[{"platform": "yandex_market", "store_uid": "yandex_market:1", "store_id": "1"}]), \
              patch.object(svc, "get_pricing_store_settings", return_value={}), \
-             patch.object(svc, "_load_sales_overview_order_fact_rows", return_value=[row]):
+             patch.object(svc, "_load_sales_overview_order_fact_rows", return_value=[row]), \
+             patch.object(svc, "_load_extra_ads_scope", return_value={}), \
+             patch.object(svc, "_load_netting_scope", return_value=[]):
             payload = await svc.get_sales_overview_tracking(store_id="1", date_mode="delivery")
 
         self.assertEqual(payload["active_month_key"], "2026-04")
         month = payload["years"][0]["months"][0]
         self.assertEqual(month["delivery_time_days"], 7.0)
         self.assertEqual(month["days"][0]["delivery_time_days"], 7.0)
+
+    async def test_tracking_delivery_mode_counts_returns_and_day_level_costs(self) -> None:
+        delivered_row = {
+            "item_status": "Доставлен покупателю",
+            "order_id": "1",
+            "sku": "SKU-1",
+            "order_created_at": "2026-04-01T12:00:00+03:00",
+            "order_created_date": "2026-04-01",
+            "delivery_date": "2026-04-07",
+            "sale_price": 1000.0,
+            "sale_price_with_coinvest": 900.0,
+            "profit": 100.0,
+            "ads": 10.0,
+            "cogs_price": 500.0,
+        }
+        return_row = {
+            "item_status": "Возврат",
+            "order_id": "2",
+            "sku": "SKU-2",
+            "order_created_at": "2026-04-02T12:00:00+03:00",
+            "order_created_date": "2026-04-02",
+            "delivery_date": "2026-04-07",
+            "sale_price": 0.0,
+            "sale_price_with_coinvest": 0.0,
+            "profit": 0.0,
+            "ads": 0.0,
+            "cogs_price": 0.0,
+        }
+
+        with patch.object(svc, "_catalog_marketplace_stores_context", return_value=[{"platform": "yandex_market", "store_uid": "yandex_market:1", "store_id": "1"}]), \
+             patch.object(svc, "get_pricing_store_settings", return_value={}), \
+             patch.object(svc, "_load_sales_overview_order_fact_rows", return_value=[delivered_row, return_row]), \
+             patch.object(svc, "_load_extra_ads_scope", return_value={"2026-04-07": 50.0}), \
+             patch.object(svc, "_load_netting_scope", return_value=[{"transactionType": "Удержание", "offerOrServiceName": "Отмена заказа по вине продавца", "transactionDate": "2026-04-07T10:00:00+03:00", "transactionSum": "-25"}]):
+            payload = await svc.get_sales_overview_tracking(store_id="1", date_mode="delivery")
+
+        month = payload["years"][0]["months"][0]
+        day = month["days"][0]
+        self.assertEqual(day["date"], "2026-04-07")
+        self.assertEqual(day["revenue"], 1000.0)
+        self.assertEqual(day["returns_pct"], 50.0)
+        self.assertEqual(day["ads_amount"], 60.0)
+        self.assertEqual(day["operational_errors"], 25.0)
+        self.assertEqual(day["profit_amount"], 25.0)
+        self.assertEqual(month["returns_pct"], 50.0)
+        self.assertEqual(month["operational_errors"], 25.0)
 
     async def test_live_open_row_does_not_keep_stale_delivery_date_from_history(self) -> None:
         historical = {

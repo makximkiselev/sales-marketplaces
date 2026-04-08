@@ -230,7 +230,7 @@ const ORDERS_PERIOD_OPTIONS: Array<{ value: OrdersPeriod; label: string }> = [
 
 const OVERVIEW_CLIENT_CACHE = new Map<string, OverviewCacheEntry>();
 const OVERVIEW_CONTEXT_CACHE_KEY = "page_sales_overview_context_v1";
-const OVERVIEW_SNAPSHOT_PREFIX = "page_sales_overview_snapshot_v5:";
+const OVERVIEW_SNAPSHOT_PREFIX = "page_sales_overview_snapshot_v6:";
 
 function getInitialSearchParams() {
   if (typeof window === "undefined") return new URLSearchParams();
