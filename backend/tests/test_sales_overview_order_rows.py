@@ -104,6 +104,31 @@ class SalesOverviewOrderRowsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(with_actual["ads_rate_percent"], 5.0)
         self.assertEqual(with_actual["ads_source"], "market_boost_fact")
 
+    async def test_tracking_delivery_days_prefers_order_created_date(self) -> None:
+        row = {
+            "item_status": "Доставлен покупателю",
+            "order_id": "1",
+            "sku": "SKU-1",
+            "order_created_at": "2026-04-01T23:30:00+00:00",
+            "order_created_date": "2026-04-01",
+            "delivery_date": "2026-04-08",
+            "sale_price": 1000.0,
+            "sale_price_with_coinvest": 900.0,
+            "profit": 100.0,
+            "ads": 0.0,
+            "cogs_price": 500.0,
+        }
+
+        with patch.object(svc, "_catalog_marketplace_stores_context", return_value=[{"platform": "yandex_market", "store_uid": "yandex_market:1", "store_id": "1"}]), \
+             patch.object(svc, "get_pricing_store_settings", return_value={}), \
+             patch.object(svc, "_load_sales_overview_order_fact_rows", return_value=[row]):
+            payload = await svc.get_sales_overview_tracking(store_id="1", date_mode="delivery")
+
+        self.assertEqual(payload["active_month_key"], "2026-04")
+        month = payload["years"][0]["months"][0]
+        self.assertEqual(month["delivery_time_days"], 7.0)
+        self.assertEqual(month["days"][0]["delivery_time_days"], 7.0)
+
 
 if __name__ == "__main__":
     unittest.main()

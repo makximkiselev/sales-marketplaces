@@ -2924,10 +2924,12 @@ async def get_sales_overview_tracking(
                 day_bucket["uses_planned_costs"] = True
 
         delivery_day = _parse_date_any(row.get("delivery_date"))
-        created_dt = _parse_datetime_any(row.get("order_created_at"))
         created_day = _parse_date_any(row.get("order_created_date"))
+        created_dt = _parse_datetime_any(row.get("order_created_at"))
         if status_kind == "delivered" and delivery_day and (created_dt or created_day):
-            created_ref = created_dt.date() if created_dt else created_day
+            created_ref = created_day
+            if created_ref is None and created_dt is not None:
+                created_ref = created_dt.astimezone(MSK).date()
             if created_ref:
                 days_delta = max(0, (delivery_day - created_ref).days)
                 bucket["delivery_days_total"] = float(bucket["delivery_days_total"]) + days_delta
