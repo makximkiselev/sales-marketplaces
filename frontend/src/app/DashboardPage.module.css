@@ -383,9 +383,19 @@
 }
 
 .chartSvg {
-  width: 100%;
   min-height: 286px;
   overflow: visible;
+  display: block;
+  flex: 0 0 auto;
+}
+
+.chartScroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(132, 161, 214, 0.34) transparent;
+  padding-bottom: 4px;
 }
 
 .chartGrid {
@@ -987,6 +997,11 @@
 
   .chartSvg {
     min-height: 214px;
+  }
+
+  .chartScroll {
+    margin: 0 -2px;
+    padding-bottom: 8px;
   }
 
   .chartLegend,

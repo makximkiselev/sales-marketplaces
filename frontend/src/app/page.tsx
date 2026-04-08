@@ -418,7 +418,8 @@ function TrendChart({
       </div>
     );
   }
-  const chartWidth = 1120;
+  const targetBandWidth = days.length >= 24 ? 56 : days.length >= 14 ? 64 : 78;
+  const chartWidth = Math.max(1120, pad.left + pad.right + days.length * targetBandWidth);
   const chartHeight = 308;
   const pad = { top: 20, right: 26, bottom: 42, left: 56 };
   const innerWidth = chartWidth - pad.left - pad.right;
@@ -468,91 +469,99 @@ function TrendChart({
           {controls}
         </div>
       </div>
-      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className={styles.chartSvg} role="img" aria-label="Динамика оборота и прибыли по дням">
-        <defs>
-          <linearGradient id="chartRevenueGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#64d6ff" />
-            <stop offset="100%" stopColor="#2f79d6" />
-          </linearGradient>
-          <linearGradient id="chartProfitGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#63e3a8" />
-            <stop offset="100%" stopColor="#1f8d63" />
-          </linearGradient>
-        </defs>
-        {gridValues.map((tick) => {
-          const y = pad.top + innerHeight - tick * innerHeight;
-          return <line key={tick} x1={pad.left} y1={y} x2={chartWidth - pad.right} y2={y} className={styles.chartGrid} />;
-        })}
-        <line x1={activeCenterX} y1={pad.top} x2={activeCenterX} y2={pad.top + innerHeight} className={styles.chartActiveGuide} />
-        <path d={coinvestPath} className={styles.chartCoinvestLine} />
-        {days.map((day, index) => (
-          <g key={`${day.date}-${index}`}>
-            {(() => {
-              const revenue = Number(day.revenue || 0);
-              const profit = Number(day.profit_amount || 0);
-              const coinvest = Number(day.coinvest_pct || 0);
-              const groupX = pad.left + index * bandWidth + (bandWidth - groupWidth) / 2;
-              const revenueH = barHeight(revenue);
-              const profitH = barHeight(profit);
-              return (
-                <>
-                  <rect
-                    x={groupX}
-                    y={pad.top + innerHeight - revenueH}
-                    width={singleBarWidth}
-                    height={revenueH}
-                    rx="5"
-                    className={`${styles.chartBarRevenue} ${resolvedActiveIndex === index ? styles.chartBarRevenueActive : ""}`}
-                  />
-                  <rect
-                    x={groupX + singleBarWidth + barGap}
-                    y={pad.top + innerHeight - profitH}
-                    width={singleBarWidth}
-                    height={profitH}
-                    rx="5"
-                    className={`${styles.chartBarProfit} ${resolvedActiveIndex === index ? styles.chartBarProfitActive : ""}`}
-                  />
-                  <circle
-                    cx={pad.left + index * bandWidth + bandWidth / 2}
-                    cy={coinvestY(coinvest)}
-                    r={resolvedActiveIndex === index ? "5" : "3.2"}
-                    className={styles.chartCoinvestPoint}
-                  />
-                  <rect
-                    x={pad.left + index * bandWidth}
-                    y={pad.top}
-                    width={bandWidth}
-                    height={innerHeight}
-                    rx="10"
-                    className={styles.chartHitArea}
-                    onMouseEnter={() => setActiveIndex(index)}
-                    onMouseMove={() => setActiveIndex(index)}
-                    onClick={() => setActiveIndex(index)}
-                    onTouchStart={() => setActiveIndex(index)}
-                  />
-                </>
-              );
-            })()}
-            {index % Math.max(1, Math.ceil(days.length / 6)) === 0 ? (
-              <text x={pad.left + index * bandWidth + bandWidth / 2} y={chartHeight - 10} textAnchor="middle" className={styles.chartLabel}>
-                {formatShortDate(day.date)}
-              </text>
-            ) : null}
-          </g>
-        ))}
-        {activeDay ? (
-          <g transform={`translate(${tooltipLeft}, ${tooltipTop})`}>
-            <rect width={tooltipWidth} height="74" rx="16" className={styles.chartTooltipCard} />
-            <text x="14" y="20" className={styles.chartTooltipDate}>{formatLongDate(activeDay.date)}</text>
-            <text x="14" y="39" className={styles.chartTooltipValue}>Оборот: {formatMoney(activeDay.revenue, currencyCode)}</text>
-            <text x="14" y="55" className={styles.chartTooltipValueAlt}>Прибыль: {formatMoney(activeDay.profit_amount, currencyCode)}</text>
-            <text x="14" y="71" className={styles.chartTooltipMeta}>Соинвест: {formatPercent(activeDay.coinvest_pct)}</text>
-          </g>
-        ) : null}
-        <text x={pad.left} y={14} className={styles.chartScaleLabel}>{formatMoney(maxValue, currencyCode)}</text>
-        <text x={pad.left} y={chartHeight - 10} className={styles.chartScaleLabel}>{formatMoney(0, currencyCode)}</text>
-        <text x={chartWidth - pad.right} y={14} textAnchor="end" className={styles.chartScaleLabel}>{formatPercent(maxCoinvest)}</text>
-      </svg>
+      <div className={styles.chartScroll}>
+        <svg
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          className={styles.chartSvg}
+          style={{ width: `${chartWidth}px`, minWidth: `${chartWidth}px` }}
+          role="img"
+          aria-label="Динамика оборота и прибыли по дням"
+        >
+          <defs>
+            <linearGradient id="chartRevenueGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#64d6ff" />
+              <stop offset="100%" stopColor="#2f79d6" />
+            </linearGradient>
+            <linearGradient id="chartProfitGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#63e3a8" />
+              <stop offset="100%" stopColor="#1f8d63" />
+            </linearGradient>
+          </defs>
+          {gridValues.map((tick) => {
+            const y = pad.top + innerHeight - tick * innerHeight;
+            return <line key={tick} x1={pad.left} y1={y} x2={chartWidth - pad.right} y2={y} className={styles.chartGrid} />;
+          })}
+          <line x1={activeCenterX} y1={pad.top} x2={activeCenterX} y2={pad.top + innerHeight} className={styles.chartActiveGuide} />
+          <path d={coinvestPath} className={styles.chartCoinvestLine} />
+          {days.map((day, index) => (
+            <g key={`${day.date}-${index}`}>
+              {(() => {
+                const revenue = Number(day.revenue || 0);
+                const profit = Number(day.profit_amount || 0);
+                const coinvest = Number(day.coinvest_pct || 0);
+                const groupX = pad.left + index * bandWidth + (bandWidth - groupWidth) / 2;
+                const revenueH = barHeight(revenue);
+                const profitH = barHeight(profit);
+                return (
+                  <>
+                    <rect
+                      x={groupX}
+                      y={pad.top + innerHeight - revenueH}
+                      width={singleBarWidth}
+                      height={revenueH}
+                      rx="5"
+                      className={`${styles.chartBarRevenue} ${resolvedActiveIndex === index ? styles.chartBarRevenueActive : ""}`}
+                    />
+                    <rect
+                      x={groupX + singleBarWidth + barGap}
+                      y={pad.top + innerHeight - profitH}
+                      width={singleBarWidth}
+                      height={profitH}
+                      rx="5"
+                      className={`${styles.chartBarProfit} ${resolvedActiveIndex === index ? styles.chartBarProfitActive : ""}`}
+                    />
+                    <circle
+                      cx={pad.left + index * bandWidth + bandWidth / 2}
+                      cy={coinvestY(coinvest)}
+                      r={resolvedActiveIndex === index ? "5" : "3.2"}
+                      className={styles.chartCoinvestPoint}
+                    />
+                    <rect
+                      x={pad.left + index * bandWidth}
+                      y={pad.top}
+                      width={bandWidth}
+                      height={innerHeight}
+                      rx="10"
+                      className={styles.chartHitArea}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      onMouseMove={() => setActiveIndex(index)}
+                      onClick={() => setActiveIndex(index)}
+                      onTouchStart={() => setActiveIndex(index)}
+                    />
+                  </>
+                );
+              })()}
+              {index % Math.max(1, Math.ceil(days.length / 6)) === 0 ? (
+                <text x={pad.left + index * bandWidth + bandWidth / 2} y={chartHeight - 10} textAnchor="middle" className={styles.chartLabel}>
+                  {formatShortDate(day.date)}
+                </text>
+              ) : null}
+            </g>
+          ))}
+          {activeDay ? (
+            <g transform={`translate(${tooltipLeft}, ${tooltipTop})`}>
+              <rect width={tooltipWidth} height="74" rx="16" className={styles.chartTooltipCard} />
+              <text x="14" y="20" className={styles.chartTooltipDate}>{formatLongDate(activeDay.date)}</text>
+              <text x="14" y="39" className={styles.chartTooltipValue}>Оборот: {formatMoney(activeDay.revenue, currencyCode)}</text>
+              <text x="14" y="55" className={styles.chartTooltipValueAlt}>Прибыль: {formatMoney(activeDay.profit_amount, currencyCode)}</text>
+              <text x="14" y="71" className={styles.chartTooltipMeta}>Соинвест: {formatPercent(activeDay.coinvest_pct)}</text>
+            </g>
+          ) : null}
+          <text x={pad.left} y={14} className={styles.chartScaleLabel}>{formatMoney(maxValue, currencyCode)}</text>
+          <text x={pad.left} y={chartHeight - 10} className={styles.chartScaleLabel}>{formatMoney(0, currencyCode)}</text>
+          <text x={chartWidth - pad.right} y={14} textAnchor="end" className={styles.chartScaleLabel}>{formatPercent(maxCoinvest)}</text>
+        </svg>
+      </div>
     </div>
   );
 }
