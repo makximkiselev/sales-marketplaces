@@ -210,15 +210,6 @@
   background: rgba(35, 96, 193, 0.24);
 }
 
-.trackingStoreSurface {
-  padding: 14px 16px;
-  margin-bottom: 12px;
-}
-
-.trackingStoreTabs {
-  gap: 10px;
-}
-
 .pager {
   display: inline-flex;
   align-items: center;
