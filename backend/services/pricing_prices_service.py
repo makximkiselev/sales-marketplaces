@@ -13,7 +13,6 @@ from backend.routers._shared import (
     _read_source_rows,
 )
 from backend.services.store_data_model import (
-    clear_pricing_strategy_results_for_store,
     get_fx_rates_cache,
     get_pricing_cogs_snapshot_map,
     get_pricing_catalog_sku_path_map,
@@ -1494,14 +1493,6 @@ async def refresh_prices_data(*, store_uids: list[str] | None = None):
             store_uid = str(store.get("store_uid") or "").strip()
             if store_uid:
                 stores_map[store_uid] = dict(store)
-    for store in list(stores_map.values()):
-        store_uid = str(store.get("store_uid") or "").strip()
-        if not store_uid:
-            continue
-        try:
-            clear_pricing_strategy_results_for_store(store_uid=store_uid)
-        except Exception:
-            pass
     try:
         from backend.services.pricing_strategy_service import invalidate_strategy_cache
         invalidate_strategy_cache()
