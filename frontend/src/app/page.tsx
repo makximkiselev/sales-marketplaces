@@ -470,13 +470,13 @@ function TrendChart({
         </div>
       </div>
       <div className={styles.chartScroll}>
-        <svg
-          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-          className={styles.chartSvg}
-          style={{ width: `${chartWidth}px`, minWidth: `${chartWidth}px` }}
-          role="img"
-          aria-label="Динамика оборота и прибыли по дням"
-        >
+        <div className={styles.chartCanvas} style={{ width: `${chartWidth}px` }}>
+          <svg
+            viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+            className={styles.chartSvg}
+            role="img"
+            aria-label="Динамика оборота и прибыли по дням"
+          >
           <defs>
             <linearGradient id="chartRevenueGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#64d6ff" />
@@ -560,7 +560,8 @@ function TrendChart({
           <text x={pad.left} y={14} className={styles.chartScaleLabel}>{formatMoney(maxValue, currencyCode)}</text>
           <text x={pad.left} y={chartHeight - 10} className={styles.chartScaleLabel}>{formatMoney(0, currencyCode)}</text>
           <text x={chartWidth - pad.right} y={14} textAnchor="end" className={styles.chartScaleLabel}>{formatPercent(maxCoinvest)}</text>
-        </svg>
+          </svg>
+        </div>
       </div>
     </div>
   );
