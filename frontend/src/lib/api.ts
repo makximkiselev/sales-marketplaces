@@ -17,10 +17,15 @@ export function buildApiUrl(path: string): string {
   return `${API_BASE}${rawPath}`;
 }
 
-export async function apiGet<T>(path: string): Promise<T> {
+type ApiRequestOptions = {
+  signal?: AbortSignal;
+};
+
+export async function apiGet<T>(path: string, options?: ApiRequestOptions): Promise<T> {
   const res = await fetch(buildApiUrl(path), {
     cache: "no-store",
     credentials: "include",
+    signal: options?.signal,
   });
   if (!res.ok) {
     const text = await res.text();
@@ -48,9 +53,10 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
 // Выбрасывают ошибку если ok === false, возвращают данные напрямую
 
 export async function apiGetOk<T extends { ok: boolean; message?: string }>(
-  path: string
+  path: string,
+  options?: ApiRequestOptions,
 ): Promise<T> {
-  const data = await apiGet<T>(path);
+  const data = await apiGet<T>(path, options);
   if (!data.ok) throw new Error(data.message || `GET ${path} failed`);
   return data;
 }
@@ -66,8 +72,9 @@ export async function apiPostOk<T extends { ok: boolean; message?: string }>(
 
 export async function apiGetParams<T extends { ok: boolean; message?: string }>(
   path: string,
-  params: Record<string, string>
+  params: Record<string, string>,
+  options?: ApiRequestOptions,
 ): Promise<T> {
   const qs = new URLSearchParams(params).toString();
-  return apiGetOk<T>(`${path}?${qs}`);
+  return apiGetOk<T>(`${path}?${qs}`, options);
 }

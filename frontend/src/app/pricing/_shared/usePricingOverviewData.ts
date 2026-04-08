@@ -12,11 +12,11 @@ type OverviewRespBase<Row> = {
 };
 
 type OverviewCachePayload<Row> = {
-  tree: TreeResp;
   overview: OverviewRespBase<Row>;
 };
 
 const inflightOverviewRequests = new Map<string, Promise<OverviewCachePayload<unknown>>>();
+const inflightTreeRequests = new Map<string, Promise<TreeResp>>();
 
 export function usePricingOverviewData<Row extends { tree_path: string[] }>(params: {
   enabled: boolean;
@@ -63,9 +63,68 @@ export function usePricingOverviewData<Row extends { tree_path: string[] }>(para
   const [refreshing, setRefreshing] = useState(false);
   const [refreshSignal, setRefreshSignal] = useState(0);
   const extraParamsKey = useMemo(() => JSON.stringify(extraParams || {}), [extraParams]);
+  const treeCachePrefix = useMemo(() => (overviewCachePrefix ? `${overviewCachePrefix}__tree_v1:` : ""), [overviewCachePrefix]);
 
   useEffect(() => {
     let cancelled = false;
+    (async () => {
+      if (!enabled) return;
+      try {
+        const treeQuery: Record<string, string> = { tree_mode: "marketplaces" };
+        if (tab === "all") {
+          treeQuery.scope = "all";
+        } else {
+          const parsed = parseStoreTabKey(tab);
+          if (parsed) {
+            treeQuery.scope = "store";
+            treeQuery.platform = parsed.platform;
+            treeQuery.store_id = parsed.store_id;
+          }
+        }
+        if (tab === "all" && treeSourceStoreId) treeQuery.tree_source_store_id = treeSourceStoreId;
+        const treeCacheKey = treeCachePrefix ? `${treeCachePrefix}${JSON.stringify(treeQuery)}` : "";
+        const cachedTree = treeCacheKey ? safeReadJson<TreeResp>(treeCacheKey) : null;
+        if (cachedTree?.ok) {
+          if (!cancelled) setTreeRoots(Array.isArray(cachedTree.roots) ? cachedTree.roots : []);
+          return;
+        }
+
+        const loadKey = `${treeEndpoint}::${JSON.stringify(treeQuery)}`;
+        let inflight = inflightTreeRequests.get(loadKey);
+        if (!inflight) {
+          inflight = apiGetParams<TreeResp>(treeEndpoint, treeQuery);
+          inflightTreeRequests.set(loadKey, inflight);
+        }
+        const treeData = await inflight;
+        inflightTreeRequests.delete(loadKey);
+        if (cancelled) return;
+        setTreeRoots(Array.isArray(treeData.roots) ? treeData.roots : []);
+        if (treeCacheKey) safeWriteJson(treeCacheKey, treeData);
+      } catch (e) {
+        if (!cancelled) {
+          setTreeRoots([]);
+          setError(e instanceof Error ? e.message : String(e));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    enabled,
+    tab,
+    treeSourceStoreId,
+    reloadNonce,
+    refreshSignal,
+    treeEndpoint,
+    setError,
+    setTreeRoots,
+    treeCachePrefix,
+  ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
     (async () => {
       if (!enabled) return;
       setTableLoading(true);
@@ -88,36 +147,25 @@ export function usePricingOverviewData<Row extends { tree_path: string[] }>(para
         if (search) query.search = search;
         query.page = String(page);
         query.page_size = String(pageSize > 0 ? pageSize : 100000);
-        const treeQuery: Record<string, string> = {
-          scope: query.scope,
-          tree_mode: query.tree_mode,
-        };
-        if (query.platform) treeQuery.platform = query.platform;
-        if (query.store_id) treeQuery.store_id = query.store_id;
-        if (query.tree_source_store_id) treeQuery.tree_source_store_id = query.tree_source_store_id;
-
         const cacheKey = overviewCachePrefix ? `${overviewCachePrefix}${JSON.stringify(query)}` : "";
-        const cachedData = cacheKey ? safeReadJson<OverviewCachePayload<Row>>(cacheKey) : null;
-        if (cachedData?.tree?.ok && cachedData?.overview?.ok) {
-          const nextRows = Array.isArray(cachedData.overview.rows) ? cachedData.overview.rows : [];
-          setOverviewData(cachedData.overview);
+        const cachedData = cacheKey ? safeReadJson<OverviewRespBase<Row> | OverviewCachePayload<Row>>(cacheKey) : null;
+        const cachedOverview = cachedData && "overview" in cachedData ? cachedData.overview : cachedData;
+        if (cachedOverview?.ok) {
+          const nextRows = Array.isArray(cachedOverview.rows) ? cachedOverview.rows : [];
+          setOverviewData(cachedOverview);
           setRows(nextRows);
-          setVisibleStores(Array.isArray(cachedData.overview.stores) ? cachedData.overview.stores : []);
-          setTotalCount(Number(cachedData.overview.total_count || 0));
-          setTreeRoots(ensureUndefinedRoot(Array.isArray(cachedData.tree.roots) ? cachedData.tree.roots : [], nextRows));
+          setVisibleStores(Array.isArray(cachedOverview.stores) ? cachedOverview.stores : []);
+          setTotalCount(Number(cachedOverview.total_count || 0));
           setTableLoading(false);
           return;
         }
 
-        const loadKey = `${treeEndpoint}::${overviewEndpoint}::${cacheKey || JSON.stringify(query)}`;
+        const loadKey = `${overviewEndpoint}::${cacheKey || JSON.stringify(query)}`;
         let inflight = inflightOverviewRequests.get(loadKey) as Promise<OverviewCachePayload<Row>> | undefined;
         if (!inflight) {
           inflight = (async () => {
-            const [treeData, overviewData] = await Promise.all([
-              apiGetParams<TreeResp>(treeEndpoint, treeQuery),
-              apiGetParams<OverviewRespBase<Row>>(overviewEndpoint, query),
-            ]);
-            return { tree: treeData, overview: overviewData };
+            const overviewData = await apiGetParams<OverviewRespBase<Row>>(overviewEndpoint, query, { signal: controller.signal });
+            return { overview: overviewData };
           })();
           inflightOverviewRequests.set(loadKey, inflight as Promise<OverviewCachePayload<unknown>>);
         }
@@ -130,14 +178,13 @@ export function usePricingOverviewData<Row extends { tree_path: string[] }>(para
         setRows(nextRows);
         setVisibleStores(Array.isArray(loaded.overview.stores) ? loaded.overview.stores : []);
         setTotalCount(Number(loaded.overview.total_count || 0));
-        setTreeRoots(ensureUndefinedRoot(Array.isArray(loaded.tree.roots) ? loaded.tree.roots : [], nextRows));
-        if (cacheKey) safeWriteJson(cacheKey, loaded);
+        if (cacheKey) safeWriteJson(cacheKey, loaded.overview);
       } catch (e) {
+        if ((e instanceof Error && e.name === "AbortError") || cancelled) return;
         if (!cancelled) {
           setRows([]);
           setOverviewData(null);
           setVisibleStores([]);
-          setTreeRoots([]);
           setTotalCount(0);
           setError(e instanceof Error ? e.message : String(e));
         }
@@ -147,6 +194,7 @@ export function usePricingOverviewData<Row extends { tree_path: string[] }>(para
     })();
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [
     enabled,
@@ -158,10 +206,8 @@ export function usePricingOverviewData<Row extends { tree_path: string[] }>(para
     pageSize,
     reloadNonce,
     refreshSignal,
-    treeEndpoint,
     overviewEndpoint,
     setError,
-    setTreeRoots,
     overviewCachePrefix,
     extraParamsKey,
   ]);

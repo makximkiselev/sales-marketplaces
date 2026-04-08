@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
 import { fetchPricingCatalogContext } from "./api";
 import {
   ContextResp,
@@ -36,6 +36,7 @@ export function usePricingCatalogController(opts: {
   const [treeSourceStoreId, setTreeSourceStoreId] = useState(() => safeReadString(treeSourceStoreKey));
   const [search, setSearch] = useState("");
   const [searchDraft, setSearchDraft] = useState("");
+  const deferredSearchDraft = useDeferredValue(searchDraft);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(() => {
     const raw = safeReadString(pageSizeStorageKey);
@@ -114,11 +115,14 @@ export function usePricingCatalogController(opts: {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      setPage(1);
-      setSearch(searchDraft.trim());
+      const nextSearch = deferredSearchDraft.trim();
+      startTransition(() => {
+        setPage(1);
+        setSearch(nextSearch);
+      });
     }, 220);
     return () => clearTimeout(t);
-  }, [searchDraft]);
+  }, [deferredSearchDraft]);
 
   useEffect(() => {
     setPage(1);
