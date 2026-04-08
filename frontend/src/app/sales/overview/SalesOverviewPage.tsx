@@ -228,9 +228,7 @@ const ORDERS_PERIOD_OPTIONS: Array<{ value: OrdersPeriod; label: string }> = [
   { value: "quarter", label: "90 дней" },
 ];
 
-const OVERVIEW_CLIENT_CACHE = new Map<string, OverviewCacheEntry>();
 const OVERVIEW_CONTEXT_CACHE_KEY = "page_sales_overview_context_v1";
-const OVERVIEW_SNAPSHOT_PREFIX = "page_sales_overview_snapshot_v6:";
 
 function getInitialSearchParams() {
   if (typeof window === "undefined") return new URLSearchParams();
@@ -458,22 +456,6 @@ function SummaryCard({ label, value, detail }: { label: string; value: string; d
   );
 }
 
-function makeOverviewCacheKey(params: {
-  tab: TabKey;
-  storeId: string;
-  trackingStoreId: string;
-  period: OrdersPeriod;
-  itemStatus: string;
-  dateMode: DateMode;
-  grain: RetrospectiveGrain;
-  page: number;
-  pageSize: number;
-  customDateFrom: string;
-  customDateTo: string;
-}) {
-  return JSON.stringify(params);
-}
-
 export default function SalesOverviewPage() {
   const initialParams = getInitialSearchParams();
   const [isMobile, setIsMobile] = useState(false);
@@ -546,35 +528,8 @@ export default function SalesOverviewPage() {
   useEffect(() => {
     if (!storeId || (storeId === "all" && !context)) return;
     let cancelled = false;
-    const cacheKey = makeOverviewCacheKey({
-      tab,
-      storeId,
-      trackingStoreId,
-      period,
-      itemStatus,
-      dateMode,
-      grain,
-      page,
-      pageSize,
-      customDateFrom,
-      customDateTo,
-    });
-    const cached = OVERVIEW_CLIENT_CACHE.get(cacheKey)
-      || readFreshPageSnapshot<OverviewCacheEntry>(`${OVERVIEW_SNAPSHOT_PREFIX}${cacheKey}`, 10 * 60 * 1000);
-
-    if (cached) {
-      OVERVIEW_CLIENT_CACHE.set(cacheKey, cached);
-      setTracking(cached.tracking ?? null);
-      setOrders(cached.orders ?? null);
-      setProblemOrders(cached.problemOrders ?? null);
-      setSkuRetrospective(cached.skuRetrospective ?? null);
-      setCategoryRetrospective(cached.categoryRetrospective ?? null);
-      setDataFlow(cached.dataFlow ?? null);
-      setLoading(false);
-    }
-
     async function loadOverview() {
-      setLoading(!cached);
+      setLoading(true);
       setError("");
       try {
         const rangeQuery = customDateFrom || customDateTo
@@ -647,8 +602,6 @@ export default function SalesOverviewPage() {
         }
 
         if (cancelled) return;
-        OVERVIEW_CLIENT_CACHE.set(cacheKey, nextState);
-        writePageSnapshot(`${OVERVIEW_SNAPSHOT_PREFIX}${cacheKey}`, nextState);
         setTracking(nextState.tracking ?? null);
         setOrders(nextState.orders ?? null);
         setProblemOrders(nextState.problemOrders ?? null);
