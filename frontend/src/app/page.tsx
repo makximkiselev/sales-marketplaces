@@ -418,10 +418,10 @@ function TrendChart({
       </div>
     );
   }
-  const targetBandWidth = days.length >= 24 ? 56 : days.length >= 14 ? 64 : 78;
-  const chartWidth = Math.max(1120, pad.left + pad.right + days.length * targetBandWidth);
   const chartHeight = 308;
   const pad = { top: 20, right: 26, bottom: 42, left: 56 };
+  const targetBandWidth = days.length >= 24 ? 56 : days.length >= 14 ? 64 : 78;
+  const chartWidth = Math.max(1120, pad.left + pad.right + days.length * targetBandWidth);
   const innerWidth = chartWidth - pad.left - pad.right;
   const innerHeight = chartHeight - pad.top - pad.bottom;
   const revenueValues = days.map((day) => Number(day.revenue || 0));
