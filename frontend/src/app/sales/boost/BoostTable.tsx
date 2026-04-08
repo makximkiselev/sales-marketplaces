@@ -16,6 +16,7 @@ export type BoostOverviewRow = {
   internal_boost_by_store?: Record<string, number | null>;
   market_boost_by_store?: Record<string, number | null>;
   expected_boost_share_by_store?: Record<string, number | null>;
+  planned_boosted_orders_count_by_store?: Record<string, number | null>;
   orders_count_by_store?: Record<string, number>;
   revenue_by_store?: Record<string, number | null>;
   profit_by_store?: Record<string, number | null>;
@@ -25,6 +26,7 @@ export type BoostOverviewRow = {
   boosted_ads_by_store?: Record<string, number | null>;
   boost_revenue_share_by_store?: Record<string, number | null>;
   boost_orders_share_by_store?: Record<string, number | null>;
+  boost_effectiveness_pct_by_store?: Record<string, number | null>;
   last_order_at_by_store?: Record<string, string>;
   updated_at: string;
 };
@@ -63,6 +65,14 @@ function renderMoney(value: number | null | undefined, currencyCode: string | un
 function renderNumber(value: number | null | undefined) {
   if (value === null || value === undefined) return "—";
   return Number(value || 0).toLocaleString("ru-RU");
+}
+
+function renderCount(value: number | null | undefined) {
+  if (value === null || value === undefined) return "—";
+  return Number(value || 0).toLocaleString("ru-RU", {
+    minimumFractionDigits: Number.isInteger(Number(value)) ? 0 : 2,
+    maximumFractionDigits: Number.isInteger(Number(value)) ? 0 : 2,
+  });
 }
 
 function renderPercentValue(value: number | null | undefined) {
@@ -136,9 +146,11 @@ export function BoostTable(props: Props) {
             <th>Буст в Маркете</th>
             <th>Доля показов</th>
             <th>Заказы</th>
+            <th>План с бустом</th>
+            <th>Факт с бустом</th>
+            <th>% срабатывания</th>
             <th>{moneyHeader("Выручка")}</th>
             <th>{moneyHeader("Прибыль")}</th>
-            <th>Заказы с бустом</th>
             <th>{moneyHeader("Выручка с бустом")}</th>
             <th>Доля буста</th>
           </tr>
@@ -146,7 +158,7 @@ export function BoostTable(props: Props) {
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={18} className={matrixStyles.emptyCell}>{tableLoading ? "Загрузка..." : "Нет товаров для выбранных параметров"}</td>
+              <td colSpan={20} className={matrixStyles.emptyCell}>{tableLoading ? "Загрузка..." : "Нет товаров для выбранных параметров"}</td>
             </tr>
           ) : rows.map((row) => (
             <tr key={`boost-${row.sku}`}>
@@ -247,8 +259,35 @@ export function BoostTable(props: Props) {
                   row,
                   renderCtx,
                   (storeUid) => row.orders_count_by_store?.[storeUid],
-                  (value) => <span>{renderNumber(value as number | null | undefined)}</span>,
+                  (value) => <span>{renderCount(value as number | null | undefined)}</span>,
                   "orders-count",
+                )}
+              </td>
+              <td className={matrixStyles.centerCell}>
+                {renderStoreValue(
+                  row,
+                  renderCtx,
+                  (storeUid) => row.planned_boosted_orders_count_by_store?.[storeUid],
+                  (value) => <span>{renderCount(value as number | null | undefined)}</span>,
+                  "planned-boosted-orders-count",
+                )}
+              </td>
+              <td className={matrixStyles.centerCell}>
+                {renderStoreValue(
+                  row,
+                  renderCtx,
+                  (storeUid) => row.boosted_orders_count_by_store?.[storeUid],
+                  (value) => <span>{renderCount(value as number | null | undefined)}</span>,
+                  "boosted-orders-count",
+                )}
+              </td>
+              <td className={matrixStyles.centerCell}>
+                {renderStoreValue(
+                  row,
+                  renderCtx,
+                  (storeUid) => row.boost_effectiveness_pct_by_store?.[storeUid],
+                  (value) => <span>{formatPercent(value as number | null | undefined)}</span>,
+                  "boost-effectiveness-pct",
                 )}
               </td>
               <td className={matrixStyles.moneyCell}>
@@ -267,15 +306,6 @@ export function BoostTable(props: Props) {
                   (storeUid) => row.profit_by_store?.[storeUid],
                   (value, currencyCode) => <span>{renderMoney(value as number | null | undefined, currencyCode)}</span>,
                   "profit",
-                )}
-              </td>
-              <td className={matrixStyles.centerCell}>
-                {renderStoreValue(
-                  row,
-                  renderCtx,
-                  (storeUid) => row.boosted_orders_count_by_store?.[storeUid],
-                  (value) => <span>{renderNumber(value as number | null | undefined)}</span>,
-                  "boosted-orders-count",
                 )}
               </td>
               <td className={matrixStyles.moneyCell}>

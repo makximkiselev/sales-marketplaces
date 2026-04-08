@@ -460,6 +460,7 @@ async def get_boost_overview(
         internal_boost_by_store: dict[str, float | None] = {}
         market_boost_by_store: dict[str, float | None] = {}
         expected_boost_share_by_store: dict[str, float | None] = {}
+        planned_boosted_orders_count_by_store: dict[str, float | None] = {}
         orders_count_by_store: dict[str, int] = {}
         revenue_by_store: dict[str, float | None] = {}
         profit_by_store: dict[str, float | None] = {}
@@ -469,6 +470,7 @@ async def get_boost_overview(
         boosted_ads_by_store: dict[str, float | None] = {}
         boost_revenue_share_by_store: dict[str, float | None] = {}
         boost_orders_share_by_store: dict[str, float | None] = {}
+        boost_effectiveness_pct_by_store: dict[str, float | None] = {}
         last_order_at_by_store: dict[str, str] = {}
         for suid in store_uids:
             strategy = (strategy_map.get(suid) or {}).get(sku) or {}
@@ -477,13 +479,20 @@ async def get_boost_overview(
             boosted_revenue = _to_num(agg.get("boosted_revenue"))
             orders_count = int(agg.get("orders_count") or 0)
             boosted_orders_count = int(agg.get("boosted_orders_count") or 0)
+            expected_boost_share = _to_num(strategy.get("boost_share"))
+            planned_boosted_orders = (
+                round((float(orders_count) * float(expected_boost_share)) / 100.0, 2)
+                if expected_boost_share is not None and orders_count > 0
+                else None
+            )
             selected_decision_by_store[suid] = str(strategy.get("decision_label") or "").strip()
             coinvest_pct_by_store[suid] = _to_num(strategy.get("coinvest_pct"))
             on_display_price_by_store[suid] = _to_num(strategy.get("on_display_price"))
             selected_price_by_store[suid] = _to_num(strategy.get("installed_price"))
             internal_boost_by_store[suid] = _to_num(strategy.get("boost_bid_percent"))
             market_boost_by_store[suid] = _to_num(strategy.get("market_boost_bid_percent"))
-            expected_boost_share_by_store[suid] = _to_num(strategy.get("boost_share"))
+            expected_boost_share_by_store[suid] = expected_boost_share
+            planned_boosted_orders_count_by_store[suid] = planned_boosted_orders
             orders_count_by_store[suid] = orders_count
             revenue_by_store[suid] = revenue
             profit_by_store[suid] = _to_num(agg.get("profit"))
@@ -493,6 +502,11 @@ async def get_boost_overview(
             boosted_ads_by_store[suid] = _to_num(agg.get("boosted_ads"))
             boost_revenue_share_by_store[suid] = round((float(boosted_revenue or 0.0) / float(revenue)) * 100.0, 2) if revenue not in (None, 0) else None
             boost_orders_share_by_store[suid] = round((float(boosted_orders_count) / float(orders_count)) * 100.0, 2) if orders_count > 0 else None
+            boost_effectiveness_pct_by_store[suid] = (
+                round((float(boosted_orders_count) / float(planned_boosted_orders)) * 100.0, 2)
+                if planned_boosted_orders not in (None, 0)
+                else None
+            )
             last_order_at_by_store[suid] = str(agg.get("last_order_at") or "").strip()
         row["selected_price_by_store"] = selected_price_by_store
         row["selected_decision_by_store"] = selected_decision_by_store
@@ -504,6 +518,7 @@ async def get_boost_overview(
         row["internal_boost_by_store"] = internal_boost_by_store
         row["market_boost_by_store"] = market_boost_by_store
         row["expected_boost_share_by_store"] = expected_boost_share_by_store
+        row["planned_boosted_orders_count_by_store"] = planned_boosted_orders_count_by_store
         row["orders_count_by_store"] = orders_count_by_store
         row["revenue_by_store"] = revenue_by_store
         row["profit_by_store"] = profit_by_store
@@ -513,6 +528,7 @@ async def get_boost_overview(
         row["boosted_ads_by_store"] = boosted_ads_by_store
         row["boost_revenue_share_by_store"] = boost_revenue_share_by_store
         row["boost_orders_share_by_store"] = boost_orders_share_by_store
+        row["boost_effectiveness_pct_by_store"] = boost_effectiveness_pct_by_store
         row["last_order_at_by_store"] = last_order_at_by_store
 
     page_size_n = max(1, min(int(page_size or 50), 200))
