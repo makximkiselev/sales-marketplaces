@@ -129,6 +129,57 @@ class SalesOverviewOrderRowsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(month["delivery_time_days"], 7.0)
         self.assertEqual(month["days"][0]["delivery_time_days"], 7.0)
 
+    async def test_live_open_row_does_not_keep_stale_delivery_date_from_history(self) -> None:
+        historical = {
+            "order_id": "10",
+            "sku": "SKU-10",
+            "order_created_at": "2026-04-05T10:00:00+03:00",
+            "order_created_date": "2026-04-05",
+            "shipment_date": "2026-04-06",
+            "delivery_date": "2026-04-07",
+            "item_status": "Доставлен покупателю",
+        }
+        live = {
+            "order_id": "10",
+            "sku": "SKU-10",
+            "order_created_at": "2026-04-05T10:00:00+03:00",
+            "order_created_date": "2026-04-05",
+            "shipment_date": "",
+            "delivery_date": "",
+            "item_status": "Оформлен",
+            "item_name": "Item",
+            "sale_price": 1000.0,
+            "payment_price": 900.0,
+            "subsidy_amount": 100.0,
+            "payload_json": "",
+            "source_updated_at": "2026-04-08T12:00:00+03:00",
+            "loaded_at": "2026-04-08T12:00:00+03:00",
+            "store_uid": "yandex_market:1",
+            "platform": "yandex_market",
+        }
+
+        with patch.object(svc, "_load_orders_scope", return_value=([historical], [], "2026-04-05", "2026-04-07", "")), \
+             patch.object(svc, "_load_live_current_month_orders", return_value=[live]), \
+             patch.object(svc, "get_pricing_store_settings", return_value={}), \
+             patch.object(svc, "get_sales_overview_cogs_source_map", return_value={"rows": []}), \
+             patch.object(svc, "_catalog_marketplace_stores_context", return_value=[{"store_uid": "yandex_market:1", "currency_code": "RUB"}]), \
+             patch.object(svc, "_snapshot_fallback_metrics", return_value=({}, {}, {})), \
+             patch.object(svc, "get_sales_overview_order_rows_map", return_value={}), \
+             patch.object(svc, "_load_strategy_iteration_snapshot_map", return_value={}), \
+             patch.object(svc, "_load_strategy_snapshot_map", return_value={}), \
+             patch.object(svc, "_load_actual_market_boost_map", return_value={}), \
+             patch.object(svc, "_planned_cost_context", return_value={"path_map": {}, "category_settings": {}, "store_settings": {}, "logistics_store": {}, "logistics_product": {}}), \
+             patch.object(svc, "_build_netting_delivery_map", return_value=({}, {})), \
+             patch.object(svc, "_load_netting_scope", return_value=[]), \
+             patch.object(svc, "replace_sales_overview_order_rows", return_value=0), \
+             patch.object(svc, "replace_sales_overview_order_rows_hot", return_value=1):
+            result = await svc._build_sales_overview_order_rows_for_store(store_uid="yandex_market:1")
+
+        row = result["rows"][0]
+        self.assertEqual(row["item_status"], "Оформлен")
+        self.assertEqual(row["delivery_date"], "")
+        self.assertEqual(row["shipment_date"], "")
+
 
 if __name__ == "__main__":
     unittest.main()

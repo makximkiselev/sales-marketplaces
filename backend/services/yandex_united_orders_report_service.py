@@ -2211,11 +2211,21 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
             if not all(key):
                 continue
             prev = merged.get(key) or {}
+            live_status = str(row.get("item_status") or "").strip()
+            live_status_kind = _status_kind(live_status)
             merged[key] = {
                 **prev,
                 **row,
-                "shipment_date": str(prev.get("shipment_date") or row.get("shipment_date") or "").strip(),
-                "delivery_date": str(prev.get("delivery_date") or row.get("delivery_date") or "").strip(),
+                "shipment_date": (
+                    str(prev.get("shipment_date") or row.get("shipment_date") or "").strip()
+                    if live_status_kind in {"delivered", "return"}
+                    else str(row.get("shipment_date") or "").strip()
+                ),
+                "delivery_date": (
+                    str(prev.get("delivery_date") or row.get("delivery_date") or "").strip()
+                    if live_status_kind in {"delivered", "return"}
+                    else str(row.get("delivery_date") or "").strip()
+                ),
             }
         rows = list(merged.values())
     settings = get_pricing_store_settings(store_uid=store_uid) or {}
