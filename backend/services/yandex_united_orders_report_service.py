@@ -2813,24 +2813,25 @@ async def get_sales_overview_tracking(
                 if loaded_at:
                     break
 
-        store_extra_ads_by_day = _load_extra_ads_scope(store_uid=store_uid, date_from="1900-01-01", date_to="2999-12-31")
-        for day_key, extra_amount in (store_extra_ads_by_day or {}).items():
-            amount = float(extra_amount or 0.0)
-            extra_ads_by_day[day_key] = round(float(extra_ads_by_day.get(day_key, 0.0)) + amount, 4)
+        if mode != "delivery":
+            store_extra_ads_by_day = _load_extra_ads_scope(store_uid=store_uid, date_from="1900-01-01", date_to="2999-12-31")
+            for day_key, extra_amount in (store_extra_ads_by_day or {}).items():
+                amount = float(extra_amount or 0.0)
+                extra_ads_by_day[day_key] = round(float(extra_ads_by_day.get(day_key, 0.0)) + amount, 4)
 
-        netting_rows = _load_netting_scope(store_uid=store_uid, date_from="1900-01-01", date_to="2999-12-31")
-        for payload in netting_rows:
-            transaction_type = str(payload.get("transactionType") or "").strip().lower()
-            if transaction_type not in {"удержание", "списание"}:
-                continue
-            if _service_bucket(str(payload.get("offerOrServiceName") or "")) != "operational_error":
-                continue
-            trans_dt = _parse_datetime_any(payload.get("transactionDate"))
-            if not trans_dt:
-                continue
-            day_key = trans_dt.astimezone(MSK).date().isoformat()
-            amount = _abs_amount(payload.get("transactionSum"))
-            operational_errors_by_day[day_key] = round(float(operational_errors_by_day.get(day_key, 0.0)) + amount, 4)
+            netting_rows = _load_netting_scope(store_uid=store_uid, date_from="1900-01-01", date_to="2999-12-31")
+            for payload in netting_rows:
+                transaction_type = str(payload.get("transactionType") or "").strip().lower()
+                if transaction_type not in {"удержание", "списание"}:
+                    continue
+                if _service_bucket(str(payload.get("offerOrServiceName") or "")) != "operational_error":
+                    continue
+                trans_dt = _parse_datetime_any(payload.get("transactionDate"))
+                if not trans_dt:
+                    continue
+                day_key = trans_dt.astimezone(MSK).date().isoformat()
+                amount = _abs_amount(payload.get("transactionSum"))
+                operational_errors_by_day[day_key] = round(float(operational_errors_by_day.get(day_key, 0.0)) + amount, 4)
 
     if not order_rows:
         return {"ok": True, "date_mode": mode, "years": [], "active_month_key": "", "kpis": {}, "loaded_at": ""}

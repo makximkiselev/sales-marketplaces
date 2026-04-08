@@ -672,6 +672,10 @@ export default function SalesOverviewPage() {
   }, [context, storeId, trackingStoreId, tab, dateMode, period, itemStatus, page, pageSize, grain, categoryLevel, customDateFrom, customDateTo]);
 
   useEffect(() => {
+    setExpandedMonthKey(String(tracking?.active_month_key || ""));
+  }, [tracking?.active_month_key, dateMode, trackingStoreId]);
+
+  useEffect(() => {
     setPage(1);
   }, [tab]);
 
