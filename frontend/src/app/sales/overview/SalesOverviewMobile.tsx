@@ -15,7 +15,6 @@ export function SalesOverviewMobile({ vm }: Props) {
     trackingStores,
     activeStore,
     activeTrackingStore,
-    summaryCards,
     tab,
     setTab,
     storeId,
@@ -57,7 +56,6 @@ export function SalesOverviewMobile({ vm }: Props) {
     if (!rate) return "—";
     return `${rate.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ₽/$`;
   };
-  const currentStoreLabel = tab === "tracking" ? activeTrackingStore?.label : activeStore?.label;
   const modeLabel = dateMode === "delivery" ? "Дата доставки" : "Дата заказа";
   const grainLabel = grain === "day" ? "По дням" : "По месяцам";
   const periodLabel = ORDERS_PERIOD_OPTIONS.find((option: any) => option.value === period)?.label || "Период";
@@ -110,7 +108,6 @@ export function SalesOverviewMobile({ vm }: Props) {
             activeId: tab,
             onChange: setTab,
           }}
-          meta={currentStoreLabel ? <span className={layoutStyles.metaChip}>{currentStoreLabel}</span> : undefined}
         >
           <div className={styles.overviewHeroIntro}>
             <div className={styles.overviewEyebrow}>{activeTabCopy.eyebrow}</div>
@@ -199,7 +196,6 @@ export function SalesOverviewMobile({ vm }: Props) {
             )}
           </div>
           <div className={styles.mobileFilterChips}>
-            {currentStoreLabel ? <span className={layoutStyles.metaChip}>{currentStoreLabel}</span> : null}
             {tab === "orders" || tab === "problems" ? <span className={layoutStyles.metaChip}>{periodLabel}</span> : null}
             {tab === "tracking" || tab === "sku" || tab === "category" ? <span className={layoutStyles.metaChip}>{modeLabel}</span> : null}
             {tab === "sku" || tab === "category" ? <span className={layoutStyles.metaChip}>{grainLabel}</span> : null}
@@ -207,20 +203,6 @@ export function SalesOverviewMobile({ vm }: Props) {
             {tab === "orders" && itemStatus ? <span className={layoutStyles.metaChip}>{itemStatus}</span> : null}
           </div>
         </WorkspacePageHero>
-
-        <div className={styles.summaryGrid}>
-          {summaryCards.map((card: any) => (
-            <div key={card.label} className={styles.summaryCard}>
-              <div className={styles.summaryLabel}>{card.label}</div>
-              <div className={styles.summaryValue}>{card.value}</div>
-              {card.detail ? <div className={styles.summaryDetail}>{card.detail}</div> : null}
-            </div>
-          ))}
-        </div>
-
-        {tab === "tracking"
-          ? (activeTrackingStore ? <div className={styles.pageInfoChip}>Магазин: {activeTrackingStore.label}</div> : null)
-          : (activeStore ? <div className={styles.pageInfoChip}>Магазин: {activeStore.label}</div> : null)}
 
         {loading ? <div className={styles.empty}>Загрузка...</div> : null}
         {error ? <div className={styles.errorBox}>{error}</div> : null}

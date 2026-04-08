@@ -16,12 +16,9 @@
 
 .overviewHeroBody {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
-  gap: 18px;
-  align-items: stretch;
+  gap: 14px;
 }
 
-.overviewHeroIntro,
 .overviewControlDeck {
   min-width: 0;
   border: 1px solid rgba(132, 161, 214, 0.14);
@@ -29,12 +26,6 @@
   background:
     radial-gradient(circle at top right, rgba(67, 115, 199, 0.12), transparent 34%),
     rgba(9, 17, 31, 0.82);
-}
-
-.overviewHeroIntro {
-  padding: 22px;
-  display: grid;
-  gap: 14px;
 }
 
 .overviewEyebrow {
@@ -60,40 +51,16 @@
   line-height: 1.6;
 }
 
-.overviewFactGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
-}
-
-.overviewFactCard {
-  min-width: 0;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(132, 161, 214, 0.14);
-  background: rgba(8, 16, 30, 0.54);
-}
-
-.overviewFactLabel {
-  margin-bottom: 6px;
-  color: var(--text-soft);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.overviewFactValue {
-  color: #eef4ff;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
 .overviewControlDeck {
   padding: 18px;
   display: grid;
   align-content: start;
+  gap: 14px;
+}
+
+.overviewControlCopy {
+  display: grid;
+  gap: 10px;
 }
 
 .overviewControlGrid {
@@ -168,38 +135,6 @@
   margin-bottom: 12px;
 }
 
-.summaryGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.summaryCard {
-  border: 1px solid rgba(157, 182, 230, 0.16);
-  border-radius: 16px;
-  padding: 14px 16px;
-  background: rgba(10, 18, 34, 0.88);
-}
-
-.summaryLabel {
-  font-size: 12px;
-  color: var(--text-soft);
-  margin-bottom: 6px;
-}
-
-.summaryValue {
-  font-size: 24px;
-  font-weight: 700;
-  color: #e9f0ff;
-}
-
-.summaryDetail {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #93b2ec;
-}
-
 .segmented {
   display: inline-flex;
   gap: 8px;
@@ -220,22 +155,6 @@
   color: var(--text-soft);
   font-size: 13px;
   margin-bottom: 16px;
-}
-
-.pageInfoChip {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  max-width: 100%;
-  min-height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(132, 161, 214, 0.16);
-  background: rgba(8, 16, 30, 0.56);
-  color: #dceaff;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.35;
 }
 
 .pageSize {

@@ -24,12 +24,10 @@ export function SalesOverviewDesktop({ vm }: Props) {
     trackingYears,
     orderRows,
     problemRows,
-    flowRows,
     skuRows,
     categoryRows,
     totalCount,
     totalPages,
-    summaryCards,
     tab,
     setTab,
     storeId,
@@ -140,23 +138,11 @@ export function SalesOverviewDesktop({ vm }: Props) {
     },
   };
   const activeTabCopy = tabCopy[tab] || tabCopy.orders;
-  const currentStoreLabel = tab === "tracking" ? activeTrackingStore?.label : activeStore?.label;
   const currentCurrencyLabel = (() => {
     if (tab === "tracking" || tab === "sku" || tab === "category") return "Аналитика: ₽";
     if (hasNativeCurrency) return "По заказам: ₽ · Справочно: $";
     return "По заказам: ₽";
   })();
-  const currentPeriodLabel = ORDERS_PERIOD_OPTIONS.find((option: any) => option.value === period)?.label || "Период";
-  const quickFacts = [
-    currentStoreLabel ? { label: "Магазин", value: currentStoreLabel } : null,
-    tab === "tracking" || tab === "sku" || tab === "category"
-      ? { label: "Срез", value: dateMode === "delivery" ? "Дата доставки" : "Дата заказа" }
-      : { label: "Период", value: currentPeriodLabel },
-    tab === "sku" || tab === "category"
-      ? { label: "Гранулярность", value: grain === "day" ? "По дням" : "По месяцам" }
-      : null,
-    tab === "orders" && itemStatus ? { label: "Статус", value: itemStatus } : null,
-  ].filter(Boolean) as Array<{ label: string; value: string }>;
 
   return (
     <WorkspacePageFrame className={s.pageFrame} innerClassName={s.pageFrameInner}>
@@ -171,29 +157,17 @@ export function SalesOverviewDesktop({ vm }: Props) {
         }}
         meta={(
           <div className={layoutStyles.heroMeta}>
-            {currentStoreLabel ? <span className={layoutStyles.metaChip}>{currentStoreLabel}</span> : null}
             <span className={layoutStyles.metaChip}>{currentCurrencyLabel}</span>
           </div>
         )}
       >
         <div className={s.overviewHeroBody}>
-          <div className={s.overviewHeroIntro}>
-            <div className={s.overviewEyebrow}>{activeTabCopy.eyebrow}</div>
-            <h2 className={s.overviewHeroTitle}>{activeTabCopy.title}</h2>
-            <p className={s.overviewHeroSubtitle}>{activeTabCopy.subtitle}</p>
-            {quickFacts.length ? (
-              <div className={s.overviewFactGrid}>
-                {quickFacts.map((fact) => (
-                  <div key={`${fact.label}-${fact.value}`} className={s.overviewFactCard}>
-                    <div className={s.overviewFactLabel}>{fact.label}</div>
-                    <div className={s.overviewFactValue}>{fact.value}</div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
-
           <div className={s.overviewControlDeck}>
+            <div className={s.overviewControlCopy}>
+              <div className={s.overviewEyebrow}>{activeTabCopy.eyebrow}</div>
+              <h2 className={s.overviewHeroTitle}>{activeTabCopy.title}</h2>
+              <p className={s.overviewHeroSubtitle}>{activeTabCopy.subtitle}</p>
+            </div>
             <div className={s.overviewControlGrid}>
               <label className={s.overviewControlField}>
                 <span className={s.overviewControlLabel}>{tab === "tracking" ? "Магазин трекинга" : "Магазин"}</span>
@@ -267,34 +241,6 @@ export function SalesOverviewDesktop({ vm }: Props) {
           </div>
         </div>
       </WorkspacePageHero>
-
-      <div className={s.summaryGrid}>
-        {summaryCards.map((card: any) => (
-          <div key={card.label} className={s.summaryCard}>
-            <div className={s.summaryLabel}>{card.label}</div>
-            <div className={s.summaryValue}>{card.value}</div>
-            {card.detail ? <div className={s.summaryDetail}>{card.detail}</div> : null}
-          </div>
-        ))}
-      </div>
-
-      {!loading && !error && flowRows.length > 0 ? (
-        <div className={s.summaryGrid}>
-          {flowRows.map((flow: any) => (
-            <div key={flow.code} className={s.summaryCard}>
-              <div className={s.summaryLabel}>{flow.label}</div>
-              <div className={s.summaryValue}>{flow.date_from && flow.date_to ? `${formatDate(flow.date_from)} - ${formatDate(flow.date_to)}` : "—"}</div>
-              <div className={s.summaryDetail}>
-                {flow.loaded_at ? `${flow.description || ""} Обновлено: ${formatDateTime(flow.loaded_at)}`.trim() : flow.description}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {tab === "tracking"
-        ? (activeTrackingStore ? <div className={s.pageInfo}>Магазин: {activeTrackingStore.label}</div> : null)
-        : (activeStore ? <div className={s.pageInfo}>Магазин: {activeStore.label}</div> : null)}
       {loading ? <div className={s.empty}>Загрузка...</div> : null}
       {error ? <div className={s.errorBox}>{error}</div> : null}
 
