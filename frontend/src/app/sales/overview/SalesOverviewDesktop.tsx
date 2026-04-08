@@ -1,6 +1,5 @@
 import { Fragment } from "react";
 import { PageSectionTitle } from "../../../components/page/PageKit";
-import { WorkspaceSurface, WorkspaceTabs } from "../../../components/page/WorkspaceKit";
 import styles from "./SalesOverviewPage.module.css";
 import layoutStyles from "../../_shared/AppPageLayout.module.css";
 import { WorkspacePageHero } from "../../_shared/WorkspacePageHero";
@@ -293,19 +292,6 @@ export function SalesOverviewDesktop({ vm }: Props) {
         </div>
       ) : null}
 
-      {tab === "tracking" ? (
-        <WorkspaceSurface className={s.trackingStoreSurface}>
-          <WorkspaceTabs
-            className={s.trackingStoreTabs}
-            items={trackingStores.map((store: any) => ({
-              id: store.store_id,
-              label: store.label,
-            }))}
-            activeId={trackingStoreId}
-            onChange={setTrackingStoreId}
-          />
-        </WorkspaceSurface>
-      ) : null}
       {tab === "tracking"
         ? (activeTrackingStore ? <div className={s.pageInfo}>Магазин: {activeTrackingStore.label}</div> : null)
         : (activeStore ? <div className={s.pageInfo}>Магазин: {activeStore.label}</div> : null)}
