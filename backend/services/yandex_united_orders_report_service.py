@@ -42,6 +42,7 @@ from backend.services.store_data_model import (
     get_pricing_store_settings,
     get_sales_overview_cogs_source_map,
     get_sales_overview_order_rows_map,
+    repair_sales_overview_order_rows_lifecycle,
     get_sales_overview_order_rows,
     prune_pricing_cogs_snapshots_for_store,
     replace_fx_rates_cache,
@@ -948,8 +949,9 @@ async def refresh_sales_overview_order_rows_for_store(*, store_uid: str) -> dict
         store_uid=store_uid,
         rows=hot_rows,
     )
+    repaired = repair_sales_overview_order_rows_lifecycle(store_uid=store_uid)
     pruned_cogs_rows = prune_pricing_cogs_snapshots_for_store(store_uid=store_uid, keep_recent_days=3)
-    return {"ok": True, "store_uid": store_uid, "rows": rows_count, "pruned_cogs_rows": pruned_cogs_rows}
+    return {"ok": True, "store_uid": store_uid, "rows": rows_count, "pruned_cogs_rows": pruned_cogs_rows, "repaired": repaired}
 
 
 async def refresh_sales_overview_order_rows_current_month_for_store(*, store_uid: str) -> dict[str, Any]:
@@ -988,6 +990,11 @@ async def refresh_sales_overview_order_rows_current_month_for_store(*, store_uid
         date_from=month_start,
         date_to=today_key,
     )
+    repaired = repair_sales_overview_order_rows_lifecycle(
+        store_uid=store_uid,
+        date_from=month_start,
+        date_to=today_key,
+    )
     return {
         "ok": True,
         "store_uid": store_uid,
@@ -996,6 +1003,7 @@ async def refresh_sales_overview_order_rows_current_month_for_store(*, store_uid
         "date_to": today_key,
         "rows": rows_count,
         "campaign_id": campaign_id,
+        "repaired": repaired,
     }
 
 
@@ -1034,6 +1042,11 @@ async def refresh_sales_overview_order_rows_today_for_store(*, store_uid: str) -
         date_from=today_key,
         date_to=today_key,
     )
+    repaired = repair_sales_overview_order_rows_lifecycle(
+        store_uid=store_uid,
+        date_from=today_key,
+        date_to=today_key,
+    )
     return {
         "ok": True,
         "store_uid": store_uid,
@@ -1042,6 +1055,7 @@ async def refresh_sales_overview_order_rows_today_for_store(*, store_uid: str) -
         "date_to": today_key,
         "rows": rows_count,
         "campaign_id": campaign_id,
+        "repaired": repaired,
     }
 
 
@@ -1282,13 +1296,16 @@ def _split_materialized_rows_by_lifecycle(rows: list[dict[str, Any]]) -> tuple[l
     history_rows: list[dict[str, Any]] = []
     hot_rows: list[dict[str, Any]] = []
     for row in rows or []:
-        status_kind = _status_kind(str((row or {}).get("item_status") or ""))
+        normalized = dict(row or {})
+        status_kind = _status_kind(str(normalized.get("item_status") or ""))
         if status_kind == "ignore":
             continue
+        if not _is_history_status_kind(status_kind):
+            normalized["delivery_date"] = ""
         if _is_history_status_kind(status_kind):
-            history_rows.append(row)
+            history_rows.append(normalized)
         else:
-            hot_rows.append(row)
+            hot_rows.append(normalized)
     return history_rows, hot_rows
 
 

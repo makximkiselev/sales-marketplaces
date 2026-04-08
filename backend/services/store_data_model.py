@@ -6961,6 +6961,74 @@ def replace_sales_overview_order_rows_hot(
     return len(prepared)
 
 
+def repair_sales_overview_order_rows_lifecycle(
+    *,
+    store_uid: str,
+    date_from: str = "",
+    date_to: str = "",
+) -> dict[str, int]:
+    init_store_data_model()
+    suid = str(store_uid or "").strip()
+    if not suid:
+        raise ValueError("store_uid обязателен")
+    from_date = str(date_from or "").strip()
+    to_date = str(date_to or "").strip()
+    hot_deleted = 0
+    history_deleted = 0
+    ph = "%s" if is_postgres_backend() else "?"
+
+    hot_where = [f"store_uid = {ph}"]
+    hot_params: list[Any] = [suid]
+    if from_date and to_date:
+        hot_where.append(f"order_created_date >= {ph}")
+        hot_where.append(f"order_created_date <= {ph}")
+        hot_params.extend([from_date, to_date])
+    hot_where_sql = " AND ".join(hot_where)
+
+    history_where = [f"store_uid = {ph}"]
+    history_params: list[Any] = [suid]
+    if from_date and to_date:
+        history_where.append(f"order_created_date >= {ph}")
+        history_where.append(f"order_created_date <= {ph}")
+        history_params.extend([from_date, to_date])
+    history_where_sql = " AND ".join(history_where)
+
+    with _connect() as conn:
+        cur = conn.execute(
+            f"""
+            DELETE FROM sales_overview_order_rows_hot
+            WHERE {hot_where_sql}
+              AND (
+                LOWER(TRIM(COALESCE(item_status, ''))) = 'доставлен покупателю'
+                OR LOWER(TRIM(COALESCE(item_status, ''))) LIKE '%возврат%'
+                OR (
+                  TRIM(COALESCE(delivery_date, '')) <> ''
+                  AND LOWER(TRIM(COALESCE(item_status, ''))) NOT IN ('доставлен покупателю')
+                  AND LOWER(TRIM(COALESCE(item_status, ''))) NOT LIKE '%возврат%'
+                )
+              )
+            """,
+            hot_params,
+        )
+        hot_deleted = int(getattr(cur, "rowcount", 0) or 0)
+        conn.commit()
+
+    with _connect_history() as conn:
+        cur = conn.execute(
+            f"""
+            DELETE FROM sales_overview_order_rows
+            WHERE {history_where_sql}
+              AND LOWER(TRIM(COALESCE(item_status, ''))) <> 'доставлен покупателю'
+              AND LOWER(TRIM(COALESCE(item_status, ''))) NOT LIKE '%возврат%'
+            """,
+            history_params,
+        )
+        history_deleted = int(getattr(cur, "rowcount", 0) or 0)
+        conn.commit()
+
+    return {"hot_deleted": hot_deleted, "history_deleted": history_deleted}
+
+
 def _current_month_start_iso() -> str:
     now_msk = datetime.now(ZoneInfo("Europe/Moscow")).date()
     return now_msk.replace(day=1).isoformat()

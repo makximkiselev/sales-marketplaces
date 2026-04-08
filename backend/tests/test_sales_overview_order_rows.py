@@ -19,6 +19,17 @@ class SalesOverviewOrderRowsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([row["order_id"] for row in hot_rows], ["1", "2"])
         self.assertEqual([row["order_id"] for row in history_rows], ["3", "4"])
 
+    def test_split_materialized_rows_clears_delivery_date_for_hot_rows(self) -> None:
+        history_rows, hot_rows = svc._split_materialized_rows_by_lifecycle(
+            [
+                {"order_id": "1", "sku": "A", "item_status": "Оформлен", "delivery_date": "2026-04-07"},
+                {"order_id": "2", "sku": "B", "item_status": "Доставлен покупателю", "delivery_date": "2026-04-07"},
+            ]
+        )
+
+        self.assertEqual(hot_rows[0]["delivery_date"], "")
+        self.assertEqual(history_rows[0]["delivery_date"], "2026-04-07")
+
     async def test_convert_store_amount_to_rub_uses_fx_snapshot(self) -> None:
         with patch.object(svc, "_get_cbr_usd_rub_rate_for_date", AsyncMock(return_value=96.5)) as rate_mock:
             converted = await svc._convert_store_amount_to_rub(
