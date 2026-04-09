@@ -3,7 +3,65 @@
   gap: 10px;
 }
 
-.heroToolbar {
+.heroSplit {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.7fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.heroCopy {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.heroEyebrow {
+  color: #7fc7ff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heroTitle {
+  margin: 0;
+  color: #f4f8ff;
+  font-size: 18px;
+  line-height: 1.1;
+  font-weight: 800;
+}
+
+.heroSubtitle {
+  margin: 0;
+  color: #9db2d4;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.heroControlCard {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(76, 201, 240, 0.08), transparent 34%),
+    rgba(9, 18, 33, 0.72);
+}
+
+.heroControlTitle {
+  color: #8ea5c8;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heroControlStack {
+  display: grid;
   gap: 10px;
 }
 
@@ -46,14 +104,9 @@
   font-size: 12px;
 }
 
-.toolbarFilters,
-.toolbarActions {
-  align-items: stretch;
-}
-
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -98,19 +151,6 @@
   color: #9db2d4;
   font-size: 11px;
   line-height: 1.35;
-}
-
-.kpiBadge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 179, 71, 0.22);
-  background: rgba(74, 46, 17, 0.52);
-  color: #ffd8a8;
-  font-size: 12px;
-  font-weight: 800;
 }
 
 .deltaPositive {
@@ -869,15 +909,13 @@
     gap: 12px;
   }
 
-  .toolbarFilters {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 132px;
-    gap: 10px;
-    width: 100%;
+  .heroSplit {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 
-  .toolbarActions {
-    width: 100%;
+  .heroControlCard {
+    padding: 12px;
   }
 
   .kpiCard,
@@ -936,16 +974,12 @@
     gap: 8px;
   }
 
-  .toolbarFilters {
-    grid-template-columns: 1fr;
-  }
-
-  .monitoringLink {
-    display: none;
+  .heroTitle {
+    font-size: 17px;
   }
 
   .kpiGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 

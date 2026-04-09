@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { apiGetOk } from "../lib/api";
 import { PageFrame } from "../components/page/PageKit";
-import { WorkspaceHeader, WorkspaceSurface, WorkspaceToolbar } from "../components/page/WorkspaceKit";
+import { WorkspaceSurface } from "../components/page/WorkspaceKit";
 import layoutStyles from "./_shared/AppPageLayout.module.css";
 import styles from "./DashboardPage.module.css";
 
@@ -897,7 +897,6 @@ export default function Page() {
   const selectedDayRevenue = Number(selectedTrackingDay?.revenue || (period === "yesterday" ? yesterdayRevenue : todayRevenue));
   const selectedDayProfit = Number(selectedTrackingDay?.profit_amount || (period === "yesterday" ? yesterdayProfit : todayProfit));
   const selectedDayOrdersCount = Number(selectedTrackingDay?.order_count_total || (period === "yesterday" ? yesterdayOrdersCount : todayOrdersCount));
-  const selectedDayProblemsCount = period === "yesterday" ? yesterdayProblemsCount : todayProblemsCount;
   const selectedDayOrdersLoadedAt = period === "yesterday" ? bundle?.yesterday?.loaded_at : bundle?.today?.loaded_at;
   const selectedDayFreshness = period === "yesterday" ? freshness?.yesterday : freshness?.today;
   const selectedDayMarginPct = selectedDayRevenue > 0 ? (selectedDayProfit / selectedDayRevenue) * 100 : null;
@@ -913,10 +912,9 @@ export default function Page() {
     selectedDayOrdersCount,
     Number(previousTrackingDay?.order_count_total || (period === "yesterday" ? previousOrdersCount : yesterdayOrdersCount)),
   );
-  const selectedProblemsDeltaPct = period === "yesterday" ? compareDelta(yesterdayProblemsCount, todayProblemsCount) : compareDelta(todayProblemsCount, yesterdayProblemsCount);
   const averageDayRevenue = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.revenue || 0), 0) / trendDays.length : null;
   const averageDayProfit = trendDays.length ? trendDays.reduce((acc, day) => acc + Number(day.profit_amount || 0), 0) / trendDays.length : null;
-  const isSelectedDayEmpty = selectedDayOrdersCount === 0 && selectedDayRevenue === 0 && selectedDayProblemsCount === 0;
+  const isSelectedDayEmpty = selectedDayOrdersCount === 0 && selectedDayRevenue === 0;
   const chartTitle = "Динамика оборота и прибыли";
   const chartHint = `Последние ${chartSpan} дней. Сейчас: ${chartRangeLabel}.`;
   const chartEmptyText = `За последние ${chartSpan} дней в графике пока нет дневных точек.`;
@@ -925,32 +923,36 @@ export default function Page() {
     <PageFrame title="Сводка" subtitle="Оперативный слой по сегодняшнему и вчерашнему дню без глубоких периодных срезов.">
       <div className={layoutStyles.shell}>
         <WorkspaceSurface className={`${layoutStyles.heroSurface} ${styles.heroSurface}`}>
-          <WorkspaceHeader
-            title="Оперативная сводка"
-            subtitle="Готовые дневные данные: оборот, прибыль, заказы и риски."
-          />
-          <WorkspaceToolbar className={`${layoutStyles.toolbar} ${styles.heroToolbar}`}>
-            <div className={`${layoutStyles.toolbarGroup} ${styles.toolbarFilters}`}>
-              <select className="input input-size-lg" value={storeId} onChange={(e) => setStoreId(e.target.value)}>
-                <option value="all">Все магазины</option>
-                {stores.map((store) => (
-                  <option key={store.store_uid} value={store.store_id}>{store.label}</option>
-                ))}
-              </select>
-              <select className="input input-size-md" value={period} onChange={(e) => setPeriod(e.target.value as DashboardPeriod)}>
-                {PERIOD_OPTIONS.map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </select>
+          <div className={styles.heroSplit}>
+            <div className={styles.heroCopy}>
+              <div className={styles.heroEyebrow}>Сводка</div>
+              <h1 className={styles.heroTitle}>Оперативная сводка</h1>
+              <p className={styles.heroSubtitle}>Готовые дневные данные: оборот, прибыль и заказы без лишних дублей и служебного шума.</p>
             </div>
-          </WorkspaceToolbar>
-          <div className={styles.heroStatusRow}>
-            <span className={selectedDayFreshness?.is_stale ? styles.heroStatusWarn : styles.heroStatusOk}>
-              {selectedDayFreshness?.is_stale ? "Данные обновляются" : "Слой актуален"}
-            </span>
-            <span className={styles.heroStatusText}>
-              {selectedDayOrdersLoadedAt ? `Обновлено: ${formatDateTime(selectedDayOrdersLoadedAt)}` : "Ожидаем первый срез"}
-            </span>
+            <div className={styles.heroControlCard}>
+              <div className={styles.heroControlTitle}>Параметры среза</div>
+              <div className={styles.heroControlStack}>
+                <select className="input input-size-lg" value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+                  <option value="all">Все магазины</option>
+                  {stores.map((store) => (
+                    <option key={store.store_uid} value={store.store_id}>{store.label}</option>
+                  ))}
+                </select>
+                <select className="input input-size-md" value={period} onChange={(e) => setPeriod(e.target.value as DashboardPeriod)}>
+                  {PERIOD_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className={styles.heroStatusRow}>
+                <span className={selectedDayFreshness?.is_stale ? styles.heroStatusWarn : styles.heroStatusOk}>
+                  {selectedDayFreshness?.is_stale ? "Данные обновляются" : "Слой актуален"}
+                </span>
+                <span className={styles.heroStatusText}>
+                  {selectedDayOrdersLoadedAt ? `Обновлено: ${formatDateTime(selectedDayOrdersLoadedAt)}` : "Ожидаем первый срез"}
+                </span>
+              </div>
+            </div>
           </div>
         </WorkspaceSurface>
 
@@ -1005,22 +1007,6 @@ export default function Page() {
                   <span className={selectedOrdersDeltaPct != null && selectedOrdersDeltaPct >= 0 ? styles.deltaPositive : styles.deltaNegative}>
                     vs день {formatPercent(selectedOrdersDeltaPct)}
                   </span>
-                </div>
-              </div>
-
-              <div className={styles.kpiCard}>
-                <div className={styles.kpiHead}>
-                  <div>
-                    <div className={styles.kpiLabel}>Проблемные заказы</div>
-                    <div className={styles.kpiValue}>{formatNumber(selectedDayProblemsCount)}</div>
-                  </div>
-                  <div className={styles.kpiBadge}>Риски</div>
-                </div>
-                <div className={styles.kpiMeta}>
-                  <span className={selectedProblemsDeltaPct != null && selectedProblemsDeltaPct <= 0 ? styles.deltaPositive : styles.deltaNegative}>
-                    vs день {formatPercent(selectedProblemsDeltaPct)}
-                  </span>
-                  <span>{selectedDayOrdersLoadedAt ? `Обновлено: ${formatDateTime(selectedDayOrdersLoadedAt)}` : "Дневной срез"}</span>
                 </div>
               </div>
             </section>
