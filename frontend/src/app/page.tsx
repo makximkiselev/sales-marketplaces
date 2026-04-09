@@ -42,6 +42,7 @@ type OrderRow = {
   item_name?: string;
   sku?: string;
   item_status?: string;
+  category_path?: string;
 };
 
 type OrdersResp = {
@@ -142,15 +143,11 @@ type RetrospectiveResp = {
 };
 
 type ChartRange = "7d" | "30d";
-type AnalysisView = "sku" | "category";
-
 type CategoryAggregate = {
   label: string;
   value: number;
   profit: number;
   marginPct: number | null;
-  brandCount: number;
-  brands: Array<{ label: string; value: number; profit: number; marginPct: number | null }>;
 };
 
 type DashboardBundle = {
@@ -305,39 +302,24 @@ function splitCategoryPath(value: string | undefined) {
 }
 
 function buildCategoryAggregates(rows: RetrospectiveRow[]) {
-  const categoryMap = new Map<string, { revenue: number; profit: number; brands: Map<string, { revenue: number; profit: number }> }>();
+  const categoryMap = new Map<string, { revenue: number; profit: number }>();
   for (const row of rows || []) {
     const parts = splitCategoryPath(row.category_path || row.label);
     const category = parts[0] || "Не определено";
-    const brand = parts.length >= 2 ? parts[parts.length >= 3 ? parts.length - 2 : 1] || "Без бренда" : "Без бренда";
     const revenue = Number(row.revenue || 0);
     const profit = Number(row.profit_amount || 0);
-    const categoryBucket = categoryMap.get(category) || { revenue: 0, profit: 0, brands: new Map() };
+    const categoryBucket = categoryMap.get(category) || { revenue: 0, profit: 0 };
     categoryBucket.revenue += revenue;
     categoryBucket.profit += profit;
-    const brandBucket = categoryBucket.brands.get(brand) || { revenue: 0, profit: 0 };
-    brandBucket.revenue += revenue;
-    brandBucket.profit += profit;
-    categoryBucket.brands.set(brand, brandBucket);
     categoryMap.set(category, categoryBucket);
   }
   return Array.from(categoryMap.entries())
     .map(([label, bucket]) => {
-      const brands = Array.from(bucket.brands.entries())
-        .map(([brandLabel, brandBucket]) => ({
-          label: brandLabel,
-          value: brandBucket.revenue,
-          profit: brandBucket.profit,
-          marginPct: brandBucket.revenue > 0 ? (brandBucket.profit / brandBucket.revenue) * 100 : null,
-        }))
-        .sort((a, b) => b.value - a.value);
       return {
         label,
         value: bucket.revenue,
         profit: bucket.profit,
         marginPct: bucket.revenue > 0 ? (bucket.profit / bucket.revenue) * 100 : null,
-        brandCount: brands.length,
-        brands,
       };
     })
     .sort((a, b) => b.value - a.value);
@@ -567,74 +549,41 @@ function TrendChart({
   );
 }
 
-function CategoryDrilldownCard({
+function CategoryRankingCard({
   categories,
   currencyCode,
-  selectedCategory,
-  onSelectCategory,
   actionTo,
 }: {
   categories: CategoryAggregate[];
   currencyCode?: string | null;
-  selectedCategory: string;
-  onSelectCategory: (value: string) => void;
   actionTo?: string;
 }) {
-  const rows = categories.slice(0, 4);
-  const selected = rows.find((row) => row.label === selectedCategory) || rows[0] || null;
+  const rows = categories.slice(0, 5);
   const maxValue = Math.max(1, ...rows.map((row) => row.value));
   return (
     <div className={styles.rankingCard}>
       <div className={styles.panelHead}>
         <div>
           <div className={styles.panelTitle}>Топ категорий</div>
-          <div className={styles.panelHint}>Сначала категория, внутри нее бренды. Без SKU-листьев в верхнем списке.</div>
+          <div className={styles.panelHint}>Только категории из дерева Маркета, без примеси брендов и товарных листьев.</div>
         </div>
         {actionTo ? <Link className={styles.panelAction} to={actionTo}>Открыть категории</Link> : null}
       </div>
-      <div className={styles.categorySplit}>
-        <div className={styles.rankingList}>
-          {rows.map((row) => (
-            <button
-              key={row.label}
-              type="button"
-              className={`${styles.categoryRowButton} ${selected?.label === row.label ? styles.categoryRowButtonActive : ""}`}
-              onClick={() => onSelectCategory(row.label)}
-            >
-              <div className={styles.rankingRowHead}>
-                <div className={styles.rankingLabel}>{row.label}</div>
-                <div className={styles.rankingValue}>{formatMoney(row.value, currencyCode)}</div>
-              </div>
-              <div className={styles.rankingBarTrack}>
-                <div className={styles.rankingBarFill} style={{ width: `${(row.value / maxValue) * 100}%` }} />
-              </div>
-              <div className={styles.rankingDetail}>
-                Прибыль: {formatMoney(row.profit, currencyCode)} · Маржа: {formatPercent(row.marginPct)} · Брендов: {formatNumber(row.brandCount)}
-              </div>
-            </button>
-          ))}
-        </div>
-        <div className={styles.brandPane}>
-          <div className={styles.brandPaneTitle}>{selected ? `Бренды: ${selected.label}` : "Бренды категории"}</div>
-          <div className={styles.brandPaneHint}>{selected ? "Внутренний срез выбранной категории по обороту." : "Категория не выбрана."}</div>
-          {selected?.brands?.length ? (
-            <div className={styles.rankingList}>
-              {selected.brands.slice(0, 4).map((brand) => (
-                <div key={`${selected.label}-${brand.label}`} className={styles.rankingRow}>
-                  <div className={styles.rankingRowHead}>
-                    <div className={styles.rankingLabel}>{brand.label}</div>
-                    <div className={styles.rankingValue}>{formatMoney(brand.value, currencyCode)}</div>
-                  </div>
-                  <div className={styles.rankingDetail}>
-                    Прибыль: {formatMoney(brand.profit, currencyCode)} · Маржа: {formatPercent(brand.marginPct)}
-                  </div>
-                </div>
-              ))}
+      <div className={styles.rankingList}>
+        {rows.map((row) => (
+          <div key={row.label} className={styles.rankingRow}>
+            <div className={styles.rankingRowHead}>
+              <div className={styles.rankingLabel}>{row.label}</div>
+              <div className={styles.rankingValue}>{formatMoney(row.value, currencyCode)}</div>
             </div>
-          ) : (
-            <div className={styles.placeholderCard}>По выбранной категории бренды пока не выделены.</div>
-          )}
-        </div>
+            <div className={styles.rankingBarTrack}>
+              <div className={styles.rankingBarFill} style={{ width: `${(row.value / maxValue) * 100}%` }} />
+            </div>
+            <div className={styles.rankingDetail}>
+              Прибыль: {formatMoney(row.profit, currencyCode)} · Маржа: {formatPercent(row.marginPct)}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -759,8 +708,6 @@ export default function Page() {
   const [period, setPeriod] = useState<DashboardPeriod>("today");
   const [storeId, setStoreId] = useState("all");
   const [chartRange, setChartRange] = useState<ChartRange>("7d");
-  const [analysisView, setAnalysisView] = useState<AnalysisView>("sku");
-  const [selectedCategoryLabel, setSelectedCategoryLabel] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -804,11 +751,38 @@ export default function Page() {
     [bundle?.tracking?.years],
   );
 
-  const topSku = (bundle?.sku?.rows || []).slice(0, 4).map((row) => ({
-    label: row.label || row.item_name || row.sku || "SKU",
-    value: Number(row.revenue || 0),
-    detail: `Прибыль: ${formatMoney(row.profit_amount, currencyCode)} · Маржа: ${formatPercent(row.profit_pct)}`,
-  }));
+  const topSku = useMemo(() => {
+    const grouped = new Map<string, { label: string; revenue: number; profit: number; sale: number; saleWithCoinvest: number; count: number }>();
+    for (const row of bundle?.orders?.rows || []) {
+      const key = String(row.sku || row.item_name || "").trim();
+      if (!key) continue;
+      const bucket = grouped.get(key) || {
+        label: String(row.item_name || row.sku || "SKU").trim(),
+        revenue: 0,
+        profit: 0,
+        sale: 0,
+        saleWithCoinvest: 0,
+        count: 0,
+      };
+      bucket.revenue += Number(row.sale_price_with_coinvest || row.sale_price || 0);
+      bucket.profit += Number(row.profit || 0);
+      bucket.sale += Number(row.sale_price || 0);
+      bucket.saleWithCoinvest += Number(row.sale_price_with_coinvest || row.sale_price || 0);
+      bucket.count += 1;
+      grouped.set(key, bucket);
+    }
+    return Array.from(grouped.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
+      .map((row) => {
+        const coinvestPct = row.sale > 0 ? ((row.sale - row.saleWithCoinvest) / row.sale) * 100 : null;
+        return {
+          label: row.label,
+          value: row.revenue,
+          detail: `Прибыль: ${formatMoney(row.profit, currencyCode)} · Соинвест: ${formatPercent(coinvestPct)}`,
+        };
+      });
+  }, [bundle?.orders?.rows, currencyCode]);
   const categoryAggregates = useMemo(() => {
     const backendGroups = bundle?.category?.category_groups || [];
     return backendGroups.length ? backendGroups : buildCategoryAggregates(bundle?.category?.rows || []);
@@ -822,15 +796,6 @@ export default function Page() {
   const trendDays = useMemo(() => {
     return allTrendDays.filter((day) => day.date >= chartRangeWindow.start && day.date <= chartRangeWindow.end);
   }, [allTrendDays, chartRangeWindow.end, chartRangeWindow.start]);
-  useEffect(() => {
-    if (!categoryAggregates.length) {
-      setSelectedCategoryLabel("");
-      return;
-    }
-    if (!categoryAggregates.some((item) => item.label === selectedCategoryLabel)) {
-      setSelectedCategoryLabel(categoryAggregates[0].label);
-    }
-  }, [categoryAggregates, selectedCategoryLabel]);
   const revenueSpark = trendDays.map((day) => Number(day.revenue || 0));
   const profitSpark = trendDays.map((day) => Number(day.profit_amount || 0));
   const marginSpark = trendDays.map((day) => Number(day.profit_pct || 0));
@@ -1028,7 +993,7 @@ export default function Page() {
                 <InsightCard
                   title="Лидер SKU"
                   value={topSku[0]?.label || "Нет данных"}
-                  detail={topSku[0] ? formatMoney(topSku[0].value, currencyCode) : "Срез пока пуст"}
+                  detail={topSku[0] ? `${formatMoney(topSku[0].value, currencyCode)} · ${topSku[0].detail}` : "Срез пока пуст"}
                   tone="neutral"
                   compact
                 />
@@ -1038,45 +1003,23 @@ export default function Page() {
                 <div className={styles.panelHead}>
                   <div>
                     <div className={styles.panelTitle}>Быстрые срезы</div>
-                    <div className={styles.panelHint}>Красивые топы по товарным и категорийным срезам без отдельного блока рисков.</div>
-                  </div>
-                  <div className={styles.analysisTabs}>
-                    <button
-                      type="button"
-                      className={`${styles.analysisTab} ${analysisView === "sku" ? styles.analysisTabActive : ""}`}
-                      onClick={() => setAnalysisView("sku")}
-                    >
-                      SKU
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.analysisTab} ${analysisView === "category" ? styles.analysisTabActive : ""}`}
-                      onClick={() => setAnalysisView("category")}
-                    >
-                      Категории
-                    </button>
+                    <div className={styles.panelHint}>Один экран с топом SKU и чистым top категорий без переключалок и смешения с брендами.</div>
                   </div>
                 </div>
-                <div className={styles.analysisViewport}>
-                  {analysisView === "sku" ? (
-                    <RankingCard
-                      title="Топ SKU"
-                      hint="Лидеры выбранного операционного дня по обороту."
-                      rows={topSku}
-                      currencyCode={currencyCode}
-                      actionTo={buildOverviewLink("sku", { storeId: selectedOverviewStoreId, period })}
-                      actionLabel="Открыть товары"
-                    />
-                  ) : null}
-                  {analysisView === "category" ? (
-                    <CategoryDrilldownCard
-                      categories={categoryAggregates}
-                      currencyCode={currencyCode}
-                      selectedCategory={selectedCategoryLabel}
-                      onSelectCategory={setSelectedCategoryLabel}
-                      actionTo={buildOverviewLink("category", { storeId: selectedOverviewStoreId, period })}
-                    />
-                  ) : null}
+                <div className={styles.analysisDualGrid}>
+                  <RankingCard
+                    title="Топ SKU"
+                    hint="Топ-5 лидеров выбранного дня по обороту."
+                    rows={topSku}
+                    currencyCode={currencyCode}
+                    actionTo={buildOverviewLink("sku", { storeId: selectedOverviewStoreId, period })}
+                    actionLabel="Открыть товары"
+                  />
+                  <CategoryRankingCard
+                    categories={categoryAggregates}
+                    currencyCode={currencyCode}
+                    actionTo={buildOverviewLink("category", { storeId: selectedOverviewStoreId, period })}
+                  />
                 </div>
               </section>
             </section>
