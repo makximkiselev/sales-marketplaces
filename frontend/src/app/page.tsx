@@ -580,7 +580,7 @@ function CategoryRankingCard({
               <div className={styles.rankingBarFill} style={{ width: `${(row.value / maxValue) * 100}%` }} />
             </div>
             <div className={styles.rankingDetail}>
-              Прибыль: {formatMoney(row.profit, currencyCode)} · Маржа: {formatPercent(row.marginPct)}
+              Прибыль: {formatMoney(row.profit, currencyCode)} ({formatPercent(row.marginPct)}) 
             </div>
           </div>
         ))}
@@ -808,10 +808,11 @@ export default function Page() {
       .slice(0, 5)
       .map((row) => {
         const coinvestPct = row.sale > 0 ? ((row.sale - row.saleWithCoinvest) / row.sale) * 100 : null;
+        const profitPct = row.revenue > 0 ? (row.profit / row.revenue) * 100 : null;
         return {
           label: row.label,
           value: row.revenue,
-          detail: `Прибыль: ${formatMoney(row.profit, currencyCode)} · Соинвест: ${formatPercent(coinvestPct)}`,
+          detail: `Прибыль: ${formatMoney(row.profit, currencyCode)} (${formatPercent(profitPct)}) · Соинвест: ${formatPercent(coinvestPct)}`,
         };
       });
   }, [bundle?.orders?.rows, currencyCode]);
