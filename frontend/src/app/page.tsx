@@ -211,8 +211,8 @@ const PERIOD_OPTIONS: Array<{ value: DashboardPeriod; label: string }> = [
   { value: "yesterday", label: "Вчера" },
 ];
 
-function moneySign(currencyCode: string | undefined | null) {
-  return String(currencyCode || "").trim().toUpperCase() === "USD" ? "$" : "₽";
+function moneySign(_currencyCode: string | undefined | null) {
+  return "₽";
 }
 
 function formatMoney(value: number | null | undefined, currencyCode?: string | null) {
