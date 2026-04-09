@@ -1012,25 +1012,15 @@ export default function Page() {
               />
             </section>
 
-            <section className={styles.dashboardSupportGrid}>
-              <div className={styles.sideStack}>
-                {isSelectedDayEmpty ? (
-                  <InsightCard
-                    title="Статус дня"
-                    value="День еще пустой"
-                    detail="Новых заказов за выбранный день пока нет, поэтому сводка показывает нулевой дневной срез без подмены месячными данными."
-                    tone="neutral"
-                  />
-                ) : null}
+            <section className={styles.analysisSection}>
+              {isSelectedDayEmpty ? (
                 <InsightCard
-                  title="Лидер SKU"
-                  value={topSku[0]?.label || "Нет данных"}
-                  detail={topSku[0] ? `${formatMoney(topSku[0].value, currencyCode)} · ${topSku[0].detail}` : "Срез пока пуст"}
+                  title="Статус дня"
+                  value="День еще пустой"
+                  detail="Новых заказов за выбранный день пока нет, поэтому сводка показывает нулевой дневной срез без подмены месячными данными."
                   tone="neutral"
-                  compact
                 />
-              </div>
-
+              ) : null}
               <section className={styles.analysisSection}>
                 <div className={styles.panelHead}>
                   <div>
