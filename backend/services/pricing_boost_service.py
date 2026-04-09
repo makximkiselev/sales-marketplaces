@@ -24,6 +24,7 @@ from backend.services.store_data_model import (
     upsert_pricing_boost_results_bulk,
 )
 from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
+from backend.services.yandex_united_orders_report_service import _load_netting_scope
 
 logger = logging.getLogger("uvicorn.error")
 MSK = ZoneInfo("Europe/Moscow")
@@ -148,11 +149,29 @@ def _status_kind(status: str) -> str:
         return "ignore"
     if normalized in {"returned", "return", "возвращен", "возвращён"}:
         return "return"
-    if normalized in {"delivered", "delivered_to_customer", "доставлен", "получен"}:
+    if normalized in {"delivered", "delivered_to_customer", "доставлен", "доставлен покупателю", "получен"}:
         return "delivered"
     if normalized:
         return "open"
     return "open"
+
+
+def _is_order_boost_cost(payload: dict[str, Any]) -> bool:
+    normalized = str(payload.get("offerOrServiceName") or "").strip().lower()
+    return normalized == "буст продаж, оплата за продажи"
+
+
+def _load_actual_boosted_order_keys(*, store_uid: str, report_date: str) -> set[tuple[str, str]]:
+    out: set[tuple[str, str]] = set()
+    for payload in _load_netting_scope(store_uid=store_uid, date_from=report_date, date_to=report_date):
+        if not isinstance(payload, dict) or not _is_order_boost_cost(payload):
+            continue
+        order_id = str(payload.get("orderId") or payload.get("shopOrderId") or "").strip()
+        sku = str(payload.get("shopSku") or "").strip()
+        if not order_id:
+            continue
+        out.add((order_id, sku))
+    return out
 
 
 async def _load_order_rows_for_store_day(*, store_uid: str, report_date: str) -> list[dict[str, Any]]:
@@ -408,6 +427,7 @@ async def get_boost_overview(
     orders_by_store: dict[str, dict[str, dict[str, Any]]] = {}
     for suid in store_uids:
         order_rows = await _load_order_rows_for_store_day(store_uid=suid, report_date=report_date_value)
+        actual_boosted_order_keys = _load_actual_boosted_order_keys(store_uid=suid, report_date=report_date_value)
         sku_aggs: dict[str, dict[str, Any]] = {}
         for order_row in order_rows:
             sku = str(order_row.get("sku") or "").strip()
@@ -416,16 +436,26 @@ async def get_boost_overview(
             if sku not in skus:
                 continue
             status_kind = _status_kind(str(order_row.get("item_status") or ""))
-            if status_kind == "ignore":
+            if status_kind != "delivered":
                 continue
+            order_id = str(order_row.get("order_id") or "").strip()
             revenue = float(_to_num(order_row.get("sale_price")) or 0.0)
             profit = float(_to_num(order_row.get("profit")) or 0.0)
             ads = float(_to_num(order_row.get("ads")) or 0.0)
-            boosted = float(_to_num(order_row.get("strategy_market_boost_bid_percent")) or 0.0) > 0.01
+            planned_market_boost = float(_to_num(order_row.get("strategy_market_boost_bid_percent")) or 0.0)
+            planned_boost_share = float(_to_num(order_row.get("strategy_boost_share")) or 0.0)
+            planned_boosted_orders_count = 0.0
+            if planned_market_boost > 0.01:
+                if planned_boost_share > 0:
+                    planned_boosted_orders_count = round(min(1.0, planned_boost_share / 100.0), 4)
+                else:
+                    planned_boosted_orders_count = 1.0
+            boosted = (order_id, sku) in actual_boosted_order_keys or (order_id, "") in actual_boosted_order_keys
             bucket = sku_aggs.setdefault(
                 sku,
                 {
                     "orders_count": 0,
+                    "planned_boosted_orders_count": 0.0,
                     "revenue": 0.0,
                     "profit": 0.0,
                     "ads": 0.0,
@@ -436,6 +466,7 @@ async def get_boost_overview(
                 },
             )
             bucket["orders_count"] += 1
+            bucket["planned_boosted_orders_count"] = round(float(bucket["planned_boosted_orders_count"]) + planned_boosted_orders_count, 2)
             bucket["revenue"] = round(float(bucket["revenue"]) + revenue, 2)
             bucket["profit"] = round(float(bucket["profit"]) + profit, 2)
             bucket["ads"] = round(float(bucket["ads"]) + ads, 2)
@@ -480,11 +511,7 @@ async def get_boost_overview(
             orders_count = int(agg.get("orders_count") or 0)
             boosted_orders_count = int(agg.get("boosted_orders_count") or 0)
             expected_boost_share = _to_num(strategy.get("boost_share"))
-            planned_boosted_orders = (
-                round((float(orders_count) * float(expected_boost_share)) / 100.0, 2)
-                if expected_boost_share is not None and orders_count > 0
-                else None
-            )
+            planned_boosted_orders = _to_num(agg.get("planned_boosted_orders_count"))
             selected_decision_by_store[suid] = str(strategy.get("decision_label") or "").strip()
             coinvest_pct_by_store[suid] = _to_num(strategy.get("coinvest_pct"))
             on_display_price_by_store[suid] = _to_num(strategy.get("on_display_price"))

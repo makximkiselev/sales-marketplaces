@@ -46,33 +46,40 @@ class PricingBoostServiceTests(unittest.IsolatedAsyncioTestCase):
         order_rows = [
             {
                 "sku": "SKU-1",
-                "item_status": "Оформлен",
+                "order_id": "1",
+                "item_status": "Доставлен покупателю",
                 "sale_price": 1000.0,
                 "profit": 120.0,
                 "ads": 50.0,
                 "strategy_market_boost_bid_percent": 5.0,
+                "strategy_boost_share": 25.0,
                 "order_created_at": "2026-04-08T11:00:00+03:00",
             },
             {
                 "sku": "SKU-1",
-                "item_status": "Оформлен",
+                "order_id": "2",
+                "item_status": "Доставлен покупателю",
                 "sale_price": 1000.0,
                 "profit": 120.0,
                 "ads": 50.0,
                 "strategy_market_boost_bid_percent": 0.0,
+                "strategy_boost_share": 0.0,
                 "order_created_at": "2026-04-08T10:00:00+03:00",
             },
             {
                 "sku": "SKU-1",
-                "item_status": "Отгружен",
+                "order_id": "3",
+                "item_status": "Доставлен покупателю",
                 "sale_price": 1000.0,
                 "profit": 120.0,
                 "ads": 50.0,
                 "strategy_market_boost_bid_percent": 5.0,
+                "strategy_boost_share": 25.0,
                 "order_created_at": "2026-04-08T12:00:00+03:00",
             },
             {
                 "sku": "SKU-1",
+                "order_id": "4",
                 "item_status": "Отменен",
                 "sale_price": 1000.0,
                 "profit": 120.0,
@@ -84,7 +91,8 @@ class PricingBoostServiceTests(unittest.IsolatedAsyncioTestCase):
 
         with patch.object(svc, "get_prices_overview", AsyncMock(return_value=base_payload)), \
              patch.object(svc, "get_pricing_strategy_results_map", return_value=strategy_map), \
-             patch.object(svc, "_load_order_rows_for_store_day", AsyncMock(return_value=order_rows)):
+             patch.object(svc, "_load_order_rows_for_store_day", AsyncMock(return_value=order_rows)), \
+             patch.object(svc, "_load_actual_boosted_order_keys", return_value={("1", "SKU-1"), ("3", "SKU-1")}):
             payload = await svc.get_boost_overview(
                 scope="all",
                 report_date="2026-04-08",
@@ -95,8 +103,8 @@ class PricingBoostServiceTests(unittest.IsolatedAsyncioTestCase):
         row = payload["rows"][0]
         self.assertEqual(row["orders_count_by_store"]["store-1"], 3)
         self.assertEqual(row["boosted_orders_count_by_store"]["store-1"], 2)
-        self.assertEqual(row["planned_boosted_orders_count_by_store"]["store-1"], 0.75)
-        self.assertEqual(row["boost_effectiveness_pct_by_store"]["store-1"], 266.67)
+        self.assertEqual(row["planned_boosted_orders_count_by_store"]["store-1"], 0.5)
+        self.assertEqual(row["boost_effectiveness_pct_by_store"]["store-1"], 400.0)
 
     async def test_boost_overview_effectiveness_is_none_without_plan(self) -> None:
         base_payload = {
@@ -115,7 +123,8 @@ class PricingBoostServiceTests(unittest.IsolatedAsyncioTestCase):
 
         with patch.object(svc, "get_prices_overview", AsyncMock(return_value=base_payload)), \
              patch.object(svc, "get_pricing_strategy_results_map", return_value={"store-1": {"SKU-1": {"decision_label": "Boost"}}}), \
-             patch.object(svc, "_load_order_rows_for_store_day", AsyncMock(return_value=[])):
+             patch.object(svc, "_load_order_rows_for_store_day", AsyncMock(return_value=[])), \
+             patch.object(svc, "_load_actual_boosted_order_keys", return_value=set()):
             payload = await svc.get_boost_overview(
                 scope="all",
                 report_date="2026-04-09",
