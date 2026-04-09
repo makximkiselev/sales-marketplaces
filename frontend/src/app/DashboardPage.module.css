@@ -631,6 +631,11 @@
   background: rgba(8, 16, 30, 0.52);
 }
 
+.insightCompact {
+  gap: 4px;
+  padding: 12px;
+}
+
 .insightPositive {
   background: linear-gradient(180deg, rgba(18, 52, 37, 0.72), rgba(8, 17, 28, 0.72));
 }
@@ -657,10 +662,20 @@
   font-weight: 800;
 }
 
+.insightCompact .insightValue {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
 .insightDetail {
   color: #94abc9;
   font-size: 13px;
   line-height: 1.45;
+}
+
+.insightCompact .insightDetail {
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .analysisSection {

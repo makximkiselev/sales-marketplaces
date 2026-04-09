@@ -688,14 +688,16 @@ function InsightCard({
   value,
   detail,
   tone = "neutral",
+  compact = false,
 }: {
   title: string;
   value: string;
   detail: string;
   tone?: "neutral" | "positive" | "warn";
+  compact?: boolean;
 }) {
   return (
-    <div className={`${styles.insightCard} ${styles[`insight${tone[0].toUpperCase()}${tone.slice(1)}`]}`}>
+    <div className={`${styles.insightCard} ${styles[`insight${tone[0].toUpperCase()}${tone.slice(1)}`]} ${compact ? styles.insightCompact : ""}`}>
       <div className={styles.insightTitle}>{title}</div>
       <div className={styles.insightValue}>{value}</div>
       <div className={styles.insightDetail}>{detail}</div>
@@ -1028,6 +1030,7 @@ export default function Page() {
                   value={topSku[0]?.label || "Нет данных"}
                   detail={topSku[0] ? formatMoney(topSku[0].value, currencyCode) : "Срез пока пуст"}
                   tone="neutral"
+                  compact
                 />
               </div>
 
