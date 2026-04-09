@@ -196,8 +196,9 @@
 
 .dashboardSupportGrid {
   display: grid;
-  grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
+  grid-template-columns: minmax(300px, 0.78fr) minmax(0, 1.22fr);
   gap: 16px;
+  align-items: start;
 }
 
 .dailyGrid {
@@ -529,6 +530,7 @@
 .sideStack {
   display: grid;
   gap: 12px;
+  align-content: start;
 }
 
 .tempoMiniGrid {

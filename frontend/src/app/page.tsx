@@ -142,7 +142,7 @@ type RetrospectiveResp = {
 };
 
 type ChartRange = "7d" | "30d";
-type AnalysisView = "sku" | "category" | "status";
+type AnalysisView = "sku" | "category";
 
 type CategoryAggregate = {
   label: string;
@@ -683,38 +683,6 @@ function RankingCard({
   );
 }
 
-function StatusBreakdownCard({
-  rows,
-  total,
-}: {
-  rows: Array<{ label: string; count: number }>;
-  total: number;
-}) {
-  const maxCount = Math.max(1, ...rows.map((row) => row.count));
-  return (
-    <div className={styles.rankingCard}>
-      <div className={styles.panelTitle}>Статусы проблемных заказов</div>
-      <div className={styles.panelHint}>Какие статусы сейчас дают основной проблемный хвост.</div>
-      <div className={styles.rankingList}>
-        {rows.map((row) => (
-          <div key={row.label} className={styles.rankingRow}>
-            <div className={styles.rankingRowHead}>
-              <div className={styles.rankingLabel}>{row.label}</div>
-              <div className={styles.rankingValue}>{formatNumber(row.count)}</div>
-            </div>
-            <div className={styles.rankingBarTrack}>
-              <div className={styles.statusBarFill} style={{ width: `${(row.count / maxCount) * 100}%` }} />
-            </div>
-            <div className={styles.rankingDetail}>
-              {total > 0 ? formatPercent((row.count / total) * 100) : "—"} от всех проблемных заказов
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function InsightCard({
   title,
   value,
@@ -843,18 +811,6 @@ export default function Page() {
     const backendGroups = bundle?.category?.category_groups || [];
     return backendGroups.length ? backendGroups : buildCategoryAggregates(bundle?.category?.rows || []);
   }, [bundle?.category?.category_groups, bundle?.category?.rows]);
-  const problematicStatuses = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const row of bundle?.problems?.rows || []) {
-      const key = String(row.item_status || "Не определено").trim() || "Не определено";
-      map.set(key, (map.get(key) || 0) + 1);
-    }
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 4);
-  }, [bundle?.problems?.rows]);
-  const problemStatusRows = problematicStatuses.map(([label, count]) => ({ label, count }));
-  const todayProblemsCount = Number(bundle?.todayProblems?.total_count || 0);
-  const yesterdayProblemsCount = Number(bundle?.yesterdayProblems?.total_count || 0);
-  const previousProblemsCount = Number(bundle?.previousProblems?.total_count || 0);
   const chartSpan = chartRange === "30d" ? 30 : 7;
   const chartRangeWindow = useMemo(() => {
     const end = localDateOnly();
@@ -1012,6 +968,24 @@ export default function Page() {
             </section>
 
             <section className={styles.dashboardGrid}>
+              <div className={styles.panelCard}>
+                <div className={styles.panelTitle}>Ритм последних дней</div>
+                <div className={styles.panelHint}>{chartRangeLabel}</div>
+                <div className={styles.tempoMiniGrid}>
+                  <div className={styles.tempoMiniCard}>
+                    <span>Средний оборот</span>
+                    <strong>{formatMoney(averageDayRevenue, currencyCode)}</strong>
+                  </div>
+                  <div className={styles.tempoMiniCard}>
+                    <span>Средняя прибыль</span>
+                    <strong>{formatMoney(averageDayProfit, currencyCode)}</strong>
+                  </div>
+                  <div className={styles.tempoMiniCard}>
+                    <span>Активных дней</span>
+                    <strong>{formatNumber(trendDays.length)}</strong>
+                  </div>
+                </div>
+              </div>
               <TrendChart
                 days={trendDays}
                 currencyCode={currencyCode}
@@ -1041,104 +1015,67 @@ export default function Page() {
 
             <section className={styles.dashboardSupportGrid}>
               <div className={styles.sideStack}>
-                <div className={styles.panelCard}>
-                  <div className={styles.panelTitle}>Ритм последних дней</div>
-                  <div className={styles.panelHint}>{chartRangeLabel}</div>
-                  <div className={styles.tempoMiniGrid}>
-                    <div className={styles.tempoMiniCard}>
-                      <span>Средний оборот</span>
-                      <strong>{formatMoney(averageDayRevenue, currencyCode)}</strong>
-                    </div>
-                    <div className={styles.tempoMiniCard}>
-                      <span>Средняя прибыль</span>
-                      <strong>{formatMoney(averageDayProfit, currencyCode)}</strong>
-                    </div>
-                    <div className={styles.tempoMiniCard}>
-                      <span>Активных дней</span>
-                      <strong>{formatNumber(trendDays.length)}</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.insightGrid}>
-                  {isSelectedDayEmpty ? (
-                    <InsightCard
-                      title="Статус дня"
-                      value="День еще пустой"
-                      detail="Новых заказов за выбранный день пока нет, поэтому сводка показывает нулевой дневной срез без подмены месячными данными."
-                      tone="neutral"
-                    />
-                  ) : null}
+                {isSelectedDayEmpty ? (
                   <InsightCard
-                    title="Топ проблема"
-                    value={problematicStatuses[0] ? problematicStatuses[0][0] : "Нет сигнала"}
-                    detail={problematicStatuses[0] ? `${formatNumber(problematicStatuses[0][1])} заказов` : "Проблемные заказы не обнаружены"}
-                    tone="warn"
-                  />
-                  <InsightCard
-                    title="Лидер SKU"
-                    value={topSku[0]?.label || "Нет данных"}
-                    detail={topSku[0] ? formatMoney(topSku[0].value, currencyCode) : "Срез пока пуст"}
+                    title="Статус дня"
+                    value="День еще пустой"
+                    detail="Новых заказов за выбранный день пока нет, поэтому сводка показывает нулевой дневной срез без подмены месячными данными."
                     tone="neutral"
                   />
+                ) : null}
+                <InsightCard
+                  title="Лидер SKU"
+                  value={topSku[0]?.label || "Нет данных"}
+                  detail={topSku[0] ? formatMoney(topSku[0].value, currencyCode) : "Срез пока пуст"}
+                  tone="neutral"
+                />
               </div>
-            </section>
 
-            <section className={styles.analysisSection}>
-              <div className={styles.panelHead}>
-                <div>
-                  <div className={styles.panelTitle}>Быстрые срезы</div>
-                  <div className={styles.panelHint}>Один операционный блок без длинного хвоста из трех карточек подряд.</div>
+              <section className={styles.analysisSection}>
+                <div className={styles.panelHead}>
+                  <div>
+                    <div className={styles.panelTitle}>Быстрые срезы</div>
+                    <div className={styles.panelHint}>Красивые топы по товарным и категорийным срезам без отдельного блока рисков.</div>
+                  </div>
+                  <div className={styles.analysisTabs}>
+                    <button
+                      type="button"
+                      className={`${styles.analysisTab} ${analysisView === "sku" ? styles.analysisTabActive : ""}`}
+                      onClick={() => setAnalysisView("sku")}
+                    >
+                      SKU
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.analysisTab} ${analysisView === "category" ? styles.analysisTabActive : ""}`}
+                      onClick={() => setAnalysisView("category")}
+                    >
+                      Категории
+                    </button>
+                  </div>
                 </div>
-                <div className={styles.analysisTabs}>
-                  <button
-                    type="button"
-                    className={`${styles.analysisTab} ${analysisView === "sku" ? styles.analysisTabActive : ""}`}
-                    onClick={() => setAnalysisView("sku")}
-                  >
-                    SKU
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.analysisTab} ${analysisView === "category" ? styles.analysisTabActive : ""}`}
-                    onClick={() => setAnalysisView("category")}
-                  >
-                    Категории
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.analysisTab} ${analysisView === "status" ? styles.analysisTabActive : ""}`}
-                    onClick={() => setAnalysisView("status")}
-                  >
-                    Риски
-                  </button>
+                <div className={styles.analysisViewport}>
+                  {analysisView === "sku" ? (
+                    <RankingCard
+                      title="Топ SKU"
+                      hint="Лидеры выбранного операционного дня по обороту."
+                      rows={topSku}
+                      currencyCode={currencyCode}
+                      actionTo={buildOverviewLink("sku", { storeId: selectedOverviewStoreId, period })}
+                      actionLabel="Открыть товары"
+                    />
+                  ) : null}
+                  {analysisView === "category" ? (
+                    <CategoryDrilldownCard
+                      categories={categoryAggregates}
+                      currencyCode={currencyCode}
+                      selectedCategory={selectedCategoryLabel}
+                      onSelectCategory={setSelectedCategoryLabel}
+                      actionTo={buildOverviewLink("category", { storeId: selectedOverviewStoreId, period })}
+                    />
+                  ) : null}
                 </div>
-              </div>
-              <div className={styles.analysisViewport}>
-                {analysisView === "sku" ? (
-                  <RankingCard
-                    title="Топ SKU"
-                    hint="Лидеры выбранного операционного дня по обороту."
-                    rows={topSku}
-                    currencyCode={currencyCode}
-                    actionTo={buildOverviewLink("sku", { storeId: selectedOverviewStoreId, period })}
-                    actionLabel="Открыть товары"
-                  />
-                ) : null}
-                {analysisView === "category" ? (
-                  <CategoryDrilldownCard
-                    categories={categoryAggregates}
-                    currencyCode={currencyCode}
-                    selectedCategory={selectedCategoryLabel}
-                    onSelectCategory={setSelectedCategoryLabel}
-                    actionTo={buildOverviewLink("category", { storeId: selectedOverviewStoreId, period })}
-                  />
-                ) : null}
-                {analysisView === "status" ? (
-                  <StatusBreakdownCard rows={problemStatusRows} total={Number(bundle?.problems?.total_count || 0)} />
-                ) : null}
-              </div>
+              </section>
             </section>
           </>
         ) : null}
