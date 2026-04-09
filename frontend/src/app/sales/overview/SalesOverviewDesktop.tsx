@@ -106,6 +106,15 @@ export function SalesOverviewDesktop({ vm }: Props) {
     if (!rate) return "—";
     return `${rate.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 4 })} ₽/$`;
   };
+  const categoryPreview = (path?: string | null) => {
+    const parts = String(path || "").split("/").map((part) => part.trim()).filter(Boolean);
+    if (parts.length === 0) return { leaf: "Без категории", branch: "" };
+    if (parts.length === 1) return { leaf: parts[0], branch: "" };
+    return {
+      leaf: parts[parts.length - 1],
+      branch: parts.slice(0, Math.max(parts.length - 1, 0)).join(" / "),
+    };
+  };
 
   const s = stylesRef as typeof styles;
   const overviewTabs = [
@@ -416,19 +425,50 @@ export function SalesOverviewDesktop({ vm }: Props) {
       {!loading && !error && tab === "sku" ? (
         <section>
           <PageSectionTitle title="Товары за выбранный день" meta={`Дата: ${formatDate(skuDate)} · Рядов: ${formatNumber(skuRetrospective?.total_count)}`} />
-          <div className={s.tableWrap}>
-            <table className={s.table}>
-              <thead><tr><th className={s.nameCell}>SKU / товар</th><th>Категория</th><th>Оборот</th><th>Прибыль</th><th>Маржинальность</th><th>Соинвест</th><th>Заказы</th><th>Динамика</th></tr></thead>
-              <tbody>
-                {skuRows.length === 0 ? <tr><td colSpan={8} className={s.empty}>Нет данных по товарам</td></tr> : skuRows.map((row: any) => (
-                  <tr key={row.key}>
-                    <td className={s.nameCell}><div>{row.sku || "—"}</div><div className={s.subtleText}>{row.item_name || row.label || "—"}</div></td>
-                    <td className={s.nameCell}>{row.category_path || "—"}</td><td>{formatMoney(row.revenue, "RUB")}</td><td>{formatMoney(row.profit_amount, "RUB")}</td><td>{formatPercent(row.profit_pct)}</td><td>{formatMoney(row.coinvest_amount, "RUB")}</td><td>{formatNumber(row.order_count_total)}</td>
-                    <td><button className={`button button--ghost ${selectedSku === row.sku ? "button--active" : ""}`} onClick={() => setSelectedSku(selectedSku === row.sku ? "" : String(row.sku || ""))}>{selectedSku === row.sku ? "Скрыть" : "Открыть"}</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className={s.skuCardList}>
+            {skuRows.length === 0 ? <div className={s.empty}>Нет данных по товарам</div> : skuRows.map((row: any) => {
+              const isActive = selectedSku === row.sku;
+              const category = categoryPreview(row.category_path);
+              return (
+                <article key={row.key} className={`${s.skuCard} ${isActive ? s.skuCardActive : ""}`}>
+                  <div className={s.skuCardMain}>
+                    <div className={s.skuCardTitleRow}>
+                      <div className={s.skuCardSku}>{row.sku || "—"}</div>
+                      <h3 className={s.skuCardTitle}>{row.item_name || row.label || "—"}</h3>
+                    </div>
+                    <div className={s.skuCardCategoryLeaf}>{category.leaf}</div>
+                    {category.branch ? <div className={s.skuCardCategoryBranch}>{category.branch}</div> : null}
+                  </div>
+                  <div className={s.skuCardMetrics}>
+                    <div className={s.skuCardMetric}>
+                      <span>Оборот</span>
+                      <strong>{formatMoney(row.revenue, "RUB")}</strong>
+                    </div>
+                    <div className={s.skuCardMetric}>
+                      <span>Прибыль</span>
+                      <strong>{formatMoney(row.profit_amount, "RUB")}</strong>
+                    </div>
+                    <div className={s.skuCardMetric}>
+                      <span>Маржа</span>
+                      <strong>{formatPercent(row.profit_pct)}</strong>
+                    </div>
+                    <div className={s.skuCardMetric}>
+                      <span>Соинвест</span>
+                      <strong>{formatPercent(row.coinvest_pct)}</strong>
+                    </div>
+                    <div className={s.skuCardMetric}>
+                      <span>Заказы</span>
+                      <strong>{formatNumber(row.order_count_total)}</strong>
+                    </div>
+                  </div>
+                  <div className={s.skuCardAction}>
+                    <button className={`button button--ghost ${isActive ? "button--active" : ""}`} onClick={() => setSelectedSku(isActive ? "" : String(row.sku || ""))}>
+                      {isActive ? "Скрыть динамику" : "Открыть товар"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
           {selectedSku ? (
             <div className={s.skuDetailPanel}>
