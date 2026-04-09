@@ -928,12 +928,6 @@ export default function Page() {
           <WorkspaceHeader
             title="Оперативная сводка"
             subtitle="Готовые дневные данные: оборот, прибыль, заказы и риски."
-            meta={(
-              <div className={layoutStyles.heroMeta}>
-                <span className={layoutStyles.metaChip}>{selectedStore ? selectedStore.label : "Все магазины"}</span>
-                <span className={layoutStyles.metaChip}>{PERIOD_OPTIONS.find((item) => item.value === period)?.label}</span>
-              </div>
-            )}
           />
           <WorkspaceToolbar className={`${layoutStyles.toolbar} ${styles.heroToolbar}`}>
             <div className={`${layoutStyles.toolbarGroup} ${styles.toolbarFilters}`}>
@@ -948,10 +942,6 @@ export default function Page() {
                   <option key={item.value} value={item.value}>{item.label}</option>
                 ))}
               </select>
-            </div>
-            <div className={`${layoutStyles.toolbarGroup} ${styles.toolbarActions}`}>
-              <Link className="btn ghost" to={buildOverviewLink("orders", { storeId: selectedOverviewStoreId, period })}>Обзор</Link>
-              <Link className={`btn ghost ${styles.monitoringLink}`} to="/settings/monitoring">Мониторинг</Link>
             </div>
           </WorkspaceToolbar>
           <div className={styles.heroStatusRow}>
