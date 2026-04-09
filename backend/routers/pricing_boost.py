@@ -45,6 +45,7 @@ async def pricing_boost_overview(
     search: str = "",
     stock_filter: str = "all",
     report_date: str = "",
+    window_days: int = 7,
     page: int = 1,
     page_size: int = 200,
 ):
@@ -58,6 +59,7 @@ async def pricing_boost_overview(
         search=search,
         stock_filter=stock_filter,
         report_date=report_date,
+        window_days=window_days,
         page=page,
         page_size=page_size,
     )

@@ -48,6 +48,29 @@
   gap: 8px;
 }
 
+.chipRow {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chipActive {
+  border-color: rgba(79, 193, 255, 0.48);
+  background: rgba(31, 117, 188, 0.28);
+}
+
+.filterHint {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid rgba(132, 161, 214, 0.2);
+  border-radius: 12px;
+  background: rgba(12, 22, 39, 0.48);
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
 @media (max-width: 960px) {
   .tableControlRow {
     align-items: stretch;

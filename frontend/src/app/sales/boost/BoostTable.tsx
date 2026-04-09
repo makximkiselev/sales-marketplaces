@@ -17,6 +17,7 @@ export type BoostOverviewRow = {
   market_boost_by_store?: Record<string, number | null>;
   expected_boost_share_by_store?: Record<string, number | null>;
   planned_boosted_orders_count_by_store?: Record<string, number | null>;
+  actual_boost_rate_pct_by_store?: Record<string, number | null>;
   orders_count_by_store?: Record<string, number>;
   revenue_by_store?: Record<string, number | null>;
   profit_by_store?: Record<string, number | null>;
@@ -143,7 +144,8 @@ export function BoostTable(props: Props) {
             <th>Цена на витрине</th>
             <th>Соинвест</th>
             <th>Буст в цене</th>
-            <th>Буст в Маркете</th>
+            <th>План ставка</th>
+            <th>Факт ставка</th>
             <th>Доля показов</th>
             <th>Заказы</th>
             <th>План с бустом</th>
@@ -242,7 +244,16 @@ export function BoostTable(props: Props) {
                   renderCtx,
                   (storeUid) => row.market_boost_by_store?.[storeUid],
                   (value) => <span>{formatPercent(value as number | null | undefined)}</span>,
-                  "market-boost",
+                  "planned-market-boost",
+                )}
+              </td>
+              <td className={matrixStyles.centerCell}>
+                {renderStoreValue(
+                  row,
+                  renderCtx,
+                  (storeUid) => row.actual_boost_rate_pct_by_store?.[storeUid],
+                  (value) => <span>{formatPercent(value as number | null | undefined)}</span>,
+                  "actual-boost-rate",
                 )}
               </td>
               <td className={matrixStyles.centerCell}>

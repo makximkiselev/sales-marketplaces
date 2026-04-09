@@ -53,6 +53,7 @@ class PricingBoostServiceTests(unittest.IsolatedAsyncioTestCase):
                 "ads": 50.0,
                 "strategy_market_boost_bid_percent": 5.0,
                 "strategy_boost_share": 25.0,
+                "delivery_date": "2026-04-08",
                 "order_created_at": "2026-04-08T11:00:00+03:00",
             },
             {
@@ -64,6 +65,7 @@ class PricingBoostServiceTests(unittest.IsolatedAsyncioTestCase):
                 "ads": 50.0,
                 "strategy_market_boost_bid_percent": 0.0,
                 "strategy_boost_share": 0.0,
+                "delivery_date": "2026-04-08",
                 "order_created_at": "2026-04-08T10:00:00+03:00",
             },
             {
@@ -75,6 +77,7 @@ class PricingBoostServiceTests(unittest.IsolatedAsyncioTestCase):
                 "ads": 50.0,
                 "strategy_market_boost_bid_percent": 5.0,
                 "strategy_boost_share": 25.0,
+                "delivery_date": "2026-04-08",
                 "order_created_at": "2026-04-08T12:00:00+03:00",
             },
             {
@@ -85,17 +88,19 @@ class PricingBoostServiceTests(unittest.IsolatedAsyncioTestCase):
                 "profit": 120.0,
                 "ads": 50.0,
                 "strategy_market_boost_bid_percent": 5.0,
+                "delivery_date": "2026-04-08",
                 "order_created_at": "2026-04-08T13:00:00+03:00",
             },
         ]
 
         with patch.object(svc, "get_prices_overview", AsyncMock(return_value=base_payload)), \
              patch.object(svc, "get_pricing_strategy_results_map", return_value=strategy_map), \
-             patch.object(svc, "_load_order_rows_for_store_day", AsyncMock(return_value=order_rows)), \
-             patch.object(svc, "_load_actual_boosted_order_keys", return_value={("1", "SKU-1"), ("3", "SKU-1")}):
+             patch.object(svc, "_load_all_order_rows_for_store", AsyncMock(return_value=order_rows)), \
+             patch.object(svc, "_load_actual_boost_facts", return_value={("1", "SKU-1"): 40.0, ("3", "SKU-1"): 60.0}):
             payload = await svc.get_boost_overview(
                 scope="all",
                 report_date="2026-04-08",
+                window_days=7,
                 page=1,
                 page_size=50,
             )
@@ -103,8 +108,13 @@ class PricingBoostServiceTests(unittest.IsolatedAsyncioTestCase):
         row = payload["rows"][0]
         self.assertEqual(row["orders_count_by_store"]["store-1"], 3)
         self.assertEqual(row["boosted_orders_count_by_store"]["store-1"], 2)
-        self.assertEqual(row["planned_boosted_orders_count_by_store"]["store-1"], 0.5)
-        self.assertEqual(row["boost_effectiveness_pct_by_store"]["store-1"], 400.0)
+        self.assertEqual(row["planned_boosted_orders_count_by_store"]["store-1"], 2.0)
+        self.assertEqual(row["boost_effectiveness_pct_by_store"]["store-1"], 100.0)
+        self.assertEqual(row["market_boost_by_store"]["store-1"], 5.0)
+        self.assertEqual(row["actual_boost_rate_pct_by_store"]["store-1"], 5.0)
+        self.assertEqual(payload["summary"]["avg_effectiveness_pct"], 100.0)
+        self.assertEqual(payload["summary"]["avg_planned_boost_bid_percent"], 5.0)
+        self.assertEqual(payload["summary"]["avg_actual_boost_rate_percent"], 5.0)
 
     async def test_boost_overview_effectiveness_is_none_without_plan(self) -> None:
         base_payload = {
@@ -123,11 +133,12 @@ class PricingBoostServiceTests(unittest.IsolatedAsyncioTestCase):
 
         with patch.object(svc, "get_prices_overview", AsyncMock(return_value=base_payload)), \
              patch.object(svc, "get_pricing_strategy_results_map", return_value={"store-1": {"SKU-1": {"decision_label": "Boost"}}}), \
-             patch.object(svc, "_load_order_rows_for_store_day", AsyncMock(return_value=[])), \
-             patch.object(svc, "_load_actual_boosted_order_keys", return_value=set()):
+             patch.object(svc, "_load_all_order_rows_for_store", AsyncMock(return_value=[])), \
+             patch.object(svc, "_load_actual_boost_facts", return_value={}):
             payload = await svc.get_boost_overview(
                 scope="all",
                 report_date="2026-04-09",
+                window_days=14,
                 page=1,
                 page_size=50,
             )
