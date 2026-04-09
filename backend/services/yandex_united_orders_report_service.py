@@ -30,8 +30,6 @@ from backend.services.storage import is_source_mode_enabled
 from backend.services.store_data_model import (
     _connect,
     _connect_history,
-    _connect_system,
-    _init_system_store_tables,
     _placeholders,
     get_pricing_strategy_history_rows,
     get_fx_rates_cache,
@@ -72,8 +70,7 @@ def _today_msk() -> date:
 
 def _marketplace_stores_context_pg_safe() -> list[dict[str, Any]]:
     try:
-        _init_system_store_tables()
-        with _connect_system() as conn:
+        with _connect() as conn:
             rows = conn.execute(
                 """
                 SELECT store_uid, platform, store_id, store_name, currency_code

@@ -25,8 +25,7 @@ from backend.services.yandex_united_orders_report_service import (
 from backend.services.yandex_united_netting_report_service import refresh_sales_united_netting_history
 from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 from backend.services.store_data_model import (
-    _connect_system,
-    _init_system_store_tables,
+    _connect,
     delete_dashboard_snapshots,
     get_dashboard_snapshot,
     get_pricing_catalog_sku_path_map,
@@ -123,8 +122,7 @@ def _build_layer_freshness(*, period: str, response: dict | None) -> dict:
 
 def _get_sales_overview_context_pg_safe() -> dict:
     try:
-        _init_system_store_tables()
-        with _connect_system() as conn:
+        with _connect() as conn:
             rows = conn.execute(
                 """
                 SELECT store_uid, platform, store_id, store_name, currency_code
