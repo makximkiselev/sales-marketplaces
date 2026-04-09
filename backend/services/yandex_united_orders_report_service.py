@@ -30,6 +30,8 @@ from backend.services.storage import is_source_mode_enabled
 from backend.services.store_data_model import (
     _connect,
     _connect_history,
+    _connect_system,
+    _init_system_store_tables,
     _placeholders,
     get_pricing_strategy_history_rows,
     get_fx_rates_cache,
@@ -68,6 +70,41 @@ def _today_msk() -> date:
     return datetime.now(timezone(timedelta(hours=3))).date()
 
 
+def _marketplace_stores_context_pg_safe() -> list[dict[str, Any]]:
+    try:
+        _init_system_store_tables()
+        with _connect_system() as conn:
+            rows = conn.execute(
+                """
+                SELECT store_uid, platform, store_id, store_name, currency_code
+                FROM stores
+                WHERE lower(platform) = 'yandex_market'
+                ORDER BY store_name, store_id
+                """
+            ).fetchall()
+    except Exception:
+        return []
+    stores: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        store_uid = str(item.get("store_uid") or "").strip()
+        store_id = str(item.get("store_id") or "").strip()
+        if not store_uid or not store_id:
+            continue
+        stores.append(
+            {
+                "platform": "yandex_market",
+                "platform_label": "Яндекс.Маркет",
+                "store_id": store_id,
+                "store_uid": store_uid,
+                "label": str(item.get("store_name") or store_id).strip(),
+                "store_name": str(item.get("store_name") or store_id).strip(),
+                "currency_code": str(item.get("currency_code") or "RUB").strip().upper() or "RUB",
+            }
+        )
+    return stores
+
+
 def _days_in_month(year: int, month: int) -> int:
     if month == 12:
         next_month = date(year + 1, 1, 1)
@@ -91,7 +128,7 @@ def _resolve_store_campaign_id(store_uid: str) -> str:
     if not suid:
         return ""
     active_store = next(
-        (store for store in _catalog_marketplace_stores_context() if str(store.get("store_uid") or "").strip() == suid),
+        (store for store in _marketplace_stores_context_pg_safe() if str(store.get("store_uid") or "").strip() == suid),
         None,
     )
     if isinstance(active_store, dict):
@@ -108,7 +145,7 @@ def _resolve_store_currency_code(store_uid: str) -> str:
     if not suid:
         return "RUB"
     active_store = next(
-        (store for store in _catalog_marketplace_stores_context() if str(store.get("store_uid") or "").strip() == suid),
+        (store for store in _marketplace_stores_context_pg_safe() if str(store.get("store_uid") or "").strip() == suid),
         None,
     )
     return str((active_store or {}).get("currency_code") or "RUB").strip().upper() or "RUB"
@@ -256,7 +293,7 @@ def refresh_sales_overview_cogs_source_for_store(*, store_uid: str) -> dict[str,
 
 def refresh_sales_overview_cogs_sources() -> dict[str, Any]:
     stores = [
-        store for store in _catalog_marketplace_stores_context()
+        store for store in _marketplace_stores_context_pg_safe()
         if str(store.get("platform") or "").strip().lower() == "yandex_market"
     ]
     results: list[dict[str, Any]] = []
@@ -864,7 +901,7 @@ async def refresh_sales_overview_history(
     date_from = from_date_obj.isoformat()
     to_date = to_date_obj.isoformat()
     stores = [
-        store for store in _catalog_marketplace_stores_context()
+        store for store in _marketplace_stores_context_pg_safe()
         if str(store.get("platform") or "").strip().lower() == "yandex_market"
     ]
     selected = {str(x or "").strip() for x in (store_uids or []) if str(x or "").strip()}
@@ -1142,7 +1179,7 @@ def get_sales_overview_context() -> dict[str, Any]:
             "label": str(store.get("store_name") or store.get("label") or store.get("store_id") or "").strip(),
             "currency_code": str(store.get("currency_code") or "RUB").strip().upper() or "RUB",
         }
-        for store in _catalog_marketplace_stores_context()
+        for store in _marketplace_stores_context_pg_safe()
         if str(store.get("platform") or "").strip().lower() == "yandex_market"
     ]
     return {"ok": True, "marketplace_stores": stores}
@@ -2260,7 +2297,7 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
         source_id or "-",
         len(cogs_map),
     )
-    active_store = next((store for store in _catalog_marketplace_stores_context() if str(store.get("store_uid") or "").strip() == store_uid), None)
+    active_store = next((store for store in _marketplace_stores_context_pg_safe() if str(store.get("store_uid") or "").strip() == store_uid), None)
     currency_code = str((active_store or {}).get("currency_code") or "RUB").strip().upper() or "RUB"
     snapshot_cogs, snapshot_day_avg, snapshot_latest_by_sku = _snapshot_fallback_metrics(store_uid=store_uid, orders=rows)
     order_keys = [(str(row.get("order_id") or "").strip(), str(row.get("sku") or "").strip()) for row in rows]
@@ -2801,7 +2838,7 @@ async def get_sales_overview_tracking(
 ) -> dict[str, Any]:
     sid = str(store_id or "").strip()
     all_market_stores = [
-        store for store in _catalog_marketplace_stores_context()
+        store for store in _marketplace_stores_context_pg_safe()
         if str(store.get("platform") or "").strip().lower() == "yandex_market"
     ]
     if sid.lower() == "all":
