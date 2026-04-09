@@ -25,7 +25,6 @@ from backend.services.yandex_united_orders_report_service import (
 from backend.services.yandex_united_netting_report_service import refresh_sales_united_netting_history
 from backend.services.service_cache_helpers import cache_get_copy, cache_set_copy, make_cache_key
 from backend.services.store_data_model import (
-    _connect,
     delete_dashboard_snapshots,
     get_dashboard_snapshot,
     get_pricing_catalog_sku_path_map,
@@ -121,36 +120,7 @@ def _build_layer_freshness(*, period: str, response: dict | None) -> dict:
 
 
 def _get_sales_overview_context_pg_safe() -> dict:
-    try:
-        with _connect() as conn:
-            rows = conn.execute(
-                """
-                SELECT store_uid, platform, store_id, store_name, currency_code
-                FROM stores
-                WHERE lower(platform) = 'yandex_market'
-                ORDER BY store_name, store_id
-                """
-            ).fetchall()
-    except Exception:
-        return {"ok": True, "marketplace_stores": []}
-    stores: list[dict] = []
-    for row in rows:
-        item = dict(row)
-        store_uid = str(item.get("store_uid") or "").strip()
-        store_id = str(item.get("store_id") or "").strip()
-        if not store_uid or not store_id:
-            continue
-        stores.append(
-            {
-                "store_uid": store_uid,
-                "store_id": store_id,
-                "platform": "yandex_market",
-                "platform_label": "Яндекс.Маркет",
-                "label": str(item.get("store_name") or store_id).strip(),
-                "currency_code": str(item.get("currency_code") or "RUB").strip().upper() or "RUB",
-            }
-        )
-    return {"ok": True, "marketplace_stores": stores}
+    return get_sales_overview_context()
 
 
 def _period_span_days(period: str) -> int:

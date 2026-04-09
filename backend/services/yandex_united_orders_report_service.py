@@ -26,7 +26,7 @@ from backend.services.db import is_postgres_backend
 from backend.services.pricing_prices_service import _clamp_rate, _compute_max_weight_kg, _num0, _resolve_category_settings_for_leaf
 from backend.services.source_tables import get_registered_source_table
 from backend.services.gsheets import read_sheet_all
-from backend.services.storage import is_source_mode_enabled
+from backend.services.storage import is_source_mode_enabled, load_integrations
 from backend.services.store_data_model import (
     _connect,
     _connect_history,
@@ -70,35 +70,46 @@ def _today_msk() -> date:
 
 def _marketplace_stores_context_pg_safe() -> list[dict[str, Any]]:
     try:
-        with _connect() as conn:
-            rows = conn.execute(
-                """
-                SELECT store_uid, platform, store_id, store_name, currency_code
-                FROM stores
-                WHERE lower(platform) = 'yandex_market'
-                ORDER BY store_name, store_id
-                """
-            ).fetchall()
+        integrations = load_integrations() or {}
     except Exception:
-        return []
-    stores: list[dict[str, Any]] = []
-    for row in rows:
-        item = dict(row)
-        store_uid = str(item.get("store_uid") or "").strip()
-        store_id = str(item.get("store_id") or "").strip()
-        if not store_uid or not store_id:
+        integrations = {}
+    reg_map: dict[str, str] = {}
+    for source in (load_sources() or []):
+        source_id = str(source.get("id") or "").strip()
+        if not source_id.startswith("pricing:"):
             continue
-        stores.append(
-            {
-                "platform": "yandex_market",
-                "platform_label": "Яндекс.Маркет",
-                "store_id": store_id,
-                "store_uid": store_uid,
-                "label": str(item.get("store_name") or store_id).strip(),
-                "store_name": str(item.get("store_name") or store_id).strip(),
-                "currency_code": str(item.get("currency_code") or "RUB").strip().upper() or "RUB",
-            }
-        )
+        table_name = str(get_registered_source_table(source_id) or "").strip()
+        if table_name:
+            reg_map[source_id] = table_name
+    stores: list[dict[str, Any]] = []
+    ym = integrations.get("yandex_market") if isinstance(integrations.get("yandex_market"), dict) else {}
+    for acc in (ym.get("accounts") or []):
+        if not isinstance(acc, dict):
+            continue
+        business_id = str(acc.get("business_id") or "").strip()
+        for shop in (acc.get("shops") or []):
+            if not isinstance(shop, dict):
+                continue
+            campaign_id = str(shop.get("campaign_id") or "").strip()
+            if not campaign_id:
+                continue
+            source_id = f"pricing:yandex_market:{campaign_id}"
+            stores.append(
+                {
+                    "platform": "yandex_market",
+                    "platform_label": "Яндекс.Маркет",
+                    "store_id": campaign_id,
+                    "store_uid": f"yandex_market:{campaign_id}",
+                    "label": str(shop.get("campaign_name") or f"Магазин {campaign_id}"),
+                    "store_name": str(shop.get("campaign_name") or f"Магазин {campaign_id}"),
+                    "currency_code": str(shop.get("currency_code") or acc.get("currency_code") or "RUB").strip().upper() or "RUB",
+                    "business_id": business_id,
+                    "account_id": business_id,
+                    "seller_id": "",
+                    "source_id": source_id,
+                    "table_name": reg_map.get(source_id, ""),
+                }
+            )
     return stores
 
 
