@@ -430,7 +430,19 @@ export function SalesOverviewDesktop({ vm }: Props) {
               const isActive = selectedSku === row.sku;
               const category = categoryPreview(row.category_path);
               return (
-                <article key={row.key} className={`${s.skuCard} ${isActive ? s.skuCardActive : ""}`}>
+                <article
+                  key={row.key}
+                  className={`${s.skuCard} ${isActive ? s.skuCardActive : ""}`}
+                  onClick={() => setSelectedSku(isActive ? "" : String(row.sku || ""))}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedSku(isActive ? "" : String(row.sku || ""));
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
                   <div className={s.skuCardMain}>
                     <div className={s.skuCardTitleRow}>
                       <div className={s.skuCardSku}>{row.sku || "—"}</div>
@@ -462,9 +474,9 @@ export function SalesOverviewDesktop({ vm }: Props) {
                     </div>
                   </div>
                   <div className={s.skuCardAction}>
-                    <button className={`button button--ghost ${isActive ? "button--active" : ""}`} onClick={() => setSelectedSku(isActive ? "" : String(row.sku || ""))}>
+                    <div className={`${s.skuCardToggle} ${isActive ? s.skuCardToggleActive : ""}`}>
                       {isActive ? "Скрыть динамику" : "Открыть товар"}
-                    </button>
+                    </div>
                   </div>
                 </article>
               );

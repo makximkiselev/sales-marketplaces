@@ -226,7 +226,11 @@ export function SalesOverviewMobile({ vm }: Props) {
             {rows.length === 0 ? (
               <div className={styles.empty}>Нет данных для выбранного режима</div>
             ) : rows.slice(0, 50).map((row: any, index: number) => (
-              <article key={String(row.key || row.order_id || row.sku || row.category_path || row.label || index)} className={styles.mobileOverviewCard}>
+              <article
+                key={String(row.key || row.order_id || row.sku || row.category_path || row.label || index)}
+                className={`${styles.mobileOverviewCard} ${tab === "sku" && selectedSku === row.sku ? styles.mobileOverviewCardActive : ""}`}
+                onClick={tab === "sku" ? () => setSelectedSku(selectedSku === row.sku ? "" : String(row.sku || "")) : undefined}
+              >
                 <div className={styles.mobileOverviewCardHead}>
                   <div className={styles.mobileOverviewCardTitle}>
                     {row.item_name || row.label || row.order_id || row.sku || "Запись"}
@@ -258,9 +262,9 @@ export function SalesOverviewMobile({ vm }: Props) {
                   )}
                 </div>
                 {tab === "sku" ? (
-                  <button className="button button--ghost" onClick={() => setSelectedSku(selectedSku === row.sku ? "" : String(row.sku || ""))}>
+                  <div className={`${styles.mobileCardToggle} ${selectedSku === row.sku ? styles.mobileCardToggleActive : ""}`}>
                     {selectedSku === row.sku ? "Скрыть динамику" : "Открыть динамику"}
-                  </button>
+                  </div>
                 ) : null}
                 {tab === "sku" && selectedSku === row.sku ? (
                   <div className={styles.mobileSkuDetail}>

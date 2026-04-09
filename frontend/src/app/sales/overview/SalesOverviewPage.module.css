@@ -394,6 +394,20 @@
   background:
     radial-gradient(circle at top right, rgba(63, 114, 206, 0.08), transparent 38%),
     rgba(10, 18, 34, 0.9);
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.skuCard:hover {
+  border-color: rgba(82, 182, 255, 0.24);
+  background:
+    radial-gradient(circle at top right, rgba(63, 114, 206, 0.12), transparent 38%),
+    rgba(10, 18, 34, 0.94);
+}
+
+.skuCard:focus-visible {
+  outline: 2px solid rgba(82, 182, 255, 0.45);
+  outline-offset: 2px;
 }
 
 .skuCardActive {
@@ -474,6 +488,26 @@
   justify-content: flex-end;
 }
 
+.skuCardToggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(8, 16, 30, 0.5);
+  color: #dce7ff;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.skuCardToggleActive {
+  border-color: rgba(82, 182, 255, 0.36);
+  background: rgba(37, 95, 176, 0.24);
+  color: #f0f6ff;
+}
+
 .skuDetailPanel {
   display: grid;
   gap: 14px;
@@ -525,6 +559,11 @@
     rgba(10, 18, 34, 0.9);
   display: grid;
   gap: 10px;
+}
+
+.mobileOverviewCardActive {
+  border-color: rgba(82, 182, 255, 0.36);
+  box-shadow: inset 0 0 0 1px rgba(82, 182, 255, 0.12);
 }
 
 .mobileOverviewCardHead {
@@ -603,6 +642,26 @@
 .mobileSkuDetail {
   display: grid;
   gap: 8px;
+}
+
+.mobileCardToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(132, 161, 214, 0.18);
+  background: rgba(8, 16, 30, 0.5);
+  color: #dce7ff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mobileCardToggleActive {
+  border-color: rgba(82, 182, 255, 0.36);
+  background: rgba(37, 95, 176, 0.24);
+  color: #f0f6ff;
 }
 
 @media (max-width: 960px) {
