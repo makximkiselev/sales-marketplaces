@@ -689,6 +689,44 @@
   gap: 14px;
 }
 
+.skuLeaderStack {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.skuLeaderCard {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid rgba(132, 161, 214, 0.14);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(76, 201, 240, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(14, 27, 47, 0.92), rgba(9, 18, 33, 0.9));
+}
+
+.skuLeaderEyebrow {
+  color: #b9cceb;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.skuLeaderTitle {
+  color: #f4f8ff;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.28;
+}
+
+.skuLeaderMeta {
+  color: #94abc9;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .rankingList,
 .storeList,
 .watchList,

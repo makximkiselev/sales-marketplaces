@@ -589,6 +589,38 @@ function CategoryRankingCard({
   );
 }
 
+function SkuLeaderStackCard({
+  rows,
+  actionTo,
+}: {
+  rows: Array<{ label: string; value: number; detail?: string }>;
+  actionTo?: string;
+}) {
+  return (
+    <div className={styles.rankingCard}>
+      <div className={styles.panelHead}>
+        <div>
+          <div className={styles.panelTitle}>Топ SKU</div>
+          <div className={styles.panelHint}>Топ-5 лидеров выбранного дня в формате карточек лидера.</div>
+        </div>
+        {actionTo ? <Link className={styles.panelAction} to={actionTo}>Открыть товары</Link> : null}
+      </div>
+      <div className={styles.skuLeaderStack}>
+        {rows.map((row, index) => (
+          <div key={`${row.label}-${index}`} className={styles.skuLeaderCard}>
+            <div className={styles.skuLeaderEyebrow}>SKU #{index + 1}</div>
+            <div className={styles.skuLeaderTitle}>{row.label}</div>
+            <div className={styles.skuLeaderMeta}>
+              {formatMoney(row.value, "RUB")}
+              {row.detail ? ` • ${row.detail}` : ""}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function RankingCard({
   title,
   hint,
@@ -1007,13 +1039,9 @@ export default function Page() {
                   </div>
                 </div>
                 <div className={styles.analysisDualGrid}>
-                  <RankingCard
-                    title="Топ SKU"
-                    hint="Топ-5 лидеров выбранного дня по обороту."
+                  <SkuLeaderStackCard
                     rows={topSku}
-                    currencyCode={currencyCode}
                     actionTo={buildOverviewLink("sku", { storeId: selectedOverviewStoreId, period })}
-                    actionLabel="Открыть товары"
                   />
                   <CategoryRankingCard
                     categories={categoryAggregates}
