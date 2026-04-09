@@ -3172,6 +3172,7 @@ async def get_sales_overview_retrospective(
     grain: str = "month",
     date_from: str = "",
     date_to: str = "",
+    sku: str = "",
     limit: int = 200,
 ) -> dict[str, Any]:
     sid = str(store_id or "").strip()
@@ -3181,6 +3182,7 @@ async def get_sales_overview_retrospective(
 
     mode = "delivery" if str(date_mode or "").strip().lower() == "delivery" else "created"
     dimension = "category" if str(group_by or "").strip().lower() == "category" else "sku"
+    sku_filter = str(sku or "").strip()
     level = str(category_level or "level2").strip().lower()
     if level not in {"level1", "level2", "level3"}:
         level = "level2"
@@ -3223,6 +3225,8 @@ async def get_sales_overview_retrospective(
             continue
         month_key = (anchor.year, anchor.month)
         sku = str(row.get("sku") or "").strip()
+        if dimension == "sku" and sku_filter and sku != sku_filter:
+            continue
         item_name = str(row.get("item_name") or "").strip()
         category_path = _resolve_category_path_for_sku(sku, path_map)
         category_parts = _path_parts(category_path)

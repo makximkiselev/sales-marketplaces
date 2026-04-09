@@ -377,6 +377,38 @@
   background: rgba(9, 18, 34, 0.98);
 }
 
+.skuDetailPanel {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid rgba(132, 161, 214, 0.16);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(63, 114, 206, 0.11), transparent 38%),
+    rgba(10, 18, 34, 0.92);
+}
+
+.skuDetailHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.skuDetailTitle {
+  margin: 4px 0 0;
+  color: #eef4ff;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.skuDetailMetrics {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .mobileOverviewShell {
   display: grid;
   gap: 12px;
@@ -471,6 +503,11 @@
   line-height: 1.2;
 }
 
+.mobileSkuDetail {
+  display: grid;
+  gap: 8px;
+}
+
 @media (max-width: 960px) {
   .overviewHeroSurface {
     padding: 16px;
@@ -503,6 +540,10 @@
 
   .overviewControlGrid {
     grid-template-columns: 1fr;
+  }
+
+  .skuDetailMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -565,5 +606,18 @@
   .mobileFilterGroup {
     padding: 10px;
     gap: 6px;
+  }
+
+  .skuDetailPanel {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .skuDetailTitle {
+    font-size: 20px;
+  }
+
+  .skuDetailMetrics {
+    grid-template-columns: 1fr;
   }
 }

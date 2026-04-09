@@ -230,6 +230,17 @@ const ORDERS_PERIOD_OPTIONS: Array<{ value: OrdersPeriod; label: string }> = [
 
 const OVERVIEW_CONTEXT_CACHE_KEY = "page_sales_overview_context_v1";
 
+function isoDateDaysAgo(anchorIso: string, daysBack: number) {
+  const base = new Date(`${anchorIso}T00:00:00`);
+  if (Number.isNaN(base.getTime())) return anchorIso;
+  base.setDate(base.getDate() - daysBack);
+  return base.toISOString().slice(0, 10);
+}
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function getInitialSearchParams() {
   if (typeof window === "undefined") return new URLSearchParams();
   return new URLSearchParams(window.location.search);
@@ -483,10 +494,13 @@ export default function SalesOverviewPage() {
   const [trackingStoreId, setTrackingStoreId] = useState(initialParams.get("trackingStoreId") || "");
   const [customDateFrom] = useState(initialParams.get("date_from") || "");
   const [customDateTo] = useState(initialParams.get("date_to") || "");
+  const [skuDate, setSkuDate] = useState(initialParams.get("sku_date") || customDateFrom || customDateTo || todayIsoDate());
+  const [selectedSku, setSelectedSku] = useState(initialParams.get("sku_id") || "");
   const [tracking, setTracking] = useState<TrackingResp | null>(null);
   const [orders, setOrders] = useState<OrdersResp | null>(null);
   const [problemOrders, setProblemOrders] = useState<ProblemOrdersResp | null>(null);
   const [skuRetrospective, setSkuRetrospective] = useState<RetrospectiveResp | null>(null);
+  const [skuDetail, setSkuDetail] = useState<RetrospectiveRow | null>(null);
   const [categoryRetrospective, setCategoryRetrospective] = useState<RetrospectiveResp | null>(null);
   const [dataFlow, setDataFlow] = useState<DataFlowResp | null>(null);
   const [expandedMonthKey, setExpandedMonthKey] = useState("");
@@ -576,17 +590,27 @@ export default function SalesOverviewPage() {
           nextState.problemOrders = problemsData;
           nextState.dataFlow = flowData;
         } else if (tab === "sku") {
+          const detailFrom = isoDateDaysAgo(skuDate, 29);
           const fetchScopedSku = async (sid: string) => fetchJson<RetrospectiveResp>(
-            `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=sku&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}${rangeQuery}&limit=120`,
+            `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=sku&grain=day&date_mode=${encodeURIComponent(dateMode)}&date_from=${encodeURIComponent(skuDate)}&date_to=${encodeURIComponent(skuDate)}&limit=120`,
           );
-          const [skuData, flowData] = await Promise.all([
+          const fetchScopedSkuDetail = async (sid: string) => fetchJson<RetrospectiveResp>(
+            `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=sku&sku=${encodeURIComponent(selectedSku)}&grain=day&date_mode=${encodeURIComponent(dateMode)}&date_from=${encodeURIComponent(detailFrom)}&date_to=${encodeURIComponent(skuDate)}&limit=1`,
+          );
+          const [skuData, flowData, skuDetailData] = await Promise.all([
             storeId === "all"
               ? Promise.all((context?.marketplace_stores || []).map((store) => fetchScopedSku(store.store_id))).then((responses) => mergeRetrospectiveResponses(responses))
               : fetchScopedSku(storeId),
             fetchJson<DataFlowResp>(`/api/sales/overview/data-flow?store_id=${encodeURIComponent(storeId)}`),
+            selectedSku
+              ? (storeId === "all"
+                ? Promise.all((context?.marketplace_stores || []).map((store) => fetchScopedSkuDetail(store.store_id))).then((responses) => mergeRetrospectiveResponses(responses))
+                : fetchScopedSkuDetail(storeId))
+              : Promise.resolve({ ok: true, rows: [] } as RetrospectiveResp),
           ]);
           nextState.skuRetrospective = skuData;
           nextState.dataFlow = flowData;
+          setSkuDetail((skuDetailData.rows || [])[0] || null);
         } else if (tab === "category") {
           const fetchScopedCategory = async (sid: string) => fetchJson<RetrospectiveResp>(
             `/api/sales/overview/retrospective?store_id=${encodeURIComponent(sid)}&group_by=category&category_level=${encodeURIComponent(categoryLevel)}&grain=${encodeURIComponent(grain)}&date_mode=${encodeURIComponent(dateMode)}${rangeQuery}&limit=120`,
@@ -608,6 +632,7 @@ export default function SalesOverviewPage() {
         setDataFlow(nextState.dataFlow ?? null);
         setSkuRetrospective(nextState.skuRetrospective ?? null);
         setCategoryRetrospective(nextState.categoryRetrospective ?? null);
+        if (tab !== "sku") setSkuDetail(null);
         if (nextState.tracking?.active_month_key) {
           setExpandedMonthKey((prev) => prev || String(nextState.tracking?.active_month_key || ""));
         }
@@ -622,7 +647,7 @@ export default function SalesOverviewPage() {
     return () => {
       cancelled = true;
     };
-  }, [context, storeId, trackingStoreId, tab, dateMode, period, itemStatus, page, pageSize, grain, categoryLevel, customDateFrom, customDateTo]);
+  }, [context, storeId, trackingStoreId, tab, dateMode, period, itemStatus, page, pageSize, grain, categoryLevel, customDateFrom, customDateTo, skuDate, selectedSku]);
 
   useEffect(() => {
     setExpandedMonthKey(String(tracking?.active_month_key || ""));
@@ -631,6 +656,10 @@ export default function SalesOverviewPage() {
   useEffect(() => {
     setPage(1);
   }, [tab]);
+
+  useEffect(() => {
+    setSelectedSku("");
+  }, [storeId, dateMode, skuDate]);
 
   const stores = useMemo<StoreCtx[]>(
     () => [{ store_uid: "all", store_id: "all", platform: "multi", platform_label: "Все магазины", label: "Все магазины", currency_code: "RUB" }, ...(context?.marketplace_stores || [])],
@@ -676,11 +705,13 @@ export default function SalesOverviewPage() {
     params.set("period", period);
     params.set("grain", grain);
     params.set("categoryLevel", categoryLevel);
+    if (skuDate) params.set("sku_date", skuDate);
+    if (selectedSku) params.set("sku_id", selectedSku);
     if (itemStatus) params.set("itemStatus", itemStatus);
     if (customDateFrom) params.set("date_from", customDateFrom);
     if (customDateTo) params.set("date_to", customDateTo);
     window.history.replaceState({}, "", `${window.location.pathname}?${params.toString()}`);
-  }, [categoryLevel, customDateFrom, customDateTo, dateMode, grain, itemStatus, period, storeId, tab, trackingStoreId]);
+  }, [categoryLevel, customDateFrom, customDateTo, dateMode, grain, itemStatus, period, selectedSku, skuDate, storeId, tab, trackingStoreId]);
 
   const summaryCards = useMemo(() => {
     if (tab === "tracking") {
@@ -693,9 +724,10 @@ export default function SalesOverviewPage() {
     if (tab === "sku") {
       const revenue = skuRows.reduce((acc, row) => acc + Number(row.revenue || 0), 0);
       const profit = skuRows.reduce((acc, row) => acc + Number(row.profit_amount || 0), 0);
+      const ordersCount = skuRows.reduce((acc, row) => acc + Number(row.order_count_total || 0), 0);
       return [
-        { label: "SKU в срезе", value: formatNumber(skuRetrospective?.total_count), detail: `Период: ${grain === "month" ? "по месяцам" : "по дням"}` },
-        { label: "Оборот", value: formatMoney(revenue, "RUB"), detail: customDateFrom && customDateTo ? `${formatDate(customDateFrom)} - ${formatDate(customDateTo)}` : `Дата: ${dateMode === "created" ? "по заказу" : "по доставке"}` },
+        { label: "SKU за день", value: formatNumber(skuRetrospective?.total_count), detail: `Дата: ${formatDate(skuDate)} · ${dateMode === "created" ? "по заказу" : "по доставке"}` },
+        { label: "Оборот", value: formatMoney(revenue, "RUB"), detail: `Заказов: ${formatNumber(ordersCount)}` },
         { label: "Прибыль", value: formatMoney(profit, "RUB"), detail: `Рентабельность: ${revenue > 0 ? formatPercent((profit / revenue) * 100) : "—"}` },
       ];
     }
@@ -721,7 +753,7 @@ export default function SalesOverviewPage() {
       { label: "Средний соинвест", value: formatPercent(orders?.kpis?.avg_coinvest_pct), detail: orders?.date_from && orders?.date_to ? `${formatDate(orders.date_from)} - ${formatDate(orders.date_to)}` : undefined },
       { label: "Доп. реклама", value: formatMoney(orders?.kpis?.additional_ads, "RUB"), detail: `Ошибки: ${formatMoney(orders?.kpis?.operational_errors, "RUB")}` },
     ];
-  }, [categoryLevel, categoryRetrospective?.total_count, categoryRows, customDateFrom, customDateTo, dateMode, grain, orders, problemOrders, skuRetrospective?.total_count, skuRows, tab, tracking]);
+  }, [categoryLevel, categoryRetrospective?.total_count, categoryRows, customDateFrom, customDateTo, dateMode, grain, orders, problemOrders, skuDate, skuRetrospective?.total_count, skuRows, tab, tracking]);
 
   const vm = {
     stylesRef: styles,
@@ -759,6 +791,11 @@ export default function SalesOverviewPage() {
     setPageSize,
     grain,
     setGrain,
+    skuDate,
+    setSkuDate,
+    selectedSku,
+    setSelectedSku,
+    skuDetail,
     categoryLevel,
     setCategoryLevel,
     trackingStoreId,

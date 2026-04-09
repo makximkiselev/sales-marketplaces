@@ -874,6 +874,7 @@ async def sales_overview_retrospective(
     grain: str = "month",
     date_from: str = "",
     date_to: str = "",
+    sku: str = "",
     limit: int = 200,
 ):
     try:
@@ -885,6 +886,7 @@ async def sales_overview_retrospective(
             grain=grain,
             date_from=date_from,
             date_to=date_to,
+            sku=sku,
             limit=limit,
         )
     except Exception as exc:

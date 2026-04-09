@@ -28,6 +28,11 @@ export function SalesOverviewMobile({ vm }: Props) {
     setDateMode,
     grain,
     setGrain,
+    skuDate,
+    setSkuDate,
+    selectedSku,
+    setSelectedSku,
+    skuDetail,
     categoryLevel,
     setCategoryLevel,
     setPage,
@@ -77,8 +82,8 @@ export function SalesOverviewMobile({ vm }: Props) {
     },
     sku: {
       eyebrow: "Товары",
-      title: "SKU в динамике",
-      subtitle: "Ретроспектива по товарам с акцентом на оборот и прибыль.",
+      title: "SKU за выбранный день",
+      subtitle: "Сначала смотри товары за конкретный день, потом проваливайся в дневную динамику отдельного SKU.",
     },
     category: {
       eyebrow: "Категории",
@@ -173,13 +178,21 @@ export function SalesOverviewMobile({ vm }: Props) {
                         <option value="delivery">Дата доставки</option>
                       </select>
                     </div>
-                    <div className={styles.mobileFilterGroup}>
-                      <div className={styles.mobileFilterLabel}>Гранулярность</div>
-                      <select className={`input input-size-fluid ${styles.dateInput}`} value={grain} onChange={(e) => { resetPage(); setGrain(e.target.value); }}>
-                        <option value="month">По месяцам</option>
-                        <option value="day">По дням</option>
-                      </select>
-                    </div>
+                    {tab === "category" ? (
+                      <div className={styles.mobileFilterGroup}>
+                        <div className={styles.mobileFilterLabel}>Гранулярность</div>
+                        <select className={`input input-size-fluid ${styles.dateInput}`} value={grain} onChange={(e) => { resetPage(); setGrain(e.target.value); }}>
+                          <option value="month">По месяцам</option>
+                          <option value="day">По дням</option>
+                        </select>
+                      </div>
+                    ) : null}
+                    {tab === "sku" ? (
+                      <div className={styles.mobileFilterGroup}>
+                        <div className={styles.mobileFilterLabel}>День отчета</div>
+                        <input className={`input input-size-fluid ${styles.dateInput}`} type="date" value={skuDate} onChange={(e) => { resetPage(); setSkuDate(e.target.value); }} />
+                      </div>
+                    ) : null}
                     {tab === "category" ? (
                       <div className={styles.mobileFilterGroup}>
                         <div className={styles.mobileFilterLabel}>Уровень категорий</div>
@@ -198,7 +211,8 @@ export function SalesOverviewMobile({ vm }: Props) {
           <div className={styles.mobileFilterChips}>
             {tab === "orders" || tab === "problems" ? <span className={layoutStyles.metaChip}>{periodLabel}</span> : null}
             {tab === "tracking" || tab === "sku" || tab === "category" ? <span className={layoutStyles.metaChip}>{modeLabel}</span> : null}
-            {tab === "sku" || tab === "category" ? <span className={layoutStyles.metaChip}>{grainLabel}</span> : null}
+            {tab === "category" ? <span className={layoutStyles.metaChip}>{grainLabel}</span> : null}
+            {tab === "sku" ? <span className={layoutStyles.metaChip}>{skuDate}</span> : null}
             {tab === "category" ? <span className={layoutStyles.metaChip}>{categoryLevel === "level1" ? "Уровень 1" : categoryLevel === "level2" ? "Уровень 2" : "Уровень 3"}</span> : null}
             {tab === "orders" && itemStatus ? <span className={layoutStyles.metaChip}>{itemStatus}</span> : null}
           </div>
@@ -239,9 +253,33 @@ export function SalesOverviewMobile({ vm }: Props) {
                       <div className={styles.mobileOverviewMetric}><span>Оборот</span><strong>{formatMoney(row.revenue, "RUB")}</strong></div>
                       <div className={styles.mobileOverviewMetric}><span>Прибыль</span><strong>{formatMoney(row.profit_amount, "RUB")}</strong></div>
                       <div className={styles.mobileOverviewMetric}><span>Маржа</span><strong>{formatPercent(row.profit_pct)}</strong></div>
+                      {tab === "sku" ? <div className={styles.mobileOverviewMetric}><span>Заказы</span><strong>{row.order_count_total || 0}</strong></div> : null}
                     </>
                   )}
                 </div>
+                {tab === "sku" ? (
+                  <button className="button button--ghost" onClick={() => setSelectedSku(selectedSku === row.sku ? "" : String(row.sku || ""))}>
+                    {selectedSku === row.sku ? "Скрыть динамику" : "Открыть динамику"}
+                  </button>
+                ) : null}
+                {tab === "sku" && selectedSku === row.sku ? (
+                  <div className={styles.mobileSkuDetail}>
+                    <div className={styles.mobileOverviewCardSub}>Последние 30 дней по SKU до {skuDate}</div>
+                    {(skuDetail?.periods || []).length === 0 ? (
+                      <div className={styles.empty}>Нет динамики по SKU</div>
+                    ) : (skuDetail?.periods || []).map((period: any) => (
+                      <div key={`${row.sku}-${period.period_key}`} className={styles.mobileOverviewMetric}>
+                        <span>{period.period_key}</span>
+                        <strong>
+                          {formatMoney(period.revenue, "RUB")}
+                          <small className={styles.mobileOverviewMetricNote}>
+                            {formatMoney(period.profit_amount, "RUB")} · {formatPercent(period.coinvest_pct)}
+                          </small>
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </article>
             ))}
           </div>

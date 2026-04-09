@@ -44,6 +44,11 @@ export function SalesOverviewDesktop({ vm }: Props) {
     setPageSize,
     grain,
     setGrain,
+    skuDate,
+    setSkuDate,
+    selectedSku,
+    setSelectedSku,
+    skuDetail,
     categoryLevel,
     setCategoryLevel,
     trackingStoreId,
@@ -127,9 +132,9 @@ export function SalesOverviewDesktop({ vm }: Props) {
       subtitle: "Оценивай оборот, прибыль, рекламу и возвраты в динамике по месяцам и дням.",
     },
     sku: {
-      eyebrow: "Ретроспектива товаров",
-      title: "Товары во времени",
-      subtitle: "Собирай выручку, прибыль и возвраты по SKU без перехода в отдельные отчеты.",
+      eyebrow: "Товары дня",
+      title: "SKU за выбранный день",
+      subtitle: "Основной экран показывает товары только за выбранный день, а динамика открывается уже внутри конкретного SKU.",
     },
     category: {
       eyebrow: "Ретроспектива категорий",
@@ -205,7 +210,7 @@ export function SalesOverviewDesktop({ vm }: Props) {
                 </label>
               )}
 
-              {tab === "sku" || tab === "category" ? (
+              {tab === "category" ? (
                 <label className={s.overviewControlField}>
                   <span className={s.overviewControlLabel}>Гранулярность</span>
                   <select className={`input input-size-fluid ${s.dateInput}`} value={grain} onChange={(e) => setGrain(e.target.value)}>
@@ -223,6 +228,13 @@ export function SalesOverviewDesktop({ vm }: Props) {
                     <option value="level2">Уровень 2</option>
                     <option value="level3">Уровень 3</option>
                   </select>
+                </label>
+              ) : null}
+
+              {tab === "sku" ? (
+                <label className={s.overviewControlField}>
+                  <span className={s.overviewControlLabel}>День отчета</span>
+                  <input className={`input input-size-fluid ${s.dateInput}`} type="date" value={skuDate} onChange={(e) => setSkuDate(e.target.value)} />
                 </label>
               ) : null}
 
@@ -403,21 +415,57 @@ export function SalesOverviewDesktop({ vm }: Props) {
 
       {!loading && !error && tab === "sku" ? (
         <section>
-          <PageSectionTitle title="Товары во времени" meta={`Рядов: ${formatNumber(skuRetrospective?.total_count)}`} />
+          <PageSectionTitle title="Товары за выбранный день" meta={`Дата: ${formatDate(skuDate)} · Рядов: ${formatNumber(skuRetrospective?.total_count)}`} />
           <div className={s.tableWrap}>
             <table className={s.table}>
-              <thead><tr><th className={s.nameCell}>SKU / товар</th><th>Категория</th><th>Оборот</th><th>Прибыль</th><th>Маржинальность</th><th>Соинвест</th><th>Возвраты</th><th>Периоды</th></tr></thead>
+              <thead><tr><th className={s.nameCell}>SKU / товар</th><th>Категория</th><th>Оборот</th><th>Прибыль</th><th>Маржинальность</th><th>Соинвест</th><th>Заказы</th><th>Динамика</th></tr></thead>
               <tbody>
                 {skuRows.length === 0 ? <tr><td colSpan={8} className={s.empty}>Нет данных по товарам</td></tr> : skuRows.map((row: any) => (
                   <tr key={row.key}>
                     <td className={s.nameCell}><div>{row.sku || "—"}</div><div className={s.subtleText}>{row.item_name || row.label || "—"}</div></td>
-                    <td className={s.nameCell}>{row.category_path || "—"}</td><td>{formatMoney(row.revenue, "RUB")}</td><td>{formatMoney(row.profit_amount, "RUB")}</td><td>{formatPercent(row.profit_pct)}</td><td>{formatMoney(row.coinvest_amount, "RUB")}</td><td>{formatPercent(row.returns_pct)}</td>
-                    <td className={s.nameCell}>{(row.periods || []).slice(0, 4).map((period: any) => <div key={`${row.key}-${period.period_key}`} className={s.subtleText}>{period.period_label}: {formatMoney(period.revenue, "RUB")} / {formatMoney(period.profit_amount, "RUB")}</div>)}</td>
+                    <td className={s.nameCell}>{row.category_path || "—"}</td><td>{formatMoney(row.revenue, "RUB")}</td><td>{formatMoney(row.profit_amount, "RUB")}</td><td>{formatPercent(row.profit_pct)}</td><td>{formatMoney(row.coinvest_amount, "RUB")}</td><td>{formatNumber(row.order_count_total)}</td>
+                    <td><button className={`button button--ghost ${selectedSku === row.sku ? "button--active" : ""}`} onClick={() => setSelectedSku(selectedSku === row.sku ? "" : String(row.sku || ""))}>{selectedSku === row.sku ? "Скрыть" : "Открыть"}</button></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {selectedSku ? (
+            <div className={s.skuDetailPanel}>
+              <div className={s.skuDetailHeader}>
+                <div>
+                  <div className={s.overviewEyebrow}>Динамика SKU</div>
+                  <h3 className={s.skuDetailTitle}>{skuDetail?.item_name || skuDetail?.label || selectedSku}</h3>
+                  <div className={s.subtleText}>SKU: {selectedSku} · Последние 30 дней до {formatDate(skuDate)}</div>
+                </div>
+              </div>
+              <div className={s.skuDetailMetrics}>
+                <div className={s.mobileOverviewMetric}><span>Оборот</span><strong>{formatMoney(skuDetail?.revenue, "RUB")}</strong></div>
+                <div className={s.mobileOverviewMetric}><span>Прибыль</span><strong>{formatMoney(skuDetail?.profit_amount, "RUB")}</strong></div>
+                <div className={s.mobileOverviewMetric}><span>Маржа</span><strong>{formatPercent(skuDetail?.profit_pct)}</strong></div>
+                <div className={s.mobileOverviewMetric}><span>Соинвест</span><strong>{formatPercent(skuDetail?.coinvest_pct)}</strong></div>
+              </div>
+              <div className={s.tableWrap}>
+                <table className={s.table}>
+                  <thead><tr><th>День</th><th>Оборот</th><th>Прибыль</th><th>Маржинальность</th><th>Соинвест</th><th>Заказы</th></tr></thead>
+                  <tbody>
+                    {(skuDetail?.periods || []).length === 0 ? (
+                      <tr><td colSpan={6} className={s.empty}>Пока нет динамики по этому SKU</td></tr>
+                    ) : (skuDetail?.periods || []).map((period: any) => (
+                      <tr key={`${selectedSku}-${period.period_key}`}>
+                        <td>{formatDate(period.period_key)}</td>
+                        <td>{formatMoney(period.revenue, "RUB")}</td>
+                        <td>{formatMoney(period.profit_amount, "RUB")}</td>
+                        <td>{formatPercent(period.profit_pct)}</td>
+                        <td>{formatPercent(period.coinvest_pct)}</td>
+                        <td>{formatNumber(period.order_count_total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
