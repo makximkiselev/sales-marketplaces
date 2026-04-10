@@ -56,7 +56,15 @@ def _get_shared_system_conn():
     with _SYSTEM_CONN_LOCK:
         conn = _SYSTEM_CONN
         if conn is not None and not getattr(conn, "closed", False):
-            return conn
+            try:
+                conn.execute("SELECT 1")
+                return conn
+            except Exception:
+                _SYSTEM_CONN = None
+                try:
+                    conn.close()
+                except Exception:
+                    pass
         try:
             import psycopg
             from psycopg.rows import dict_row
@@ -85,7 +93,7 @@ def _with_system_conn(fn):
     if not is_postgres_backend():
         with _connect_system() as conn:
             return fn(conn)
-    with _SYSTEM_CONN_LOCK:
+    try:
         conn = _get_shared_system_conn()
         try:
             return fn(conn)
@@ -97,6 +105,14 @@ def _with_system_conn(fn):
             except Exception:
                 _reset_shared_system_conn()
                 raise
+    except Exception:
+        _reset_shared_system_conn()
+        retry_conn = _get_shared_system_conn()
+        try:
+            return fn(retry_conn)
+        except Exception:
+            _reset_shared_system_conn()
+            raise
 
 
 def warm_auth_runtime() -> None:
