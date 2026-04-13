@@ -96,6 +96,16 @@ def _snapshot_set(payload: dict[str, Any], value: dict[str, Any]) -> None:
     cache_set_copy(_PRICES_SNAPSHOT_CACHE, key, value, _PRICES_SNAPSHOT_CACHE_MAX)
 
 
+def _can_reuse_materialized_price_metrics(*, db_rec: dict[str, Any] | None, src_updated: str | None) -> bool:
+    if not isinstance(db_rec, dict) or not db_rec:
+        return False
+    source_updated = str(src_updated or "").strip()
+    if not source_updated:
+        return False
+    db_source_updated = str(db_rec.get("source_updated_at") or "").strip()
+    return bool(db_source_updated) and db_source_updated == source_updated
+
+
 def _build_prices_page_from_snapshot(snapshot: dict[str, Any], *, page: int, page_size: int) -> dict[str, Any]:
     rows = list(snapshot.get("rows") or [])
     total_count = int(snapshot.get("total_count") or len(rows))
@@ -944,8 +954,7 @@ async def get_prices_overview(
                 rrc_profit_pct = round(pp * 100.0, 2)
 
             db_rec = ((db_price_map.get(suid) or {}).get(sku) or {}) if isinstance(db_price_map.get(suid), dict) else {}
-            db_source_updated = str(db_rec.get("source_updated_at") or "").strip() or None
-            if db_rec and db_source_updated == src_updated:
+            if _can_reuse_materialized_price_metrics(db_rec=db_rec, src_updated=src_updated):
                 price_metrics_by_store[suid] = {
                     "rrc_no_ads_price": _to_num(db_rec.get("rrc_no_ads_price")),
                     "rrc_no_ads_profit_abs": _to_num(db_rec.get("rrc_no_ads_profit_abs")),
