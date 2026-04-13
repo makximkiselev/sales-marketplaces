@@ -115,6 +115,26 @@ class SalesOverviewOrderRowsTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(with_actual["ads_rate_percent"], 5.0)
         self.assertEqual(with_actual["ads_source"], "market_boost_fact")
 
+    def test_strategy_snapshot_is_complete_requires_installed_price(self) -> None:
+        self.assertFalse(
+            svc._strategy_snapshot_is_complete(
+                {
+                    "captured_at": "2026-04-13T07:00:00+00:00",
+                    "installed_price": None,
+                    "decision_label": "Умеренно",
+                }
+            )
+        )
+        self.assertTrue(
+            svc._strategy_snapshot_is_complete(
+                {
+                    "captured_at": "2026-04-13T07:00:00+00:00",
+                    "installed_price": 122022.0,
+                    "decision_label": "Умеренно",
+                }
+            )
+        )
+
     async def test_tracking_delivery_days_prefers_order_created_date(self) -> None:
         row = {
             "item_status": "Доставлен покупателю",
@@ -224,6 +244,7 @@ class SalesOverviewOrderRowsTests(unittest.IsolatedAsyncioTestCase):
              patch.object(svc, "_catalog_marketplace_stores_context", return_value=[{"store_uid": "yandex_market:1", "currency_code": "RUB"}]), \
              patch.object(svc, "_snapshot_fallback_metrics", return_value=({}, {}, {})), \
              patch.object(svc, "get_sales_overview_order_rows_map", return_value={}), \
+             patch.object(svc, "get_pricing_strategy_results_map", return_value={"yandex_market:1": {}}), \
              patch.object(svc, "_load_strategy_iteration_snapshot_map", return_value={}), \
              patch.object(svc, "_load_strategy_snapshot_map", return_value={}), \
              patch.object(svc, "_load_actual_market_boost_map", return_value={}), \

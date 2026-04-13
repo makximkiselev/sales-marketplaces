@@ -32,6 +32,7 @@ from backend.services.store_data_model import (
     _connect_history,
     _placeholders,
     get_pricing_strategy_history_rows,
+    get_pricing_strategy_results_map,
     get_fx_rates_cache,
     get_pricing_catalog_sku_path_map,
     get_pricing_market_boost_export_history_rows,
@@ -1984,11 +1985,39 @@ def _strategy_snapshot_from_existing_order_row(row: dict[str, Any]) -> dict[str,
     }
 
 
+def _strategy_snapshot_from_live_strategy_result(row: dict[str, Any]) -> dict[str, Any]:
+    if not isinstance(row, dict):
+        return {}
+    calculated_at = str(row.get("calculated_at") or "").strip()
+    if not calculated_at:
+        return {}
+    return {
+        "cycle_started_at": str(row.get("cycle_started_at") or "").strip(),
+        "captured_at": calculated_at,
+        "installed_price": row.get("installed_price"),
+        "boost_bid_percent": row.get("boost_bid_percent"),
+        "market_boost_bid_percent": row.get("market_boost_bid_percent"),
+        "boost_share": row.get("boost_share"),
+        "decision_code": str(row.get("decision_code") or "").strip(),
+        "decision_label": str(row.get("decision_label") or "").strip(),
+        "control_state": str(row.get("control_state") or "").strip(),
+        "attractiveness_status": str(row.get("attractiveness_status") or "").strip(),
+        "promo_count": int(row.get("promo_count") or 0),
+        "coinvest_pct": row.get("coinvest_pct"),
+        "selected_iteration_code": str(row.get("selected_iteration_code") or "").strip(),
+        "uses_promo": bool(row.get("uses_promo")),
+        "market_promo_status": str(row.get("market_promo_status") or "").strip(),
+    }
+
+
 def _strategy_snapshot_is_complete(snapshot: dict[str, Any]) -> bool:
     if not isinstance(snapshot, dict):
         return False
     snapshot_at = str(snapshot.get("captured_at") or snapshot.get("strategy_snapshot_at") or "").strip()
     if not snapshot_at:
+        return False
+    installed_price = _parse_decimal(snapshot.get("installed_price") or snapshot.get("strategy_installed_price"))
+    if installed_price in (None, 0):
         return False
     decision_label = str(snapshot.get("decision_label") or snapshot.get("strategy_decision_label") or "").strip().lower()
     promo_count = int(snapshot.get("promo_count") or snapshot.get("strategy_promo_count") or 0)
@@ -2324,6 +2353,10 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
             )
         ],
     )
+    live_strategy_result_map = get_pricing_strategy_results_map(
+        store_uids=[store_uid],
+        skus=sorted({str(row.get("sku") or "").strip() for row in rows if str(row.get("sku") or "").strip()}),
+    ).get(store_uid, {})
     actual_market_boost_map = _load_actual_market_boost_map(store_uid=store_uid, orders=rows)
     plan_ctx = _planned_cost_context(store_uid, [str(row.get("sku") or "").strip() for row in rows])
     netting_rows = _load_netting_scope(store_uid=store_uid, date_from=min_date or "1900-01-01", date_to=max_date or "2999-12-31")
@@ -2380,12 +2413,24 @@ async def _build_sales_overview_order_rows_for_store(*, store_uid: str) -> dict[
         sku_key = str((row or {}).get("sku") or "").strip()
         status_kind = _status_kind(str((row or {}).get("item_status") or ""))
         existing_strategy_snapshot = _strategy_snapshot_from_existing_order_row(existing_order_rows_map.get((order_id, sku_key)) or {})
-        strategy_snapshot = (
+        historical_strategy_snapshot = (
             strategy_iteration_snapshot_map.get((order_id, sku_key))
             or strategy_snapshot_map.get((order_id, sku_key))
-            or (existing_strategy_snapshot if _strategy_snapshot_is_complete(existing_strategy_snapshot) else {})
-            or {}
         )
+        live_strategy_snapshot = _strategy_snapshot_from_live_strategy_result((live_strategy_result_map.get(sku_key) or {}))
+        if status_kind == "open":
+            strategy_snapshot = (
+                (historical_strategy_snapshot if _strategy_snapshot_is_complete(historical_strategy_snapshot) else {})
+                or (live_strategy_snapshot if _strategy_snapshot_is_complete(live_strategy_snapshot) else {})
+                or (existing_strategy_snapshot if _strategy_snapshot_is_complete(existing_strategy_snapshot) else {})
+                or {}
+            )
+        else:
+            strategy_snapshot = (
+                historical_strategy_snapshot
+                or (existing_strategy_snapshot if _strategy_snapshot_is_complete(existing_strategy_snapshot) else {})
+                or {}
+            )
         strategy_cycle_started_at = str(strategy_snapshot.get("cycle_started_at") or "").strip()
         strategy_boost_bid_percent = _parse_decimal(strategy_snapshot.get("boost_bid_percent"))
         strategy_market_boost_bid_percent = _parse_decimal(strategy_snapshot.get("market_boost_bid_percent"))
